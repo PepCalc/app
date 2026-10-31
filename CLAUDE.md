@@ -29,6 +29,9 @@ Path-scoped rules in `.claude/rules/` cover comments, markdown, time, data and p
 catalog. A post-edit hook lints edited TypeScript and Vue, checks markdown for em-dashes, runs
 the catalog tests after JSON edits, and re-checks contrast after token edits.
 
+A change ported from Gliplog (or any other repository) is formatted and checked here with
+this repository's own tools: `npx prettier --write` from this directory, then `make check`.
+
 ## Non-negotiables
 
 - No network requests, CDNs, analytics, or remote fonts; every asset is bundled and precached.
