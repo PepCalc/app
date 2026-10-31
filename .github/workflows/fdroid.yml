@@ -71,6 +71,11 @@ jobs:
             -e "s|^    versionCode: .*|    versionCode: $code|" \
             "metadata/$APP_ID.yml"
           cat "metadata/$APP_ID.yml"
+          # fdroidserver can fall back to the recipe's last commit for SOURCE_DATE_EPOCH, as in
+          # fdroiddata. Uncommitted, that is empty, and Debian's JDK fails parsing it ("For
+          # input string") whenever Gradle writes a properties file.
+          git add "metadata/$APP_ID.yml"
+          git -c user.name=CI -c user.email=ci@localhost commit -q -m "Test build of $APP_ID"
           chown -R vagrant "$GITHUB_WORKSPACE" "$home_vagrant"
           sudo --preserve-env --user vagrant \
             env PATH="$fdroidserver:$PATH" PYTHONPATH="$fdroidserver:$fdroidserver/examples" \
