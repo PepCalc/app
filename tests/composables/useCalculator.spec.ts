@@ -4,15 +4,15 @@ import { useCalculator } from '@/composables/useCalculator'
 describe('useCalculator', () => {
   it('computes the semaglutide default draw', () => {
     const calc = useCalculator({ peptideId: 'semaglutide' })
-    expect(calc.plan.value?.volumeMl).toBeCloseTo(0.375, 9)
-    expect(calc.reading.value?.scaleValue).toBeCloseTo(37.5, 9)
+    expect(calc.plan.value?.volumeMl).toBeCloseTo(0.15, 9)
+    expect(calc.reading.value?.scaleValue).toBeCloseTo(15, 9)
   })
 
   it('converts the dose when the user switches mg to mcg', () => {
     const calc = useCalculator({ peptideId: 'semaglutide' })
     calc.actions.setDoseUnit('mcg')
     expect(calc.state.doseValue).toBe(250)
-    expect(calc.plan.value?.volumeMl).toBeCloseTo(0.375, 9)
+    expect(calc.plan.value?.volumeMl).toBeCloseTo(0.15, 9)
   })
 
   it('takes the new peptide defaults without converting them', () => {

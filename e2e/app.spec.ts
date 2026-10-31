@@ -52,19 +52,19 @@ test('the mixing advisor dilutes GHK-Cu and fills in the water', async ({ page }
 test('saves a vial, logs a draw and tracks the balance', async ({ page }) => {
   await page.goto('./')
   await acceptDisclaimer(page)
-  // Semaglutide defaults: 2 mg vial, 3 mL water, 0.25 mg dose.
-  await expect(page.getByTestId('draw-headline')).toHaveText('37.5')
+  // Semaglutide defaults: 5 mg vial, 3 mL water, 0.25 mg dose.
+  await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
   // A dose other than the vial's typical one: logging must not reset it.
   await choose(page, 'Dose', '0.5 mg')
-  await expect(page.getByTestId('draw-headline')).toHaveText('75')
+  await expect(page.getByTestId('draw-headline')).toHaveText('30')
   await page.getByRole('button', { name: 'Log this draw now' }).click()
   await expect(page.getByText(/Logged 0.5 mg of Semaglutide/)).toBeVisible()
-  await expect(page.getByTestId('draw-headline')).toHaveText('75')
+  await expect(page.getByTestId('draw-headline')).toHaveText('30')
 
   await page.getByRole('link', { name: 'Open vial' }).click()
-  await expect(page.getByText('1.5', { exact: false }).first()).toBeVisible()
+  await expect(page.getByText('4.5', { exact: false }).first()).toBeVisible()
   await expect(page.getByText('1 draw')).toBeVisible()
   await expect(page.locator('.pk-chart canvas')).toBeVisible()
 
@@ -75,7 +75,7 @@ test('saves a vial, logs a draw and tracks the balance', async ({ page }) => {
   await expect(dialog.getByText('Last drawn: 0.5 mg, today.')).toBeVisible()
   await dialog.getByRole('button', { name: 'Cancel' }).click()
   await page.getByRole('main').getByRole('link', { name: 'Calculator' }).click()
-  await expect(page.getByTestId('draw-headline')).toHaveText('75')
+  await expect(page.getByTestId('draw-headline')).toHaveText('30')
 })
 
 test('numbers twin vials, ages them, and pages the draw history', async ({ page }) => {
@@ -83,7 +83,7 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
   await acceptDisclaimer(page)
   for (let i = 0; i < 2; i++) {
     await page.goto('./#/')
-    await expect(page.getByTestId('draw-headline')).toHaveText('37.5')
+    await expect(page.getByTestId('draw-headline')).toHaveText('15')
     await page.getByRole('button', { name: 'Save vial to shelf' }).click()
     await expect(page.getByText('From your shelf')).toBeVisible()
   }
@@ -131,7 +131,7 @@ test('works offline after the first visit, including stored data', async ({
 
   // The calculator chunk (with the chart library) must also come from the precache.
   await page.goto('./#/')
-  await expect(page.getByTestId('draw-headline')).toHaveText('37.5')
+  await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await context.setOffline(false)
 })
 

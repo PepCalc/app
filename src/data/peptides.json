@@ -42,7 +42,7 @@
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [2, 3, 5, 10],
+        "values": [5, 10, 15, 20, 30],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -92,7 +92,7 @@
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [5, 10, 15, 20, 30, 60],
+        "values": [10, 20, 30, 40, 60],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -141,7 +141,7 @@
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [5, 10, 20],
+        "values": [10, 20, 30, 40, 60],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -195,7 +195,7 @@
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [5, 10],
+        "values": [5, 10, 20],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -249,7 +249,7 @@
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [2, 5, 10],
+        "values": [5, 10, 20],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -349,7 +349,7 @@
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [2, 5, 10],
+        "values": [5, 10],
         "unit": "mg",
         "source": {
           "kind": "community",

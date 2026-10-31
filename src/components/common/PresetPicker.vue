@@ -132,6 +132,12 @@ const customError = computed(() => {
   justify-content: space-between;
   gap: 4px 8px;
   width: 100%;
+  margin-bottom: 6px;
+}
+
+/* The row owns the gap below; a margin on the label alone would lift it off the button's centre. */
+.preset-picker__legend > .pc-label {
+  margin-bottom: 0;
 }
 
 .preset-picker__custom {
