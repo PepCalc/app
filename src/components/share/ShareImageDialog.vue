@@ -48,8 +48,13 @@ let generation = 0
 async function redraw() {
   const content = props.content
   const draw = props.render ?? (content ? () => renderShareCard(content, colors.value) : null)
-  if (!draw) return
   const mine = ++generation
+  // Nothing to draw any more: drop the old preview so it cannot be shared by mistake.
+  if (!draw) {
+    setPreview(null)
+    busy.value = false
+    return
+  }
   busy.value = true
   try {
     const blob = await draw()
@@ -97,7 +102,7 @@ async function share() {
             alt="Preview of the image to share"
             class="share-preview__img"
           />
-          <v-progress-circular v-else indeterminate color="primary" />
+          <v-progress-circular v-else-if="busy" indeterminate color="primary" />
         </div>
         <div class="pc-stack pc-stack--tight">
           <slot />

@@ -1,3 +1,4 @@
+import { toPixelRect, type CropRect } from '@/domain/crop'
 import { fitWithin, IMAGE_EDGE, THUMB_EDGE } from '@/domain/photos'
 
 export interface PreparedPhoto {
@@ -34,8 +35,10 @@ async function decode(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
   }
 }
 
+/** Draws `region` of `source` at `width` × `height` and encodes it as a JPEG. */
 async function encode(
   source: ImageBitmap | HTMLImageElement,
+  region: CropRect,
   width: number,
   height: number,
   quality: number,
@@ -46,7 +49,7 @@ async function encode(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new PhotoReadError()
   ctx.imageSmoothingQuality = 'high'
-  ctx.drawImage(source, 0, 0, width, height)
+  ctx.drawImage(source, region.x, region.y, region.width, region.height, 0, 0, width, height)
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, 'image/jpeg', quality),
   )
@@ -55,26 +58,45 @@ async function encode(
 }
 
 /**
- * Re-encode a chosen or captured photo as a stored image and a thumbnail. Redrawing through a
- * canvas keeps only the pixels: EXIF metadata, including the GPS location phones embed, never
- * reaches the database or a backup.
+ * The stored image and thumbnail for `crop` of `file` (the whole of it without one), each
+ * scaled to fit its edge. Closes the decoded source when done.
  */
-export async function preparePhoto(file: Blob): Promise<PreparedPhoto> {
+async function prepare(file: Blob, crop?: CropRect): Promise<PreparedPhoto> {
   const source = await decode(file)
-  const naturalWidth = 'naturalWidth' in source ? source.naturalWidth : source.width
-  const naturalHeight = 'naturalHeight' in source ? source.naturalHeight : source.height
-  if (!(naturalWidth > 0) || !(naturalHeight > 0)) throw new PhotoReadError()
-  const size = fitWithin(naturalWidth, naturalHeight, IMAGE_EDGE)
-  const thumbSize = fitWithin(naturalWidth, naturalHeight, THUMB_EDGE)
   try {
+    const naturalWidth = 'naturalWidth' in source ? source.naturalWidth : source.width
+    const naturalHeight = 'naturalHeight' in source ? source.naturalHeight : source.height
+    if (!(naturalWidth > 0) || !(naturalHeight > 0)) throw new PhotoReadError()
+    const bounds = { width: naturalWidth, height: naturalHeight }
+    const region = crop ? toPixelRect(crop, bounds) : { x: 0, y: 0, ...bounds }
+    const size = fitWithin(region.width, region.height, IMAGE_EDGE)
+    const thumbSize = fitWithin(region.width, region.height, THUMB_EDGE)
     const [image, thumb] = await Promise.all([
-      encode(source, size.width, size.height, 0.85),
-      encode(source, thumbSize.width, thumbSize.height, 0.8),
+      encode(source, region, size.width, size.height, 0.85),
+      encode(source, region, thumbSize.width, thumbSize.height, 0.8),
     ])
     return { image, thumb, ...size }
   } finally {
     if ('close' in source) source.close()
   }
+}
+
+/**
+ * Re-encode a chosen or captured photo as a stored image and a thumbnail. Redrawing through a
+ * canvas keeps only the pixels: EXIF metadata, including the GPS location phones embed, never
+ * reaches the database or a backup.
+ */
+export function preparePhoto(file: Blob): Promise<PreparedPhoto> {
+  return prepare(file)
+}
+
+/**
+ * `photo` cut down to `crop`, in the photo's own pixels, with a fresh thumbnail. It works from
+ * the prepared image rather than the original file: that is already upright and stripped, and
+ * on Android the camera's file is deleted as soon as it has been read.
+ */
+export function cropPhoto(photo: PreparedPhoto, crop: CropRect): Promise<PreparedPhoto> {
+  return prepare(new Blob([photo.image], { type: 'image/jpeg' }), crop)
 }
 
 /**

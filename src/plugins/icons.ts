@@ -28,6 +28,7 @@ export {
   mdiWaterPlusOutline,
   mdiCameraOutline,
   mdiCompare,
+  mdiCrop,
   mdiImageOutline,
   mdiNotebookOutline,
   mdiScaleBathroom,

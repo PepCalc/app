@@ -6,6 +6,7 @@ import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
 import { useSettingsStore } from '@/stores/settings'
 import { formatDate, toEpochMs } from '@/services/time'
+import { photoLabels } from './photoLabels'
 
 /** Two progress photos side by side, each with its date and the weigh-in logged nearest it. */
 const open = defineModel<boolean>({ required: true })
@@ -20,12 +21,13 @@ const afterId = ref<string | null>(null)
 const showWeights = ref(true)
 const urls = ref<Record<'before' | 'after', string | null>>({ before: null, after: null })
 
-const items = computed(() =>
-  photosStore.photos.map((p) => ({
-    title: `${formatDate(p.takenAt)} · ${POSE_LABELS[p.pose]}`,
+const items = computed(() => {
+  const labels = photoLabels(photosStore.photos)
+  return photosStore.photos.map((p) => ({
+    title: `${labels.get(p.id) ?? formatDate(p.takenAt)} · ${POSE_LABELS[p.pose]}`,
     value: p.id,
-  })),
-)
+  }))
+})
 
 watch(open, (isOpen) => {
   if (!isOpen) return
@@ -87,9 +89,12 @@ const sides = computed(() =>
   }),
 )
 
+/** Choosing the photo already on the other side swaps the two, so both never show one photo. */
 function choose(side: 'before' | 'after', id: string | null) {
-  if (side === 'before') beforeId.value = id
-  else afterId.value = id
+  const mine = side === 'before' ? beforeId : afterId
+  const other = side === 'before' ? afterId : beforeId
+  if (id !== null && id === other.value) other.value = mine.value
+  mine.value = id
 }
 
 const summary = computed(() => {

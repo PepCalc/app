@@ -16,9 +16,11 @@ import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
 import ShareImageDialog from './ShareImageDialog.vue'
 import { renderCollage } from './collageCard'
+import { photoLabels } from '@/components/photos/photoLabels'
 
 /**
- * Share progress photos as one collage. Photos of one pose, picked evenly across the span the
+ * Share progress photos as one collage. Photos of one pose (or of every pose, when no single
+ * pose has two photos yet, so any two photos make a collage), picked evenly across the span the
  * user chooses, cropped into equal tiles and labelled with their date or the week since the
  * first of them, in a post or story shape. Weight change is off by default.
  */
@@ -34,7 +36,11 @@ const ids = {
   format: useId(),
 }
 
-const pose = ref<PhotoPose>('front')
+/** One pose, or every photo whatever its pose. */
+type PoseChoice = PhotoPose | 'all'
+const POSE_CHOICE_LABELS: Record<PoseChoice, string> = { ...POSE_LABELS, all: 'All poses' }
+
+const pose = ref<PoseChoice>('all')
 const count = ref<number>(4)
 const fromId = ref<string | null>(null)
 const toId = ref<string | null>(null)
@@ -46,17 +52,25 @@ const showChange = ref(false)
 const all = computed(() =>
   [...photosStore.photos].reverse().map((p) => ({ ...p, at: toEpochMs(p.takenAt) })),
 )
-/** Poses with at least two photos: a collage of one is not a collage. */
-const poses = computed(() =>
-  PHOTO_POSES.filter((p) => all.value.filter((photo) => photo.pose === p).length >= 2),
+/**
+ * Poses with at least two photos (a collage of one is not a collage), then All poses when the
+ * photos span more than one pose.
+ */
+const poses = computed<PoseChoice[]>(() => {
+  const own: PoseChoice[] = PHOTO_POSES.filter(
+    (p) => all.value.filter((photo) => photo.pose === p).length >= 2,
+  )
+  const mixed = new Set(all.value.map((p) => p.pose)).size > 1
+  return mixed ? [...own, 'all'] : own
+})
+const ofPose = computed(() =>
+  pose.value === 'all' ? all.value : all.value.filter((p) => p.pose === pose.value),
 )
-const ofPose = computed(() => all.value.filter((p) => p.pose === pose.value))
 
 watch(open, (isOpen) => {
   if (!isOpen) return
   const latest = all.value[all.value.length - 1]
-  pose.value =
-    latest && poses.value.includes(latest.pose) ? latest.pose : (poses.value[0] ?? 'front')
+  pose.value = latest && poses.value.includes(latest.pose) ? latest.pose : (poses.value[0] ?? 'all')
   showChange.value = false
   resetRange()
 })
@@ -69,15 +83,40 @@ function resetRange() {
 }
 watch(pose, resetRange)
 
-const rangeItems = computed(() =>
-  ofPose.value.map((p) => ({ title: formatDate(p.at), value: p.id })),
+/*
+ * From lists only photos before To, and To only photos after From, so the span always holds
+ * at least two photos. With just two there is nothing to choose, so the pickers are hidden.
+ */
+const fromIndex = computed(() => ofPose.value.findIndex((p) => p.id === fromId.value))
+const toIndex = computed(() => ofPose.value.findIndex((p) => p.id === toId.value))
+const showRange = computed(() => ofPose.value.length > 2)
+const rangeItems = computed(() => {
+  const labels = photoLabels(ofPose.value)
+  return ofPose.value.map((p, i) => ({
+    title: labels.get(p.id) ?? formatDate(p.at),
+    value: p.id,
+    i,
+  }))
+})
+const fromItems = computed(() =>
+  rangeItems.value.map(({ title, value, i }) => ({
+    title,
+    value,
+    props: { disabled: toIndex.value >= 0 && i >= toIndex.value },
+  })),
+)
+const toItems = computed(() =>
+  rangeItems.value.map(({ title, value, i }) => ({
+    title,
+    value,
+    props: { disabled: i <= fromIndex.value },
+  })),
 )
 const inRange = computed(() => {
-  const list = ofPose.value
-  const a = list.findIndex((p) => p.id === fromId.value)
-  const b = list.findIndex((p) => p.id === toId.value)
-  if (a < 0 || b < 0) return list
-  return list.slice(Math.min(a, b), Math.max(a, b) + 1)
+  const a = fromIndex.value
+  const b = toIndex.value
+  if (a < 0 || b < 0 || a >= b) return ofPose.value
+  return ofPose.value.slice(a, b + 1)
 })
 const counts = computed(() => COLLAGE_COUNTS.filter((n) => n <= Math.max(2, inRange.value.length)))
 watch(counts, (list) => {
@@ -148,7 +187,8 @@ async function render(): Promise<Blob> {
     {
       format: format.value,
       photos,
-      eyebrow: `Progress photos · ${POSE_LABELS[pose.value]}`,
+      eyebrow:
+        pose.value === 'all' ? 'Progress photos' : `Progress photos · ${POSE_LABELS[pose.value]}`,
       title:
         gap.weeks !== null ? `${gap.weeks} weeks` : `${gap.days} day${gap.days === 1 ? '' : 's'}`,
       stats,
@@ -183,7 +223,7 @@ async function render(): Promise<Blob> {
         density="comfortable"
         :aria-labelledby="ids.pose"
       >
-        <v-btn v-for="p in poses" :key="p" :value="p">{{ POSE_LABELS[p] }}</v-btn>
+        <v-btn v-for="p in poses" :key="p" :value="p">{{ POSE_CHOICE_LABELS[p] }}</v-btn>
       </v-btn-toggle>
     </div>
     <div>
@@ -198,11 +238,13 @@ async function render(): Promise<Blob> {
         <v-btn v-for="n in counts" :key="n" :value="n">{{ n }}</v-btn>
       </v-btn-toggle>
     </div>
-    <div class="range">
-      <v-select v-model="fromId" :items="rangeItems" label="From" />
-      <v-select v-model="toId" :items="rangeItems" label="To" />
-    </div>
-    <p class="text-body-small pc-muted">Photos are picked evenly between these dates.</p>
+    <template v-if="showRange">
+      <div class="range">
+        <v-select v-model="fromId" :items="fromItems" label="From" />
+        <v-select v-model="toId" :items="toItems" label="To" />
+      </div>
+      <p class="text-body-small pc-muted">Photos are picked evenly between these dates.</p>
+    </template>
     <div>
       <p :id="ids.labels" class="pc-label">Labels</p>
       <v-btn-toggle

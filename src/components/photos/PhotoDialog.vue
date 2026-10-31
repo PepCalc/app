@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, useId, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, shallowRef, useId, watch } from 'vue'
 import type { PhotoRow } from '@/db/database'
+import { initialCrop, isFullFrame, type CropRect } from '@/domain/crop'
 import { nearestWeight, PHOTO_POSES, POSE_LABELS, type PhotoPose } from '@/domain/photos'
 import { formatWeight } from '@/domain/bodyUnits'
-import type { PreparedPhoto } from '@/services/photos/preparePhoto'
+import { cropPhoto, type PreparedPhoto } from '@/services/photos/preparePhoto'
+import { mdiCrop } from '@/plugins/icons'
+import PhotoCropper from './PhotoCropper.vue'
 import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
 import { useSettingsStore } from '@/stores/settings'
@@ -13,7 +16,8 @@ import { formatDate, fromLocalInputValue, toEpochMs, toLocalInputValue } from '@
 
 /**
  * Save a new progress photo (`prepared`, taken or chosen a moment ago), or view, edit and
- * delete a saved one (`photo`).
+ * delete a saved one (`photo`). A new photo can be cropped before it is saved; the crop is
+ * applied to a working copy, so Undo crop returns to the photo as it was taken.
  */
 const props = defineProps<{
   photo: PhotoRow | null
@@ -31,8 +35,13 @@ const notify = useNotifyStore()
 const confirm = useConfirmStore()
 const titleId = useId()
 const poseLabelId = useId()
+const shapeLabelId = useId()
 const saving = ref(false)
 const imageUrl = ref<string | null>(null)
+
+/** The new photo as it will be saved: `prepared`, or a crop of it. */
+const working = shallowRef<PreparedPhoto | null>(null)
+const cropped = computed(() => working.value !== null && working.value !== props.prepared)
 
 const form = reactive({ takenAt: '', pose: 'front' as PhotoPose, notes: '' })
 
@@ -41,16 +50,26 @@ function releaseImage() {
   imageUrl.value = null
 }
 
+function showWorking() {
+  releaseImage()
+  if (working.value) {
+    imageUrl.value = URL.createObjectURL(new Blob([working.value.image], { type: 'image/jpeg' }))
+  }
+}
+
 // Reset from props each time the dialog opens, so an abandoned edit never leaks into the next.
 watch(open, async (isOpen) => {
   releaseImage()
+  cropping.value = false
+  working.value = null
   if (!isOpen) return
   const p = props.photo
   form.takenAt = toLocalInputValue(p?.takenAt ?? props.takenAt)
   form.pose = p?.pose ?? photosStore.photos[0]?.pose ?? 'front'
   form.notes = p?.notes ?? ''
   if (props.prepared) {
-    imageUrl.value = URL.createObjectURL(new Blob([props.prepared.image], { type: 'image/jpeg' }))
+    working.value = props.prepared
+    showWorking()
   } else if (p) {
     const url = await photosStore.imageUrl(p.id)
     // The dialog may have closed, or moved to another photo, while the image was read.
@@ -62,9 +81,60 @@ watch(open, async (isOpen) => {
 onBeforeUnmount(releaseImage)
 
 const aspect = computed(() => {
-  const size = props.prepared ?? props.photo
+  const size = working.value ?? props.photo
   return size ? size.width / size.height : 3 / 4
 })
+
+/*
+ * Cropping: the frame is held in the working image's pixels. Portrait matches the 3:4 tiles of
+ * a shared collage, so a photo cropped that way is shown whole there.
+ */
+const CROP_SHAPES = { free: null, portrait: 3 / 4, square: 1 } as const
+type CropShape = keyof typeof CROP_SHAPES
+const cropping = ref(false)
+const cropShape = ref<CropShape>('free')
+const cropRect = ref<CropRect>({ x: 0, y: 0, width: 1, height: 1 })
+const applyingCrop = ref(false)
+
+const workingSize = computed(() =>
+  working.value ? { width: working.value.width, height: working.value.height } : null,
+)
+
+function startCrop() {
+  if (!workingSize.value) return
+  cropShape.value = 'free'
+  cropRect.value = initialCrop(workingSize.value, null)
+  cropping.value = true
+}
+
+watch(cropShape, (shape) => {
+  if (workingSize.value) cropRect.value = initialCrop(workingSize.value, CROP_SHAPES[shape])
+})
+
+async function applyCrop() {
+  const photo = working.value
+  const size = workingSize.value
+  if (!photo || !size) return
+  if (isFullFrame(cropRect.value, size)) {
+    cropping.value = false
+    return
+  }
+  applyingCrop.value = true
+  try {
+    working.value = await cropPhoto(photo, cropRect.value)
+    showWorking()
+    cropping.value = false
+  } catch {
+    notify.show("Couldn't crop that photo.", 'error')
+  } finally {
+    applyingCrop.value = false
+  }
+}
+
+function undoCrop() {
+  working.value = props.prepared
+  showWorking()
+}
 
 /** The weigh-in logged nearest the photo, shown so the photo reads with its number. */
 const nearby = computed(() => {
@@ -89,7 +159,7 @@ async function save() {
   }
   try {
     if (props.photo) await photosStore.updatePhoto(props.photo.id, details)
-    else if (props.prepared) await photosStore.addPhoto(details, props.prepared)
+    else if (working.value) await photosStore.addPhoto(details, working.value)
     notify.show(props.photo ? 'Photo updated' : 'Photo saved', 'success')
     emit('saved')
     open.value = false
@@ -124,9 +194,46 @@ async function remove() {
         <v-card-title :id="titleId">Progress photo</v-card-title>
       </v-card-item>
       <v-card-text class="pc-stack">
-        <div class="frame" :style="{ aspectRatio: aspect }">
-          <img v-if="imageUrl" :src="imageUrl" alt="Your progress photo" />
-        </div>
+        <template v-if="cropping && imageUrl && workingSize">
+          <PhotoCropper
+            v-model="cropRect"
+            :src="imageUrl"
+            :size="workingSize"
+            :ratio="CROP_SHAPES[cropShape]"
+          />
+          <p class="text-body-small pc-muted">
+            Drag the frame to move it, or a corner to resize it.
+          </p>
+          <div>
+            <p :id="shapeLabelId" class="pc-label">Shape</p>
+            <v-btn-toggle
+              v-model="cropShape"
+              role="group"
+              mandatory
+              density="comfortable"
+              :aria-labelledby="shapeLabelId"
+            >
+              <v-btn value="free">Free</v-btn>
+              <v-btn value="portrait">3:4</v-btn>
+              <v-btn value="square">Square</v-btn>
+            </v-btn-toggle>
+          </div>
+          <div class="d-flex flex-wrap ga-2">
+            <v-btn variant="text" :disabled="applyingCrop" @click="cropping = false">
+              Cancel crop
+            </v-btn>
+            <v-btn variant="tonal" :loading="applyingCrop" @click="applyCrop">Apply crop</v-btn>
+          </div>
+        </template>
+        <template v-else>
+          <div class="frame" :style="{ aspectRatio: aspect }">
+            <img v-if="imageUrl" :src="imageUrl" alt="Your progress photo" />
+          </div>
+          <div v-if="working" class="d-flex flex-wrap ga-2">
+            <v-btn variant="tonal" :prepend-icon="mdiCrop" @click="startCrop">Crop</v-btn>
+            <v-btn v-if="cropped" variant="text" @click="undoCrop">Undo crop</v-btn>
+          </div>
+        </template>
         <p v-if="nearby" class="text-body-small pc-muted">{{ nearby }}</p>
         <div>
           <p :id="poseLabelId" class="pc-label">Pose</p>
@@ -157,7 +264,7 @@ async function remove() {
         <v-btn
           color="primary"
           variant="flat"
-          :disabled="!form.takenAt"
+          :disabled="!form.takenAt || cropping"
           :loading="saving"
           @click="save"
         >
