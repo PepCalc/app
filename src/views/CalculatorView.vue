@@ -261,21 +261,25 @@ function clearShelfVial() {
               :presets="calc.peptide.value?.diluentMl.values ?? [1, 2, 3, 5]"
               unit-label="mL"
               hint="More water makes small doses easier to measure but increases each dose's volume."
-            />
-            <v-btn
-              variant="tonal"
-              :prepend-icon="mdiWaterPlusOutline"
-              :disabled="!calc.vial.value"
-              class="align-self-start"
-              @click="advising = true"
             >
-              Help me choose
-            </v-btn>
+              <template #action>
+                <v-btn
+                  variant="tonal"
+                  size="small"
+                  :prepend-icon="mdiWaterPlusOutline"
+                  :disabled="!calc.vial.value"
+                  @click="advising = true"
+                >
+                  Help me choose
+                </v-btn>
+              </template>
+            </PresetPicker>
           </v-card-text>
           <v-card-actions>
             <v-btn
               color="primary"
               variant="tonal"
+              size="large"
               :prepend-icon="mdiBookshelf"
               :disabled="!calc.vial.value || !state.diluentMl"
               @click="saveToShelf"

@@ -127,6 +127,57 @@ function choose() {
       </v-card-item>
 
       <v-card-text class="pc-stack">
+        <fieldset class="advisor__fieldset">
+          <legend class="pc-label">Doses you plan to draw</legend>
+          <div class="pc-stack pc-stack--tight">
+            <div class="d-flex ga-3">
+              <v-text-field
+                :model-value="state.lowDose ?? ''"
+                label="Dose"
+                :suffix="unitLabel(state.doseUnit)"
+                type="number"
+                inputmode="decimal"
+                hide-details
+                @update:model-value="state.lowDose = parseDose($event)"
+              />
+              <v-text-field
+                :model-value="state.highDose ?? ''"
+                label="Up to"
+                placeholder="Same"
+                persistent-placeholder
+                :suffix="unitLabel(state.doseUnit)"
+                type="number"
+                inputmode="decimal"
+                hide-details
+                @update:model-value="state.highDose = parseDose($event)"
+              />
+            </div>
+            <div class="d-flex flex-wrap align-center ga-3">
+              <v-btn-toggle
+                v-if="advisor.doseUnits.value.length > 1"
+                :model-value="state.doseUnit"
+                mandatory
+                density="compact"
+                aria-label="Dose unit"
+                @update:model-value="advisor.actions.setDoseUnit($event)"
+              >
+                <v-btn v-for="u in advisor.doseUnits.value" :key="u" :value="u">{{
+                  unitLabel(u)
+                }}</v-btn>
+              </v-btn-toggle>
+              <span class="text-body-small pc-faint">Add a top dose if you'll titrate.</span>
+            </div>
+          </div>
+        </fieldset>
+
+        <PresetPicker
+          v-model="state.vialCapacityMl"
+          input-id="vial-capacity"
+          label="Vial size"
+          :presets="VIAL_SIZES_ML"
+          unit-label="mL"
+          hint="How much the glass vial holds."
+        />
         <section aria-label="Water volumes" aria-live="polite" class="pc-stack">
           <v-alert v-if="problem" type="warning" variant="tonal" density="compact">
             {{ problem }}
@@ -193,7 +244,7 @@ function choose() {
             </p>
           </template>
 
-          <p v-else class="pc-muted">Enter your dose below.</p>
+          <p v-else class="pc-muted">Enter your dose above.</p>
         </section>
 
         <section
@@ -227,58 +278,6 @@ function choose() {
             </ul>
           </details>
         </section>
-
-        <fieldset class="advisor__fieldset">
-          <legend class="pc-label">Doses you plan to draw</legend>
-          <div class="pc-stack pc-stack--tight">
-            <div class="d-flex ga-3">
-              <v-text-field
-                :model-value="state.lowDose ?? ''"
-                label="Dose"
-                :suffix="unitLabel(state.doseUnit)"
-                type="number"
-                inputmode="decimal"
-                hide-details
-                @update:model-value="state.lowDose = parseDose($event)"
-              />
-              <v-text-field
-                :model-value="state.highDose ?? ''"
-                label="Up to"
-                placeholder="Same"
-                persistent-placeholder
-                :suffix="unitLabel(state.doseUnit)"
-                type="number"
-                inputmode="decimal"
-                hide-details
-                @update:model-value="state.highDose = parseDose($event)"
-              />
-            </div>
-            <div class="d-flex flex-wrap align-center ga-3">
-              <v-btn-toggle
-                v-if="advisor.doseUnits.value.length > 1"
-                :model-value="state.doseUnit"
-                mandatory
-                density="compact"
-                aria-label="Dose unit"
-                @update:model-value="advisor.actions.setDoseUnit($event)"
-              >
-                <v-btn v-for="u in advisor.doseUnits.value" :key="u" :value="u">{{
-                  unitLabel(u)
-                }}</v-btn>
-              </v-btn-toggle>
-              <span class="text-body-small pc-faint">Add a top dose if you'll titrate.</span>
-            </div>
-          </div>
-        </fieldset>
-
-        <PresetPicker
-          v-model="state.vialCapacityMl"
-          input-id="vial-capacity"
-          label="Vial size"
-          :presets="VIAL_SIZES_ML"
-          unit-label="mL"
-          hint="How much the glass vial holds."
-        />
       </v-card-text>
 
       <v-card-actions>

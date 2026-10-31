@@ -366,6 +366,14 @@
   }
 
   /*
+   * A scrollable sheet pins its actions below the content as a bar of their own, so they need
+   * even space above and below; the home indicator's inset is added beneath.
+   */
+  .v-bottom-sheet > .v-overlay__content > .v-card > .v-card-actions {
+    padding: 12px 16px calc(12px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom)));
+  }
+
+  /*
    * Solid surfaces where glass cannot render (no backdrop-filter) or is unwanted (the user
    * asked the OS for less transparency): translucency without blur only muddies text.
    */

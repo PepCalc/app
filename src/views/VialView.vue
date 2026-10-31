@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import { useShelfStore } from '@/stores/shelf'
 import { useSettingsStore } from '@/stores/settings'
 import { useNotifyStore } from '@/stores/notify'
@@ -42,6 +43,43 @@ const now = useNow()
 
 const editing = ref(false)
 const logging = ref(false)
+
+/*
+ * Edit, archive and delete share the title row. On a phone three labelled buttons leave no room
+ * for the name, so below the sm breakpoint they shrink to icons named by aria-label.
+ */
+const { smAndUp: labelledActions } = useDisplay()
+const manageActions = computed(() => {
+  const archived = vial.value?.status === 'archived'
+  return [
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: mdiPencilOutline,
+      color: undefined,
+      variant: 'outlined' as const,
+      run: () => {
+        editing.value = true
+      },
+    },
+    {
+      key: 'archive',
+      label: archived ? 'Restore to shelf' : 'Archive',
+      icon: archived ? mdiArchiveArrowUpOutline : mdiArchiveArrowDownOutline,
+      color: undefined,
+      variant: 'text' as const,
+      run: toggleArchive,
+    },
+    {
+      key: 'delete',
+      label: 'Delete',
+      icon: mdiDeleteOutline,
+      color: 'error',
+      variant: 'text' as const,
+      run: deleteVial,
+    },
+  ]
+})
 
 const vial = computed(() => shelf.vialById(props.id))
 const peptide = computed(() => findPeptide(vial.value?.peptideId))
@@ -126,10 +164,33 @@ async function deleteVial() {
 <template>
   <div class="pc-page">
     <template v-if="vial && balance">
-      <header class="d-flex align-start flex-wrap ga-3 mb-4">
-        <div class="flex-grow-1">
-          <p class="pc-eyebrow">{{ vial.status === 'archived' ? 'Archived vial' : 'Vial' }}</p>
-          <h1 class="pc-display text-headline-large">{{ shelf.displayName(vial) }}</h1>
+      <header class="mb-4">
+        <p class="pc-eyebrow">{{ vial.status === 'archived' ? 'Archived vial' : 'Vial' }}</p>
+        <div class="vial-title-row">
+          <h1 class="vial-title pc-display text-headline-large">{{ shelf.displayName(vial) }}</h1>
+          <div class="vial-manage" aria-label="Manage vial" role="group">
+            <template v-for="action in manageActions" :key="action.key">
+              <v-btn
+                v-if="labelledActions"
+                :prepend-icon="action.icon"
+                :color="action.color"
+                :variant="action.variant"
+                @click="action.run"
+              >
+                {{ action.label }}
+              </v-btn>
+              <v-btn
+                v-else
+                :icon="action.icon"
+                :color="action.color"
+                :aria-label="action.label"
+                variant="text"
+                @click="action.run"
+              />
+            </template>
+          </div>
+        </div>
+        <div>
           <p class="pc-muted pc-num">
             {{ vial.amount }} {{ unitLabel(vial.unit) }} in {{ vial.diluentMl }} mL ·
             {{ concentrationText }}
@@ -139,9 +200,6 @@ async function deleteVial() {
           </p>
           <div v-if="age && age.tier !== 'fresh'" class="mt-2"><VialAgeBadge :age="age" /></div>
         </div>
-        <v-btn :prepend-icon="mdiPencilOutline" variant="outlined" @click="editing = true"
-          >Edit</v-btn
-        >
       </header>
 
       <div class="vial-layout">
@@ -232,21 +290,6 @@ async function deleteVial() {
         </div>
       </div>
 
-      <footer class="vial-manage" aria-label="Manage vial">
-        <v-btn
-          variant="text"
-          :prepend-icon="
-            vial.status === 'archived' ? mdiArchiveArrowUpOutline : mdiArchiveArrowDownOutline
-          "
-          @click="toggleArchive"
-        >
-          {{ vial.status === 'archived' ? 'Restore to shelf' : 'Archive' }}
-        </v-btn>
-        <v-btn variant="text" color="error" :prepend-icon="mdiDeleteOutline" @click="deleteVial">
-          Delete
-        </v-btn>
-      </footer>
-
       <VialFormDialog v-model="editing" :vial="vial" @save="saveVial" />
       <LogDrawDialog
         v-model="logging"
@@ -278,14 +321,23 @@ async function deleteVial() {
   }
 }
 
-/* Archive and delete close the page, apart from the everyday actions. */
+.vial-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A long name wraps under itself so the actions keep their place at the right. */
+.vial-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .vial-manage {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid var(--pc-divider);
+  flex: 0 0 auto;
+  gap: 4px;
 }
 
 .vial-remaining {

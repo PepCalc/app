@@ -73,8 +73,12 @@ const customError = computed(() => {
 </script>
 
 <template>
-  <fieldset class="preset-picker">
-    <legend class="pc-label">{{ label }}</legend>
+  <!-- Named by the label alone so a button in the action slot is not read as part of it. -->
+  <fieldset class="preset-picker" :aria-labelledby="`${inputId}-label`">
+    <legend class="preset-picker__legend">
+      <span :id="`${inputId}-label`" class="pc-label">{{ label }}</span>
+      <slot name="action" />
+    </legend>
     <v-chip-group :model-value="selected" color="primary" column @update:model-value="choose">
       <v-chip
         v-for="value in presets"
@@ -119,6 +123,15 @@ const customError = computed(() => {
   margin: 0;
   padding: 0;
   min-width: 0;
+}
+
+.preset-picker__legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+  width: 100%;
 }
 
 .preset-picker__custom {
