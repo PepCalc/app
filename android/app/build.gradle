@@ -3,10 +3,16 @@ import groovy.json.JsonSlurper
 apply plugin: 'com.android.application'
 
 // package.json is the single source of the version. versionCode must only ever increase:
-// major * 10000 + minor * 100 + patch, so each part stays below 100.
-def appVersion = new JsonSlurper().parse(file('../../package.json')).version as String
+// major * 10000 + minor * 100 + patch, so each part stays below 100. It is also written out in
+// package.json because F-Droid's update checker can only read a literal number; the build fails
+// if the two disagree.
+def pkg = new JsonSlurper().parse(file('../../package.json'))
+def appVersion = pkg.version as String
 def (major, minor, patch) = appVersion.tokenize('.-')[0..2].collect { it as int }
 def appVersionCode = major * 10000 + minor * 100 + patch
+if (pkg.versionCode != appVersionCode) {
+    throw new GradleException("package.json versionCode is ${pkg.versionCode}; version ${appVersion} needs ${appVersionCode}")
+}
 
 // Release signing comes from the environment so the keystore and passwords never enter the
 // repository. Without PEPCALC_KEYSTORE the release build is left unsigned.
@@ -37,6 +43,12 @@ android {
                 keyPassword System.getenv('PEPCALC_KEY_PASSWORD')
             }
         }
+    }
+    // F-Droid and reproducible builds reject the encrypted dependency report Google adds to
+    // release artifacts; Play does not need it.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
     buildTypes {
         release {

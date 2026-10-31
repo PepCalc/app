@@ -1,0 +1,87 @@
+name: F-Droid
+
+# Builds the app the way F-Droid's build server does, from the recipe in docs/fdroid/ with this
+# commit in place of the release tag, so a change that would break the F-Droid build fails here
+# first. Also runs fdroid lint and rewritemeta on the recipe exactly as it will be submitted.
+# docs/releasing.md has the submission steps.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # The image fdroiddata's own CI builds merge requests in.
+    container: registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie
+    env:
+      APP_ID: io.github.pepcalc
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: src
+          fetch-depth: 0
+      - name: Set up fdroidserver and fdroiddata
+        shell: bash
+        run: |
+          set -euxo pipefail
+          apt-get update
+          apt-get install -y sudo
+          git clone --depth 1 https://gitlab.com/fdroid/fdroidserver.git /home/vagrant/fdroidserver
+          git clone --depth 1 https://gitlab.com/fdroid/fdroiddata.git fdroiddata
+          cp "src/docs/fdroid/$APP_ID.yml" fdroiddata/metadata/
+      - name: Lint the recipe
+        shell: bash
+        working-directory: fdroiddata
+        run: |
+          set -euxo pipefail
+          source /etc/profile.d/bsenv.sh
+          export PATH="$fdroidserver:$PATH" PYTHONPATH="$fdroidserver:$fdroidserver/examples"
+          export serverwebroot=/tmp
+          # Lint's "Appending .git is not necessary" check matches the ".github.io" in this
+          # repository's name (its pattern has no end anchor), so that one message is allowed.
+          if ! fdroid lint "$APP_ID" > lint.txt 2>&1; then
+            cat lint.txt
+            known='Appending .git is not necessary'
+            grep -q "^$APP_ID: .*$known" lint.txt || exit 1
+            if grep "^$APP_ID:" lint.txt | grep -v "$known"; then exit 1; fi
+          fi
+          cat lint.txt
+          fdroid rewritemeta "$APP_ID"
+          diff -u "../src/docs/fdroid/$APP_ID.yml" "metadata/$APP_ID.yml"
+      - name: Build from this commit
+        shell: bash
+        working-directory: fdroiddata
+        run: |
+          set -euxo pipefail
+          source /etc/profile.d/bsenv.sh
+          sdkmanager "platform-tools" "build-tools;31.0.0"
+          git -C "$home_vagrant/gradlew-fdroid" pull
+          # The recipe as submitted, pointed at this checkout and commit, versioned from it.
+          code=$(python3 -c 'import json; print(json.load(open("../src/package.json"))["versionCode"])')
+          name=$(python3 -c 'import json; print(json.load(open("../src/package.json"))["version"])')
+          sed -i \
+            -e "s|^Repo: .*|Repo: $GITHUB_WORKSPACE/src|" \
+            -e "s|^    commit: .*|    commit: $GITHUB_SHA|" \
+            -e "s|^  - versionName: .*|  - versionName: $name|" \
+            -e "s|^    versionCode: .*|    versionCode: $code|" \
+            "metadata/$APP_ID.yml"
+          cat "metadata/$APP_ID.yml"
+          chown -R vagrant "$GITHUB_WORKSPACE" "$home_vagrant"
+          sudo --preserve-env --user vagrant \
+            env PATH="$fdroidserver:$PATH" PYTHONPATH="$fdroidserver:$fdroidserver/examples" \
+            PYTHONUNBUFFERED=true HOME="$home_vagrant" serverwebroot=/tmp \
+            fdroid build --verbose --test --on-server --no-tarball "$APP_ID:$code"
+          ls -l tmp/*.apk
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: fdroid-build
+          path: |
+            fdroiddata/tmp/*.apk
+            fdroiddata/logs/
+          retention-days: 14

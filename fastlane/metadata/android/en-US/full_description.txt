@@ -1,0 +1,23 @@
+PepCalc is a private, offline calculator for reconstituting peptide vials and reading the syringe. Pick a peptide, the amount in the vial and the water you added, and PepCalc shows how far to draw, with a drawing of the barrel to check against.
+
+<b>What it does</b>
+<ul>
+<li>Draw calculator: a dose in mg, mcg or IU becomes a volume and a syringe reading for U-100 (1, 0.5 and 0.3 mL), U-40 and mL syringes. It warns when a draw is over capacity, under one mark or between marks.</li>
+<li>Mixing advisor: enter the doses you plan to draw and your vial size, and PepCalc ranks water volumes so every dose fits one syringe and lands on a mark.</li>
+<li>Presets with sources: vial sizes, water volumes and doses for each peptide, each marked as coming from a prescribing label, a clinical trial or community reports.</li>
+<li>Blends: KLOW, GLOW and custom mixes split each dose into its components.</li>
+<li>Shelf: save mixed vials, log draws and see what is left.</li>
+<li>Level charts: an estimate of the amount remaining in the body from a simple model of published human data, or from a half-life you enter yourself, clearly marked as yours.</li>
+<li>Journal: weight and body measurements, side effects, blood sugar and progress photos that only you can see.</li>
+<li>Share a level chart as an image, or export a PDF report, both made on the device.</li>
+</ul>
+
+<b>Private by design</b>
+<ul>
+<li>No account, no server, no analytics, no ads.</li>
+<li>The app requests no network permission. Your data never leaves your phone unless you save a backup file yourself.</li>
+<li>Free and open source.</li>
+</ul>
+
+<b>Important</b>
+PepCalc is for adults. It does arithmetic and shows sourced reference values. It does not recommend doses and is not medical advice. Several listed peptides are investigational or not approved for human use.

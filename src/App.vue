@@ -222,6 +222,12 @@ onMounted(async () => {
   height: calc(64px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom))) !important;
 }
 
+/* Vuetify gives each item an 80px minimum; five tabs need 400px and overflow narrower phones. */
+.bottom-nav .v-btn {
+  min-width: 0;
+  padding-inline: 0;
+}
+
 .rail-item {
   justify-content: center;
   min-height: 64px;

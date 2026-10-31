@@ -1,0 +1,37 @@
+Categories:
+  - Calculator
+  - Medication
+License: AGPL-3.0-only
+WebSite: https://pepcalc.github.io/
+SourceCode: https://github.com/PepCalc/pepcalc.github.io
+IssueTracker: https://github.com/PepCalc/pepcalc.github.io/issues
+
+AutoName: PepCalc
+
+RepoType: git
+Repo: https://github.com/PepCalc/pepcalc.github.io.git
+
+Builds:
+  - versionName: 0.2.0
+    versionCode: 200
+    commit: v0.2.0
+    subdir: android/app
+    sudo:
+      - apt-get update
+      - apt-get install -y curl xz-utils
+      - curl -Lo /tmp/node.tar.xz https://nodejs.org/dist/v24.16.0/node-v24.16.0-linux-x64.tar.xz
+      - echo "d804845d34eddc21dc1092b519d643ef40b1f58ec5dec5c22b1f4bd8fabde6c9  /tmp/node.tar.xz"
+        | sha256sum -c
+      - tar xJf /tmp/node.tar.xz --strip-components=1 -C /usr/local/
+    init: cd ../.. && npm ci
+    gradle:
+      - yes
+    prebuild: cd ../.. && npm run build:android
+    scandelete:
+      - node_modules
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9]+\.[0-9]+\.[0-9]+$
+UpdateCheckData: package.json|"versionCode":\s*(\d+)|.|"version":\s*"([\d.]+)"
+CurrentVersion: 0.2.0
+CurrentVersionCode: 200

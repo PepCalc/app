@@ -1,0 +1,1 @@
+First F-Droid release: draw calculator, mixing advisor, sourced presets, blends, shelf, level charts, journal, and PDF reports.

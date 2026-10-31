@@ -8,14 +8,15 @@ accounts, no network requests; all data stays in IndexedDB on the device.
 
 All commands run on the Node version in `.nvmrc` (`nvm use`); never system Node.
 
-| Command          | Purpose                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------ |
-| `make install`   | `npm ci`                                                                                         |
-| `make dev`       | Vite dev server (no service worker in dev)                                                       |
-| `make check`     | Fast gate: lint, format, typecheck, token and contrast checks, markdown, knip, unit tests, build |
-| `make check-all` | Full gate before declaring done: adds Playwright e2e (offline, PWA) and `npm audit`              |
-| `make preview`   | Serve the production build at `http://localhost:4173/pepcalc/`                                   |
-| `make android`   | Build the Capacitor bundle (`dist-android/`) and sync it into `android/`                         |
+| Command                  | Purpose                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `make install`           | `npm ci`                                                                                         |
+| `make dev`               | Vite dev server (no service worker in dev)                                                       |
+| `make check`             | Fast gate: lint, format, typecheck, token and contrast checks, markdown, knip, unit tests, build |
+| `make check-all`         | Full gate before declaring done: adds Playwright e2e (offline, PWA) and `npm audit`              |
+| `make preview`           | Serve the production build at `http://localhost:4173/pepcalc/`                                   |
+| `make android`           | Build the Capacitor bundle (`dist-android/`) and sync it into `android/`                         |
+| `make store-screenshots` | Retake the F-Droid phone screenshots in `fastlane/metadata` with sample data                     |
 
 ## Skills and rules
 
@@ -27,7 +28,8 @@ All commands run on the Node version in `.nvmrc` (`nvm use`); never system Node.
 
 Path-scoped rules in `.claude/rules/` cover comments, markdown, time, data and privacy, and the
 catalog. A post-edit hook lints edited TypeScript and Vue, checks markdown for em-dashes, runs
-the catalog tests after JSON edits, and re-checks contrast after token edits.
+the catalog tests after JSON edits, and re-checks contrast after token edits. Releases and the
+F-Droid recipe are in `docs/releasing.md`.
 
 ## Non-negotiables
 
