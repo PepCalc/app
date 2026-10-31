@@ -86,6 +86,15 @@ const aspect = computed(() => {
 })
 
 /*
+ * The preview box takes the photo's own shape, sized like the cropper, so the Crop button over
+ * its corner sits on the picture rather than on letterboxing.
+ */
+const frameStyle = computed(() => ({
+  aspectRatio: aspect.value,
+  width: `min(100%, calc(60vh * ${aspect.value}))`,
+}))
+
+/*
  * Cropping: the frame is held in the working image's pixels. Portrait matches the 3:4 tiles of
  * a shared collage, so a photo cropped that way is shown whole there.
  */
@@ -226,12 +235,22 @@ async function remove() {
           </div>
         </template>
         <template v-else>
-          <div class="frame" :style="{ aspectRatio: aspect }">
+          <div class="frame" :style="frameStyle">
             <img v-if="imageUrl" :src="imageUrl" alt="Your progress photo" />
-          </div>
-          <div v-if="working" class="d-flex flex-wrap ga-2">
-            <v-btn variant="tonal" :prepend-icon="mdiCrop" @click="startCrop">Crop</v-btn>
-            <v-btn v-if="cropped" variant="text" @click="undoCrop">Undo crop</v-btn>
+            <div v-if="working" class="frame__actions">
+              <v-btn v-if="cropped" variant="flat" color="surface" size="small" @click="undoCrop">
+                Undo crop
+              </v-btn>
+              <v-btn
+                variant="flat"
+                color="surface"
+                size="small"
+                :prepend-icon="mdiCrop"
+                @click="startCrop"
+              >
+                Crop
+              </v-btn>
+            </div>
           </div>
         </template>
         <p v-if="nearby" class="text-body-small pc-muted">{{ nearby }}</p>
@@ -277,18 +296,26 @@ async function remove() {
 
 <style scoped>
 .frame {
-  width: 100%;
-  max-height: 60vh;
+  position: relative;
+  margin-inline: auto;
+  flex-shrink: 0;
   border-radius: var(--pc-radius-md);
   overflow: hidden;
   background: var(--pc-surface-sunk);
-  display: flex;
-  justify-content: center;
 }
 
 .frame img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.frame__actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 8px;
 }
 </style>

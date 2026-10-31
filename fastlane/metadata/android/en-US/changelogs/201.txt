@@ -1,0 +1,1 @@
+Progress photos: crop a new photo before saving it, with the crop frame now keeping the photo's shape. Clearer wording across the app and a better PDF export.

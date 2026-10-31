@@ -276,6 +276,11 @@ test('crops a new photo before saving it', async ({ page }) => {
 
   await dialog.getByRole('button', { name: 'Crop' }).click()
   await expect(dialog.getByRole('button', { name: 'Save' })).toBeDisabled()
+  // The cropper keeps the photo's 3:4 shape even when the dialog has to scroll.
+  const cropBox = (await dialog
+    .getByRole('img', { name: 'The photo you are cropping' })
+    .boundingBox())!
+  expect(cropBox.width / cropBox.height).toBeCloseTo(3 / 4, 2)
   await choose(dialog, 'Shape', 'Square')
   await dialog.getByRole('button', { name: 'Apply crop' }).click()
   await expect.poll(size).toBe('300x300')

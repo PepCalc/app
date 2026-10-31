@@ -133,6 +133,11 @@ function onKeydown(event: KeyboardEvent) {
 .cropper {
   position: relative;
   margin-inline: auto;
+  /*
+   * Hold the photo's own shape. In the dialog's scrolling column a clipped box may otherwise
+   * shrink to fit, which squashes the picture and the frame drawn over it.
+   */
+  flex-shrink: 0;
   border-radius: var(--pc-radius-md);
   overflow: hidden;
   background: var(--pc-surface-sunk);

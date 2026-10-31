@@ -1,8 +1,8 @@
 {
   "name": "pepcalc",
   "private": true,
-  "version": "0.2.0",
-  "versionCode": 200,
+  "version": "0.2.1",
+  "versionCode": 201,
   "license": "AGPL-3.0-only",
   "type": "module",
   "description": "Offline, private peptide reconstitution and draw calculator (installable PWA).",
