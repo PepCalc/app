@@ -283,13 +283,13 @@ const INSTALL_SCREENSHOTS: Partial<Record<InstallPlatform, InstallScreenshot>> =
     src: iosSafariShot,
     width: 480,
     height: 666,
-    alt: "Safari's Share menu with Add to Home Screen at the bottom of the list",
+    alt: "Safari's Share menu with Add to Home Screen highlighted",
   },
   'ios-chrome': {
     src: iosChromeShot,
     width: 480,
     height: 842,
-    alt: "Chrome's Share menu on iPhone with Add to Home Screen at the bottom of the list",
+    alt: "Chrome's Share menu on iPhone with Add to Home Screen highlighted",
   },
   'android-chrome': {
     src: androidChromeShot,
