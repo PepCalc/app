@@ -82,9 +82,7 @@ function onSaved() {
       <v-card-title>Progress photos</v-card-title>
     </v-card-item>
     <v-card-text class="pc-stack">
-      <p v-if="!photosStore.photos.length">
-        Same spot, same pose, every few weeks. Photos show what the scale can't.
-      </p>
+      <p v-if="!photosStore.photos.length">Take one every few weeks, in the same spot and pose.</p>
       <ul v-else class="grid" aria-label="Your progress photos, newest first">
         <li v-for="photo in pages.current.value.items" :key="photo.id">
           <button

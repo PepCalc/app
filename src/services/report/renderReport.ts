@@ -228,6 +228,6 @@ export function renderReport(data: ReportData): Uint8Array<ArrayBuffer> {
     layout.paragraph(paragraph, 'regular', 9, ink['text-2'])
     layout.gap(4)
   }
-  layout.footers('PepCalc · Arithmetic and sourced references only; never a dose recommendation.')
+  layout.footers('PepCalc · A calculator, not medical advice.')
   return buildPdf(layout.pages, `PepCalc report: ${data.title}`)
 }
