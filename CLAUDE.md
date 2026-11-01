@@ -2,7 +2,8 @@
 
 Offline, private peptide reconstitution and draw calculator: a static PWA on GitHub Pages at
 `https://pepcalc.github.io/app/`, installable from the browser on Android and iOS, phones and
-tablets, and a Capacitor Android app. No backend, no accounts, no network requests; all data
+tablets, a Capacitor Android app (Google Play and F-Droid) and a Capacitor iOS app built only in
+GitHub Actions (`ios.yml`). No backend, no accounts, no network requests; all data
 stays in IndexedDB on the device. The website is the separate `PepCalc/pepcalc.github.io`
 repository, which shares this origin.
 
@@ -18,6 +19,7 @@ All commands run on the Node version in `.nvmrc` (`nvm use`); never system Node.
 | `make check-all`         | Full gate before declaring done: adds Playwright e2e (offline, PWA) and `npm audit`              |
 | `make preview`           | Serve the production build at `http://localhost:4173/app/`                                       |
 | `make android`           | Build the Capacitor bundle (`dist-android/`) and sync it into `android/`                         |
+| `make ios`               | Build the iOS bundle (`dist-ios/`) and sync it into `ios/`; the app builds in CI, not locally    |
 | `make store-screenshots` | Retake the F-Droid phone screenshots in `fastlane/metadata` with sample data                     |
 
 ## Skills and rules

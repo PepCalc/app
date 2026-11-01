@@ -13,7 +13,9 @@ export default defineConfigWithVueTs(
     ignores: [
       'dist/**',
       'dist-android/**',
+      'dist-ios/**',
       'android/**',
+      'ios/**',
       'dev-dist/**',
       'coverage/**',
       'playwright-report/**',

@@ -87,9 +87,16 @@ Rules the writer keeps:
 - **Loading:** `useReportExport` imports the renderer lazily, so it is its own precached chunk
   and works offline.
 
+## Native apps
+
+`vite build --mode android` and `--mode ios` set `__NATIVE__` and `__PLATFORM__` and write to
+`dist-android/` or `dist-ios/`; `PEPCALC_PLATFORM=ios` makes `cap sync` copy the iOS one.
+Android-only calls (clearing the camera's capture file) check `__PLATFORM__`. iOS is built and
+uploaded only by `.github/workflows/ios.yml`.
+
 ## PWA and hosting
 
-- `build/seo.ts` makes the single-page app findable (web builds only, never Android): a plain
+- `build/seo.ts` makes the single-page app findable (web builds only, never native): a plain
   description of PepCalc inside `#app` that Vue replaces on mount (crawlers and AI assistants
   that don't run JavaScript read it), canonical and Open Graph tags pointing at the app's address
   (`PEPCALC_SITE_URL`, default `https://pepcalc.github.io/`, plus the base path), and a

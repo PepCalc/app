@@ -1,6 +1,6 @@
 /**
  * Hand a file to the user without any network: the share sheet on phones (save to Files,
- * AirDrop, a messaging app) and a plain download elsewhere. The Android app's WebView supports
+ * AirDrop, a messaging app) and a plain download elsewhere. The native apps' WebViews support
  * neither Web Share with files nor blob downloads, so it uses the native share sheet. `data` is
  * text (a backup) or a Blob (an image); the MIME type comes from the Blob when it has one.
  */

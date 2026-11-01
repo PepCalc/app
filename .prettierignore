@@ -1,5 +1,6 @@
 dist
 dist-android
+dist-ios
 dev-dist
 node_modules
 coverage
@@ -9,6 +10,7 @@ package-lock.json
 public/*.png
 public/*.ico
 android
+ios
 
 # Patched third-party code: kept byte-identical to upstream apart from the fix, so it diffs cleanly.
 vendor/

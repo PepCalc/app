@@ -116,7 +116,8 @@ cd android && ./gradlew assembleDebug    # needs JDK 21 and the Android SDK
 ```
 
 `.github/workflows/android.yml` builds a debug APK on every push and uploads it as a workflow
-artifact. A release build is signed when `PEPCALC_KEYSTORE`, `PEPCALC_KEYSTORE_PASSWORD`,
+artifact. `.github/workflows/release.yml` builds a signed App Bundle (Google Play) and APK on a
+`v*` tag and attaches both to a GitHub release. A release build is signed when `PEPCALC_KEYSTORE`, `PEPCALC_KEYSTORE_PASSWORD`,
 `PEPCALC_KEY_ALIAS` and `PEPCALC_KEY_PASSWORD` are set; keep the keystore out of the
 repository and backed up, because a lost key means the app can never be updated. The version
 comes from `package.json` (`versionCode` is `major * 10000 + minor * 100 + patch`).
@@ -126,3 +127,15 @@ app's IndexedDB, must never change after release. Data in the browser-installed 
 carry over to the Android app (and vice versa); move it with a backup file.
 
 `npm run icons:android` regenerates the launcher icons from `public/favicon.svg`.
+
+## iOS app
+
+The iOS app is the same Capacitor shell (Swift Package Manager, no CocoaPods), built only in
+GitHub Actions since there is no Mac. `make ios` builds `dist-ios/` and syncs it into `ios/`;
+`.github/workflows/ios.yml` builds it for the simulator on every push, and on a `v*` tag (or
+run by hand) archives a signed build and uploads it to App Store Connect for TestFlight. Its
+WebView origin, `capacitor://localhost`, must never change after release.
+`npm run icons:ios` regenerates the app icon and launch image from `public/favicon.svg`.
+
+The release checklist, signing, Google Play, F-Droid and App Store setup are in
+[docs/releasing.md](docs/releasing.md).

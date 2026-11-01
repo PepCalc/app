@@ -9,6 +9,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify('test'),
     __NATIVE__: 'false',
+    __PLATFORM__: JSON.stringify('web'),
     __SITE_URL__: JSON.stringify('https://pepcalc.github.io/'),
   },
   resolve: {

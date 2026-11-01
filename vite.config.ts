@@ -71,19 +71,21 @@ function contentSecurityPolicy(): Plugin {
 }
 
 /*
- * `vite build --mode android` builds the Capacitor bundle: served from the app's own origin
- * at "/", with no service worker (the APK already holds every asset, and a worker would keep
- * serving the previous version's files after an app update). It writes to its own directory
- * so it never mixes with the Pages build.
+ * `vite build --mode android` and `--mode ios` build the Capacitor bundles: served from the
+ * app's own origin at "/", with no service worker (the app already holds every asset, and a
+ * worker would keep serving the previous version's files after an update). Each writes to its
+ * own directory so it never mixes with the Pages build or the other platform.
  */
 export default defineConfig(({ command, mode }) => {
-  const native = mode === 'android'
+  const platform = mode === 'android' || mode === 'ios' ? mode : 'web'
+  const native = platform !== 'web'
   const base = native ? '/' : webBase()
   return {
     base,
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
       __NATIVE__: JSON.stringify(native),
+      __PLATFORM__: JSON.stringify(platform),
       __SITE_URL__: JSON.stringify(siteUrl()),
     },
     plugins: [
@@ -159,7 +161,7 @@ export default defineConfig(({ command, mode }) => {
     },
     build: {
       target: 'es2022',
-      outDir: native ? 'dist-android' : 'dist',
+      outDir: native ? `dist-${platform}` : 'dist',
       chunkSizeWarningLimit: 900,
     },
   }

@@ -13,7 +13,11 @@ CI (`.github/workflows/ci.yml`) runs the full gate on pull requests. Deployment
 (`.github/workflows/deploy.yml`) runs `npm run check` and publishes `dist/` to GitHub Pages on
 every push to `main`. `.github/workflows/android.yml` builds a debug APK from
 `npm run build:android` (Capacitor, base `/`, no service worker, `__NATIVE__` true) and fails
-if the merged manifest requests a network permission. The e2e suite covers only the web build,
+if the merged manifest requests a network permission. `.github/workflows/ios.yml` builds the iOS
+app (`npm run build:ios`, `__PLATFORM__` "ios") for the simulator, unsigned, and fails if
+`Info.plist` relaxes App Transport Security; on a `v*` tag it uploads a signed build to App Store
+Connect. `.github/workflows/release.yml` builds the signed Android bundle and APK on a `v*` tag.
+The e2e suite covers only the web build,
 so native-only paths (`src/services/nativeFileTransfer.ts`) need a check on a device.
 
 ## Tests
