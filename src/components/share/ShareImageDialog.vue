@@ -95,7 +95,7 @@ async function share() {
         <v-card-title :id="titleId">{{ title }}</v-card-title>
       </v-card-item>
       <v-card-text class="pc-stack">
-        <div class="share-preview" :style="{ aspectRatio: aspect }">
+        <div class="share-preview" :style="{ '--share-aspect': aspect }">
           <img
             v-if="previewUrl"
             :src="previewUrl"
@@ -127,10 +127,18 @@ async function share() {
 </template>
 
 <style scoped>
+/*
+ * A definite width, never shrink-to-fit: the auto margins centre it in the column, which turns
+ * off stretching, and a fit-content box around a percentage-sized image can lay out at zero
+ * width if the image decodes late (WebKit). The cap keeps the height within 52vh.
+ */
 .share-preview {
+  --share-aspect: 4 / 5;
   display: grid;
   place-items: center;
-  max-height: 52vh;
+  width: 100%;
+  max-width: calc(52vh * (var(--share-aspect)));
+  aspect-ratio: var(--share-aspect);
   margin-inline: auto;
 }
 
