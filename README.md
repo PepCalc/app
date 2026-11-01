@@ -79,7 +79,7 @@ Requires Node 24 (see `.nvmrc`).
 ```bash
 nvm use
 make install
-make dev          # http://localhost:5173/pepcalc/
+make dev          # http://localhost:5173/app/
 make check        # fast gate
 make check-all    # full gate, including offline e2e tests
 ```
@@ -89,13 +89,19 @@ Project conventions for contributors and coding agents are in [CLAUDE.md](CLAUDE
 
 ## Deploying to GitHub Pages
 
-1. Push the repository to GitHub.
-2. In the repository settings, under Pages, set the source to **GitHub Actions**.
-3. Push to `main`. `.github/workflows/deploy.yml` runs the gate, builds with the repository
-   name as the base path (`https://<owner>.github.io/<repo>/`), and publishes.
+This repository is `PepCalc/app`, so Pages serves it at
+[pepcalc.github.io/app](https://pepcalc.github.io/app/). The website at the root of the same
+origin is the separate [PepCalc/pepcalc.github.io](https://github.com/PepCalc/pepcalc.github.io)
+repository.
 
-For a custom domain or a user site served from the root, set the repository variable
-`PEPCALC_BASE` to `/`. Locally, `PEPCALC_BASE=/ npm run build` does the same.
+1. In the repository settings, under Pages, set the source to **GitHub Actions**.
+2. Push to `main`. `.github/workflows/deploy.yml` runs the gate, builds with the repository
+   name as the base path (`/app/`), and publishes.
+
+With a custom domain on the website repository, the app stays at `/app/` on that domain; set
+the repository variable `PEPCALC_SITE_URL` to the new root (for example `https://pepcalc.app/`)
+so the canonical tags and share cards name it. A new domain is a new origin, so data saved at
+`pepcalc.github.io` does not follow: users move it with a backup file.
 
 ## Android app
 

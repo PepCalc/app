@@ -42,15 +42,7 @@ jobs:
           source /etc/profile.d/bsenv.sh
           export PATH="$fdroidserver:$PATH" PYTHONPATH="$fdroidserver:$fdroidserver/examples"
           export serverwebroot=/tmp
-          # Lint's "Appending .git is not necessary" check matches the ".github.io" in this
-          # repository's name (its pattern has no end anchor), so that one message is allowed.
-          if ! fdroid lint "$APP_ID" > lint.txt 2>&1; then
-            cat lint.txt
-            known='Appending .git is not necessary'
-            grep -q "^$APP_ID: .*$known" lint.txt || exit 1
-            if grep "^$APP_ID:" lint.txt | grep -v "$known"; then exit 1; fi
-          fi
-          cat lint.txt
+          fdroid lint "$APP_ID"
           fdroid rewritemeta "$APP_ID"
           diff -u "../src/docs/fdroid/$APP_ID.yml" "metadata/$APP_ID.yml"
       - name: Build from this commit

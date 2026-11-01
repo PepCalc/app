@@ -33,11 +33,6 @@ The F-Droid workflow (`fdroid.yml`) runs `fdroid lint` and `fdroid rewritemeta` 
 and builds this commit with it in fdroiddata's own build container, on every change. Keep it
 green; a failure there is a failure F-Droid would hit.
 
-`fdroid lint` reports "Appending .git is not necessary" for the SourceCode and IssueTracker
-URLs. That is a false match: the check's pattern has no end anchor, so it reads the `.github.io`
-in this repository's name as a `.git` suffix. The workflow allows that one message; mention it
-in the merge request.
-
 ### First submission
 
 1. Tag the release (`v<version>`) and push the tag. The recipe's `commit` names that tag, and

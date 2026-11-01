@@ -91,14 +91,16 @@ Rules the writer keeps:
 
 - `build/seo.ts` makes the single-page app findable (web builds only, never Android): a plain
   description of PepCalc inside `#app` that Vue replaces on mount (crawlers and AI assistants
-  that don't run JavaScript read it), canonical and Open Graph tags pointing at the fixed
-  `PEPCALC_SITE_URL` (default `https://pepcalc.github.io/`), a `WebApplication` JSON-LD record,
-  and `robots.txt`, `sitemap.xml` and `llms.txt`. Peptide names come from the catalog.
+  that don't run JavaScript read it), canonical and Open Graph tags pointing at the app's address
+  (`PEPCALC_SITE_URL`, default `https://pepcalc.github.io/`, plus the base path), and a
+  `WebApplication` JSON-LD record. `robots.txt`, `sitemap.xml` and `llms.txt` live at the origin
+  root, so the website repository (`PepCalc/pepcalc.github.io`) publishes them. Peptide names come from the catalog.
   `public/og.png` is the link-preview image and is kept out of the precache.
 
 - `vite-plugin-pwa` (generateSW) precaches every built asset, including the ECharts chunk and
   fonts. `registerType: 'prompt'`: an update waits until the user reloads (`UpdatePrompt.vue`).
-- Base path comes from `PEPCALC_BASE` (default `/pepcalc/`). The router uses hash history so
+- Base path comes from `PEPCALC_BASE` (default `/app/`): the app is the `PepCalc/app`
+  repository, served by Pages at `/app/` beside the website at the root. The router uses hash history so
   every URL resolves to `index.html` on GitHub Pages and offline.
 - A production-only meta CSP (`default-src 'self'`) is injected by `vite.config.ts`, because
   GitHub Pages cannot set headers. Styles need `'unsafe-inline'` for Vuetify's theme tag.

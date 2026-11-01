@@ -146,14 +146,14 @@ test('serves a manifest and service worker scoped to the base path', async ({
   )
   await page.goto('./')
   const href = await page.locator('link[rel="manifest"]').getAttribute('href')
-  expect(href).toBe('/pepcalc/manifest.webmanifest')
+  expect(href).toBe('/app/manifest.webmanifest')
   const manifest = await (await request.get(href!)).json()
-  expect(manifest.start_url).toBe('/pepcalc/')
-  expect(manifest.scope).toBe('/pepcalc/')
+  expect(manifest.start_url).toBe('/app/')
+  expect(manifest.scope).toBe('/app/')
   expect(manifest.display).toBe('standalone')
   expect(manifest.icons.some((i: { purpose?: string }) => i.purpose === 'maskable')).toBe(true)
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope)
-  expect(new URL(scope).pathname).toBe('/pepcalc/')
+  expect(new URL(scope).pathname).toBe('/app/')
 })
 
 test('makes no third-party requests', async ({ page }) => {

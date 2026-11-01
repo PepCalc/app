@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
-# Builds with the repository name as the base path (https://<owner>.github.io/<repo>/), except
-# for a user or organization site repo named <owner>.github.io, which Pages serves from "/".
-# Set the PEPCALC_BASE repository variable to "/" when serving from a custom domain.
+# Builds with the repository name as the base path: this is PepCalc/app, served at
+# https://pepcalc.github.io/app/ beside the website (PepCalc/pepcalc.github.io) at the root.
+# With a custom domain, set the PEPCALC_SITE_URL repository variable to its root URL.
 on:
   push:
     branches: [main]
@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PEPCALC_BASE: ${{ vars.PEPCALC_BASE || (endsWith(github.event.repository.name, '.github.io') && '/' || format('/{0}/', github.event.repository.name)) }}
+      PEPCALC_SITE_URL: ${{ vars.PEPCALC_SITE_URL }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

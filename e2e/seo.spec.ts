@@ -6,13 +6,11 @@ test('serves crawlers a readable page that the app replaces when it starts', asy
   request,
 }) => {
   const html = await (await request.get('./')).text()
-  expect(html).toContain('<link rel="canonical" href="https://pepcalc.github.io/"')
-  expect(html).toContain('property="og:image" content="https://pepcalc.github.io/og.png"')
+  expect(html).toContain('<link rel="canonical" href="https://pepcalc.github.io/app/"')
+  expect(html).toContain('property="og:image" content="https://pepcalc.github.io/app/og.png"')
   expect(html).toContain('"@type":"WebApplication"')
   expect(html).toContain('<h1>PepCalc: peptide reconstitution calculator</h1>')
-  for (const file of ['robots.txt', 'sitemap.xml', 'llms.txt', 'og.png']) {
-    expect((await request.get(`./${file}`)).ok(), file).toBe(true)
-  }
+  expect((await request.get('./og.png')).ok()).toBe(true)
   // Link previews fetch the share image; installs need not precache it.
   expect(await (await request.get('./sw.js')).text()).not.toContain('og.png')
 

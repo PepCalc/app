@@ -10,7 +10,7 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:4173/pepcalc/',
+    baseURL: 'http://localhost:4173/app/',
     trace: 'retain-on-failure',
   },
   projects: [
@@ -19,15 +19,16 @@ export default defineConfig({
     /*
      * WebKit is the engine behind every browser on iOS and iPadOS. It needs system libraries
      * (`npx playwright install --with-deps webkit`, which uses sudo), so it runs in CI and
-     * locally only when PEPCALC_E2E_WEBKIT=1.
+     * locally only when PEPCALC_E2E_WEBKIT=1. On the CI runner WebKit runs about five times
+     * slower than Chromium (a 9 s Chromium test takes about 50 s), so it gets a longer limit.
      */
     ...(process.env.CI || process.env.PEPCALC_E2E_WEBKIT
-      ? [{ name: 'iphone', use: { ...devices['iPhone 15'] } }]
+      ? [{ name: 'iphone', timeout: 90_000, use: { ...devices['iPhone 15'] } }]
       : []),
   ],
   webServer: {
     command: 'npm run build && npx vite preview --port 4173 --strictPort',
-    url: 'http://localhost:4173/pepcalc/',
+    url: 'http://localhost:4173/app/',
     reuseExistingServer: false,
     timeout: 180_000,
   },

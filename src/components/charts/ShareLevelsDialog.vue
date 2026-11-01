@@ -126,11 +126,17 @@ async function share() {
 </template>
 
 <style scoped>
+/*
+ * A definite width, never shrink-to-fit: the auto margins centre it in the column, which turns
+ * off stretching, and a fit-content box around a percentage-sized image can lay out at zero
+ * width if the image decodes late (WebKit). The cap keeps the height within 52vh.
+ */
 .share-preview {
   display: grid;
   place-items: center;
+  width: 100%;
+  max-width: calc(52vh * 4 / 5);
   aspect-ratio: 4 / 5;
-  max-height: 52vh;
   margin-inline: auto;
 }
 
