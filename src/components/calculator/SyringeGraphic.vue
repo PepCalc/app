@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
-import { readSyringe, toScale, type SyringeSpec } from '@/domain/syringe'
+import { readSyringe, syringeTicks, toScale, type SyringeSpec } from '@/domain/syringe'
 import { roundTo } from '@/domain/units'
 
 const props = defineProps<{
@@ -61,20 +61,14 @@ const fillX = computed(() => BARREL_X + BARREL_W * shownFraction.value)
 const uid = useId()
 const fluidId = `${uid}-fluid`
 
-const ticks = computed(() => {
-  const s = props.syringe
-  const count = Math.round(s.capacityMl / s.tickMl)
-  const tickScale = toScale(s.tickMl, s)
-  return Array.from({ length: count + 1 }, (_, i) => {
-    const major = i % s.labelEveryTicks === 0
-    const half = !major && s.labelEveryTicks % 2 === 0 && i % (s.labelEveryTicks / 2) === 0
-    return {
-      x: BARREL_X + (BARREL_W * i) / count,
-      length: major ? 20 : half ? 14 : 8,
-      label: major ? String(roundTo(i * tickScale, 3)) : null,
-    }
-  })
-})
+const TICK_LENGTH = { major: 20, half: 14, minor: 8 } as const
+const ticks = computed(() =>
+  syringeTicks(props.syringe).map((t) => ({
+    x: BARREL_X + BARREL_W * t.at,
+    length: TICK_LENGTH[t.kind],
+    label: t.label,
+  })),
+)
 
 const scaleName = computed(() => (props.syringe.unitsPerMl === null ? 'mL' : 'units'))
 

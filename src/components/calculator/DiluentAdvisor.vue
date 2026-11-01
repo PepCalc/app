@@ -5,7 +5,7 @@ import type { InjectionSiteNote } from '@/domain/catalog'
 import type { Concentration } from '@/domain/reconstitution'
 import type { DiluentOption, DiluentProblem, MarkFit } from '@/domain/diluent'
 import { scaleLabel, type SyringeReading } from '@/domain/syringe'
-import { roundTo, unitLabel, type Quantity } from '@/domain/units'
+import { formatQuantity, roundTo, unitLabel, type Quantity } from '@/domain/units'
 import PresetPicker from '@/components/common/PresetPicker.vue'
 import SourceBadge from '@/components/common/SourceBadge.vue'
 
@@ -30,9 +30,7 @@ const VIAL_SIZES_ML = [2, 3, 5, 10]
 const mixLabel = computed(() => {
   const { peptide, vial, syringe } = props.context
   const name = peptide?.name ?? 'Custom peptide'
-  return vial
-    ? `${name} · ${roundTo(vial.value, 4)} ${unitLabel(vial.unit)} · ${syringe.label}`
-    : name
+  return vial ? `${name} · ${formatQuantity(vial)} · ${syringe.label}` : name
 })
 
 const doseRangeLabel = computed(() => {
@@ -49,8 +47,7 @@ function parseDose(text: string): number | null {
 
 const sourceKinds = (note: InjectionSiteNote) => [...new Set(note.sources.map((s) => s.kind))]
 
-const strength = (c: Concentration) =>
-  `${roundTo(c.perMl, c.perMl >= 10 ? 1 : 2)} ${unitLabel(c.unit)}/mL`
+const strength = (c: Concentration) => `${formatQuantity({ value: c.perMl, unit: c.unit })}/mL`
 
 /** A reading, or a range of readings when the planned doses differ. */
 function readingRange(low: SyringeReading, high: SyringeReading): string {

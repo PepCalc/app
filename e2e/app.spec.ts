@@ -327,6 +327,29 @@ test('estimated levels can be previewed as a shareable image', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Share image' })).toBeEnabled()
 })
 
+test('shares the mix and the draw as an image', async ({ page }) => {
+  // Take the download path on every browser: a share sheet cannot be driven from a test.
+  await page.addInitScript(() => {
+    delete (navigator as { canShare?: unknown }).canShare
+  })
+  await page.goto('./')
+  await acceptDisclaimer(page)
+  await page.locator('.v-select').first().click()
+  await page.getByRole('option', { name: /BPC-157/ }).click()
+  await choose(page, 'Peptide in vial', '5 mg')
+  await choose(page, 'Bacteriostatic water added', '2 mL')
+  await choose(page, 'Dose', '250 mcg')
+  await page.getByRole('button', { name: 'Share draw as an image' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Share this draw' })
+  const preview = dialog.getByAltText('Preview of the image to share')
+  await expect
+    .poll(() => preview.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight]))
+    .toEqual([1080, 1350])
+  const image = page.waitForEvent('download')
+  await dialog.getByRole('button', { name: 'Share' }).click()
+  expect((await image).suggestedFilename()).toMatch(/^pepcalc-bpc-157-draw-\d{4}-\d{2}-\d{2}\.png$/)
+})
+
 test('exports draws and estimated levels as a PDF, offline', async ({
   page,
   context,

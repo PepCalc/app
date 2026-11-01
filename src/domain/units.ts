@@ -59,6 +59,17 @@ export function roundTo(value: number, maxDecimals: number): number {
   return Math.round((value + Number.EPSILON) * factor) / factor
 }
 
+/**
+ * Decimal places for showing an amount: two for mg, one for mcg, two for IU. IU doses go as
+ * low as a quarter unit (0.25 IU of somatropin), so fewer places would lose real values.
+ */
+export const AMOUNT_DECIMALS: Record<AmountUnit, number> = { mg: 2, mcg: 1, iu: 2 }
+
+/** An amount for display, rounded for its unit: "1.23 mg", "176.4 mcg", "0.25 IU". */
+export function formatQuantity(q: Quantity): string {
+  return `${roundTo(q.value, AMOUNT_DECIMALS[q.unit])} ${unitLabel(q.unit)}`
+}
+
 /** "0.25 mg": three decimals below one unit, two above. */
 export function formatAmount(value: number, unitLabel: string): string {
   return `${roundTo(value, value < 1 ? 3 : 2)} ${unitLabel}`

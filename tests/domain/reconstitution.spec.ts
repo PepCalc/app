@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { concentrationOf, drawVolumeMl, planDraw, InvalidInputError } from '@/domain/reconstitution'
-import { IncompatibleUnitsError, convert, roundTo, doseUnitsFor } from '@/domain/units'
+import {
+  concentrationOf,
+  drawVolumeMl,
+  formatConcentration,
+  planDraw,
+  InvalidInputError,
+} from '@/domain/reconstitution'
+import {
+  IncompatibleUnitsError,
+  convert,
+  roundTo,
+  doseUnitsFor,
+  formatQuantity,
+} from '@/domain/units'
 
 describe('units', () => {
   it('converts between mg and mcg', () => {
@@ -53,5 +65,33 @@ describe('reconstitution', () => {
     expect(() => planDraw({ value: 5, unit: 'mg' }, 2, { value: 10, unit: 'iu' })).toThrow(
       IncompatibleUnitsError,
     )
+  })
+})
+
+describe('formatConcentration', () => {
+  it('shows mass in mg/mL and mcg/mL', () => {
+    expect(formatConcentration({ perMl: 5, unit: 'mg' })).toBe('5 mg/mL (5000 mcg/mL)')
+    expect(formatConcentration({ perMl: 250, unit: 'mcg' })).toBe('0.25 mg/mL (250 mcg/mL)')
+  })
+
+  it('rounds mg/mL to two decimals and mcg/mL to one', () => {
+    expect(formatConcentration({ perMl: 70 / 3, unit: 'mg' })).toBe('23.33 mg/mL (23333.3 mcg/mL)')
+  })
+
+  it('keeps IU in IU', () => {
+    expect(formatConcentration({ perMl: 100 / 3, unit: 'iu' })).toBe('33.33 IU/mL')
+  })
+})
+
+describe('formatQuantity', () => {
+  it('rounds mg to two decimals and mcg to one', () => {
+    expect(formatQuantity({ value: 1.23456, unit: 'mg' })).toBe('1.23 mg')
+    expect(formatQuantity({ value: 176.4286, unit: 'mcg' })).toBe('176.4 mcg')
+    expect(formatQuantity({ value: 5, unit: 'mg' })).toBe('5 mg')
+  })
+
+  it('rounds IU to two decimals, keeping quarter units', () => {
+    expect(formatQuantity({ value: 0.25, unit: 'iu' })).toBe('0.25 IU')
+    expect(formatQuantity({ value: 10 / 3, unit: 'iu' })).toBe('3.33 IU')
   })
 })

@@ -76,7 +76,11 @@ export default defineConfig(({ command, mode }) => {
   const base = native ? '/' : webBase()
   return {
     base,
-    define: { __APP_VERSION__: JSON.stringify(pkg.version), __NATIVE__: JSON.stringify(native) },
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+      __NATIVE__: JSON.stringify(native),
+      __SITE_URL__: JSON.stringify(siteUrl()),
+    },
     plugins: [
       vuetifyRipplePatch({ required: command === 'build' }),
       vue(),

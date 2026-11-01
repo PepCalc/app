@@ -82,9 +82,42 @@ export function suggestSyringe(
   return fitting[0] ?? null
 }
 
+/** A reading in the syringe's scale, rounded as the barrel can be read: { 12.5, 'units' }. */
+export function scaleParts(reading: SyringeReading): { value: number; unit: 'units' | 'mL' } {
+  return reading.scaleUnit === 'units'
+    ? { value: roundTo(reading.scaleValue, 2), unit: 'units' }
+    : { value: roundTo(reading.scaleValue, 3), unit: 'mL' }
+}
+
 /** A reading as printed on the barrel: "12.5 units" on insulin syringes, "0.125 mL" on luer. */
 export function scaleLabel(reading: SyringeReading): string {
-  return reading.scaleUnit === 'units'
-    ? `${roundTo(reading.scaleValue, 2)} units`
-    : `${roundTo(reading.scaleValue, 3)} mL`
+  const { value, unit } = scaleParts(reading)
+  return `${value} ${unit}`
+}
+
+export interface SyringeTick {
+  /** Position along the graduated barrel, 0 at the needle end to 1 at capacity. */
+  at: number
+  kind: 'major' | 'half' | 'minor'
+  /** The printed number on a major mark, in the syringe's scale; null elsewhere. */
+  label: string | null
+}
+
+/**
+ * Every graduation on the barrel, as printed: a long numbered mark every `labelEveryTicks`, a
+ * medium mark halfway between them when that falls on a tick, short marks elsewhere.
+ */
+export function syringeTicks(syringe: SyringeSpec): SyringeTick[] {
+  const count = Math.round(syringe.capacityMl / syringe.tickMl)
+  const tickScale = toScale(syringe.tickMl, syringe)
+  const every = syringe.labelEveryTicks
+  return Array.from({ length: count + 1 }, (_, i) => {
+    const major = i % every === 0
+    const half = !major && every % 2 === 0 && i % (every / 2) === 0
+    return {
+      at: i / count,
+      kind: major ? 'major' : half ? 'half' : 'minor',
+      label: major ? String(roundTo(i * tickScale, 3)) : null,
+    }
+  })
 }

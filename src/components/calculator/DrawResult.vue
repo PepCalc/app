@@ -2,10 +2,11 @@
 import { computed, ref } from 'vue'
 import { syringeCatalog } from '@/data'
 import type { ComponentDose } from '@/domain/blend'
-import type { DrawPlan } from '@/domain/reconstitution'
-import { scaleLabel, type SyringeReading, type SyringeSpec } from '@/domain/syringe'
-import { roundTo, unitLabel, type Quantity } from '@/domain/units'
+import { formatConcentration, type DrawPlan } from '@/domain/reconstitution'
+import { scaleLabel, scaleParts, type SyringeReading, type SyringeSpec } from '@/domain/syringe'
+import { AMOUNT_DECIMALS, formatQuantity, roundTo, type Quantity } from '@/domain/units'
 import type { CalculatorWarning } from '@/composables/useCalculator'
+import { mdiShareVariantOutline } from '@/plugins/icons'
 import SyringeGraphic from './SyringeGraphic.vue'
 
 const props = defineProps<{
@@ -19,20 +20,10 @@ const props = defineProps<{
 }>()
 
 const syringeId = defineModel<string>('syringeId', { required: true })
+defineEmits<{ share: [] }>()
 
-const headline = computed(() => {
-  const r = props.reading
-  return r.scaleUnit === 'units'
-    ? { value: roundTo(r.scaleValue, 2), unit: 'units' }
-    : { value: roundTo(r.scaleValue, 3), unit: 'mL' }
-})
-
-const concentrationText = computed(() => {
-  const c = props.plan.concentration
-  if (c.unit === 'iu') return `${roundTo(c.perMl, 3)} IU/mL`
-  const perMl = c.unit === 'mg' ? c.perMl : c.perMl / 1000
-  return `${roundTo(perMl, 4)} mg/mL (${roundTo(perMl * 1000, 1)} mcg/mL)`
-})
+const headline = computed(() => scaleParts(props.reading))
+const concentrationText = computed(() => formatConcentration(props.plan.concentration))
 
 /*
  * A dismissed suggestion stays hidden while this result is on screen. It is keyed on the
@@ -51,6 +42,14 @@ const syringeItems = syringeCatalog.syringes.map((s) => ({ title: s.label, value
 <template>
   <v-card class="draw-result" aria-live="polite">
     <v-card-item>
+      <template #append>
+        <v-btn
+          :icon="mdiShareVariantOutline"
+          variant="text"
+          aria-label="Share draw as an image"
+          @click="$emit('share')"
+        />
+      </template>
       <p class="pc-eyebrow">Draw</p>
       <div class="draw-result__headline">
         <span class="draw-result__value pc-num" data-testid="draw-headline">{{
@@ -59,8 +58,8 @@ const syringeItems = syringeCatalog.syringes.map((s) => ({ title: s.label, value
         <span class="draw-result__unit">{{ headline.unit }}</span>
       </div>
       <p class="pc-muted pc-num">
-        <strong>{{ roundTo(plan.volumeMl, 3) }} mL</strong> for {{ roundTo(dose.value, 4) }}
-        {{ unitLabel(dose.unit) }} on a {{ reading.syringe.label }}
+        <strong>{{ roundTo(plan.volumeMl, 3) }} mL</strong> for {{ formatQuantity(dose) }} on a
+        {{ reading.syringe.label }}
       </p>
     </v-card-item>
 
@@ -112,7 +111,7 @@ const syringeItems = syringeCatalog.syringes.map((s) => ({ title: s.label, value
         <ul class="draw-result__components">
           <li v-for="c in componentDoses" :key="c.name" class="pc-num">
             <span>{{ c.name }}</span>
-            <span>{{ roundTo(c.dose.value, 1) }} mcg</span>
+            <span>{{ roundTo(c.dose.value, AMOUNT_DECIMALS.mcg) }} mcg</span>
           </li>
         </ul>
       </div>

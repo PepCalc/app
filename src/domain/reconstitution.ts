@@ -1,4 +1,4 @@
-import { convert, type AmountUnit, type Quantity } from './units'
+import { AMOUNT_DECIMALS, convert, roundTo, type AmountUnit, type Quantity } from './units'
 
 /** Amount of peptide per mL of reconstituted solution, in the vial's unit. */
 export interface Concentration {
@@ -50,4 +50,14 @@ export function planDraw(vial: Quantity, diluentMl: number, dose: Quantity): Dra
     volumeMl,
     dosesPerVial: Math.floor(vial.value / doseInVialUnit + 1e-9),
   }
+}
+
+/**
+ * "5 mg/mL (5000 mcg/mL)" for mass and "33.33 IU/mL" for IU, which never converts to mass;
+ * rounded like amounts (see AMOUNT_DECIMALS).
+ */
+export function formatConcentration(c: Concentration): string {
+  if (c.unit === 'iu') return `${roundTo(c.perMl, AMOUNT_DECIMALS.iu)} IU/mL`
+  const mgPerMl = c.unit === 'mg' ? c.perMl : c.perMl / 1000
+  return `${roundTo(mgPerMl, AMOUNT_DECIMALS.mg)} mg/mL (${roundTo(mgPerMl * 1000, AMOUNT_DECIMALS.mcg)} mcg/mL)`
 }

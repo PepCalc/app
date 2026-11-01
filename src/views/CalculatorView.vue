@@ -7,7 +7,7 @@ import { useNow } from '@/composables/useNow'
 import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
 import { useNotifyStore } from '@/stores/notify'
-import { roundTo, unitLabel } from '@/domain/units'
+import { formatQuantity, unitLabel } from '@/domain/units'
 import type { DoseEvent } from '@/domain/pk'
 import { nowIso } from '@/services/time'
 import PresetPicker from '@/components/common/PresetPicker.vue'
@@ -16,6 +16,7 @@ import DrawResult from '@/components/calculator/DrawResult.vue'
 import DiluentAdvisor from '@/components/calculator/DiluentAdvisor.vue'
 import type { MixContext } from '@/composables/useDiluentAdvisor'
 import PkPanel from '@/components/charts/PkPanel.vue'
+import ShareDrawDialog from '@/components/share/ShareDrawDialog.vue'
 import { mdiBookshelf, mdiNeedle, mdiWaterPlusOutline } from '@/plugins/icons'
 
 const route = useRoute()
@@ -77,6 +78,13 @@ watch(
 )
 
 const advising = ref(false)
+const sharing = ref(false)
+
+const shareName = computed(() =>
+  shelfVial.value
+    ? shelf.displayName(shelfVial.value)
+    : (calc.peptide.value?.name ?? (state.customName.trim() || 'Custom peptide')),
+)
 const mixContext = computed<MixContext>(() => ({
   peptide: calc.peptide.value,
   components: state.components,
@@ -141,10 +149,7 @@ async function logDraw() {
     syringeId: state.syringeId,
     notes: '',
   })
-  notify.show(
-    `Logged ${roundTo(dose.value, 4)} ${unitLabel(dose.unit)} of ${shelf.displayName(vial)}`,
-    'success',
-  )
+  notify.show(`Logged ${formatQuantity(dose)} of ${shelf.displayName(vial)}`, 'success')
 }
 
 function clearShelfVial() {
@@ -166,9 +171,11 @@ function clearShelfVial() {
             <p class="pc-eyebrow">From your shelf</p>
             <v-card-title>{{ shelf.displayName(shelfVial) }}</v-card-title>
             <v-card-subtitle class="pc-num">
-              {{ shelfVial.amount }} {{ unitLabel(shelfVial.unit) }} in {{ shelfVial.diluentMl }} mL
+              {{ formatQuantity({ value: shelfVial.amount, unit: shelfVial.unit }) }} in
+              {{ shelfVial.diluentMl }} mL
               <template v-if="balance">
-                · {{ roundTo(balance.remainingAmount, 3) }} {{ unitLabel(shelfVial.unit) }} left
+                ·
+                {{ formatQuantity({ value: balance.remainingAmount, unit: shelfVial.unit }) }} left
               </template>
             </v-card-subtitle>
           </v-card-item>
@@ -351,6 +358,7 @@ function clearShelfVial() {
           :component-doses="calc.componentDoses.value"
           :better-syringe="calc.betterSyringe.value"
           :dose="calc.dose.value"
+          @share="sharing = true"
         />
         <v-card v-else variant="tonal">
           <v-card-text class="pc-muted">
@@ -383,6 +391,18 @@ function clearShelfVial() {
         />
       </section>
     </div>
+
+    <ShareDrawDialog
+      v-if="calc.plan.value && calc.reading.value && calc.dose.value && calc.vial.value"
+      v-model="sharing"
+      :name="shareName"
+      :vial="calc.vial.value"
+      :diluent-ml="state.diluentMl ?? 0"
+      :dose="calc.dose.value"
+      :plan="calc.plan.value"
+      :reading="calc.reading.value"
+      :component-doses="calc.componentDoses.value"
+    />
 
     <DiluentAdvisor
       v-model="advising"

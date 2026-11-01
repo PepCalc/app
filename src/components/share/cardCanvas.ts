@@ -16,6 +16,13 @@ const TOKENS = [
   'glass-card',
   'glass-edge',
   'surface',
+  'notice-fg',
+  'syringe-barrel',
+  'syringe-ink',
+  'syringe-fill',
+  'syringe-fill-deep',
+  'syringe-glint',
+  'syringe-plunger',
 ] as const
 export type CardTokens = Record<(typeof TOKENS)[number], string>
 
@@ -39,7 +46,8 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
 export function wrap(ctx: CanvasRenderingContext2D, text: string, width: number, maxLines: number) {
   const lines: string[] = []
   let line = ''
-  for (const word of text.split(/\s+/).filter(Boolean)) {
+  // Split on plain spaces only, so a no-break space keeps a figure with its unit.
+  for (const word of text.split(/[ \t\n]+/).filter(Boolean)) {
     const next = line ? `${line} ${word}` : word
     if (ctx.measureText(next).width <= width || !line) line = next
     else {
@@ -50,7 +58,7 @@ export function wrap(ctx: CanvasRenderingContext2D, text: string, width: number,
   if (line) lines.push(line)
   if (lines.length > maxLines) {
     lines.length = maxLines
-    lines[maxLines - 1] = `${lines[maxLines - 1]!.replace(/\s+\S*$/, '')}…`
+    lines[maxLines - 1] = `${lines[maxLines - 1]!.replace(/ +[^ ]*$/, '')}…`
   }
   return lines
 }
@@ -104,16 +112,25 @@ export function drawBrandRow(
   ctx.textAlign = 'left'
 }
 
+/** The sign-off line; with `link`, the site's address right-aligned beside it. */
 export function drawFooter(
   ctx: CanvasRenderingContext2D,
   t: CardTokens,
   font: string,
   height: number,
   pad: number,
+  link?: { text: string; width: number },
 ) {
+  const y = height - pad + 12
   ctx.font = `600 24px ${font}`
   ctx.fillStyle = t['text-3']
-  ctx.fillText('Made with PepCalc · Not medical advice', pad, height - pad + 12)
+  ctx.fillText('Made with PepCalc · Not medical advice', pad, y)
+  if (!link) return
+  ctx.font = `700 26px ${font}`
+  ctx.fillStyle = t.brand
+  ctx.textAlign = 'right'
+  ctx.fillText(link.text, link.width - pad, y)
+  ctx.textAlign = 'left'
 }
 
 export function toPng(canvas: HTMLCanvasElement): Promise<Blob> {
