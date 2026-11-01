@@ -5,13 +5,14 @@ import type { HtmlTagDescriptor, Plugin } from 'vite'
  * What search engines and AI assistants can read about PepCalc. The app is a single page that
  * renders in JavaScript, and many crawlers (most AI ones included) never run it, so the build
  * writes a plain description of the app into #app, which Vue replaces when it mounts, plus the
- * head tags link previews read, a WebApplication record, robots.txt, sitemap.xml and llms.txt.
- * The text is the same for people and crawlers; it is visible until the app starts.
+ * head tags link previews read and a WebApplication record. The text is the same for people and
+ * crawlers; it is visible until the app starts. robots.txt, sitemap.xml and llms.txt belong at
+ * the origin root, so the website repository (PepCalc/pepcalc.github.io) publishes them.
  */
 
 export interface SeoOptions {
-  /** Absolute URL the site is served at, ending in "/". */
-  siteUrl: string
+  /** Absolute URL the app is served at, ending in "/". */
+  appUrl: string
   version: string
   /** Peptide names from the catalog, so the list never drifts from it. */
   peptides: readonly string[]
@@ -22,7 +23,7 @@ export const DESCRIPTION =
   'Work out how much water to add to a peptide vial, the concentration, and how far to draw ' +
   'on your syringe. Track vials and draws, see estimated levels from published data, and keep ' +
   'a private journal. Free, offline, and nothing leaves your device.'
-const SOURCE = 'https://github.com/PepCalc/pepcalc.github.io'
+const SOURCE = 'https://github.com/PepCalc/app'
 
 const FEATURES = [
   'Reconstitution: the concentration from the amount in the vial and the water added (mg, mcg or IU per mL)',
@@ -85,7 +86,7 @@ export function structuredData(o: SeoOptions): Record<string, unknown> {
     '@type': 'WebApplication',
     name: 'PepCalc',
     alternateName: 'PepCalc peptide calculator',
-    url: o.siteUrl,
+    url: o.appUrl,
     description: DESCRIPTION,
     applicationCategory: 'HealthApplication',
     operatingSystem: 'Any modern web browser; Android',
@@ -95,7 +96,7 @@ export function structuredData(o: SeoOptions): Record<string, unknown> {
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     license: 'https://www.gnu.org/licenses/agpl-3.0.html',
     codeRepository: SOURCE,
-    image: `${o.siteUrl}og.png`,
+    image: `${o.appUrl}og.png`,
     featureList: FEATURES,
     keywords:
       'peptide calculator, reconstitution calculator, bacteriostatic water, insulin syringe units, ' +
@@ -110,14 +111,14 @@ export function headTags(o: SeoOptions): HtmlTagDescriptor[] {
     injectTo: 'head',
   })
   return [
-    { tag: 'link', attrs: { rel: 'canonical', href: o.siteUrl }, injectTo: 'head' },
+    { tag: 'link', attrs: { rel: 'canonical', href: o.appUrl }, injectTo: 'head' },
     meta({ property: 'og:type', content: 'website' }),
     meta({ property: 'og:site_name', content: 'PepCalc' }),
     meta({ property: 'og:locale', content: 'en_US' }),
     meta({ property: 'og:title', content: TITLE }),
     meta({ property: 'og:description', content: DESCRIPTION }),
-    meta({ property: 'og:url', content: o.siteUrl }),
-    meta({ property: 'og:image', content: `${o.siteUrl}og.png` }),
+    meta({ property: 'og:url', content: o.appUrl }),
+    meta({ property: 'og:image', content: `${o.appUrl}og.png` }),
     meta({ property: 'og:image:width', content: '1200' }),
     meta({ property: 'og:image:height', content: '630' }),
     meta({ property: 'og:image:alt', content: 'PepCalc, a private peptide calculator' }),
@@ -144,52 +145,6 @@ const SHELL_CSS =
   '.pc-shell dt{font-weight:600;margin-top:.75em}.pc-shell dd{margin:0}.pc-shell a{color:#3f6b52}' +
   '@media (prefers-color-scheme:dark){.pc-shell{color:#f4ede2}.pc-shell a{color:#8fc7a4}}'
 
-export function robotsTxt(o: SeoOptions): string {
-  return `User-agent: *\nAllow: /\n\nSitemap: ${o.siteUrl}sitemap.xml\n`
-}
-
-export function sitemapXml(o: SeoOptions): string {
-  return (
-    '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    `  <url><loc>${o.siteUrl}</loc></url>\n` +
-    '</urlset>\n'
-  )
-}
-
-/** The llms.txt convention: a plain summary for AI assistants, at the site root. */
-export function llmsTxt(o: SeoOptions): string {
-  return [
-    '# PepCalc',
-    '',
-    `> ${DESCRIPTION}`,
-    '',
-    'PepCalc is a free, open source progressive web app (also an Android app). It runs entirely',
-    'on the device: no account, no server, no analytics, and it works offline. It does arithmetic',
-    'and shows sourced references; it is not medical advice and never recommends a dose.',
-    '',
-    '## Features',
-    '',
-    ...FEATURES.map((f) => `- ${f}`),
-    '',
-    '## Peptides in the catalog',
-    '',
-    `${o.peptides.join(', ')}, or any peptide the user adds.`,
-    '',
-    '## The arithmetic',
-    '',
-    '- Concentration = amount in the vial / water added',
-    '- Volume to draw (mL) = amount / concentration',
-    '- Units on a U-100 syringe = mL x 100 (U-40: mL x 40)',
-    '',
-    '## Links',
-    '',
-    `- [Open PepCalc](${o.siteUrl})`,
-    `- [Source code](${SOURCE})`,
-    '',
-  ].join('\n')
-}
-
 /** Catalog names, read from the JSON the app bundles. */
 export function catalogPeptides(path: string): string[] {
   const data = JSON.parse(readFileSync(path, 'utf8')) as { peptides: { name: string }[] }
@@ -208,16 +163,6 @@ export function seo(options: SeoOptions & { enabled: boolean }): Plugin {
       return {
         html: html.replace(marker, `<div id="app">${shellHtml(options)}</div>`),
         tags: headTags(options),
-      }
-    },
-    generateBundle() {
-      if (!options.enabled) return
-      for (const [fileName, source] of [
-        ['robots.txt', robotsTxt(options)],
-        ['sitemap.xml', sitemapXml(options)],
-        ['llms.txt', llmsTxt(options)],
-      ] as const) {
-        this.emitFile({ type: 'asset', fileName, source })
       }
     },
   }

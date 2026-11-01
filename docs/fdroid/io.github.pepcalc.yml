@@ -3,13 +3,13 @@ Categories:
   - Medication
 License: AGPL-3.0-only
 WebSite: https://pepcalc.github.io/
-SourceCode: https://github.com/PepCalc/pepcalc.github.io
-IssueTracker: https://github.com/PepCalc/pepcalc.github.io/issues
+SourceCode: https://github.com/PepCalc/app
+IssueTracker: https://github.com/PepCalc/app/issues
 
 AutoName: PepCalc
 
 RepoType: git
-Repo: https://github.com/PepCalc/pepcalc.github.io.git
+Repo: https://github.com/PepCalc/app.git
 
 Builds:
   - versionName: 0.2.0

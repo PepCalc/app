@@ -10,7 +10,7 @@ export default defineConfig({
   retries: 0,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:4173/pepcalc/',
+    baseURL: 'http://localhost:4173/app/',
     trace: 'retain-on-failure',
   },
   projects: [
@@ -27,7 +27,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run build && npx vite preview --port 4173 --strictPort',
-    url: 'http://localhost:4173/pepcalc/',
+    url: 'http://localhost:4173/app/',
     reuseExistingServer: false,
     timeout: 180_000,
   },

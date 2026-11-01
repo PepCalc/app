@@ -12,19 +12,24 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
 }
 
 /*
- * The site is served from a sub-path on GitHub Pages (https://<user>.github.io/<repo>/).
- * PEPCALC_BASE overrides it, e.g. "/" for a custom domain. Always starts and ends with "/".
+ * The app is served from the `app` repository of the PepCalc organisation on GitHub Pages
+ * (https://pepcalc.github.io/app/); the website (PepCalc/pepcalc.github.io) owns the root of
+ * that origin. PEPCALC_BASE overrides it. Always starts and ends with "/".
  */
 function webBase(): string {
-  return normalizeBase(process.env.PEPCALC_BASE ?? '/pepcalc/')
+  return normalizeBase(process.env.PEPCALC_BASE ?? '/app/')
 }
 
 /*
- * Where the public site lives, for canonical and share links. Fixed rather than taken from the
- * base path, which local and CI builds set to "/pepcalc/". PEPCALC_SITE_URL overrides it.
+ * The website's root, printed on share cards. PEPCALC_SITE_URL overrides it, e.g. for a custom
+ * domain. The app's own address (canonical and Open Graph tags) is this plus the base path.
  */
 function siteUrl(): string {
-  return (process.env.PEPCALC_SITE_URL ?? 'https://pepcalc.github.io/').replace(/\/?$/, '/')
+  return (process.env.PEPCALC_SITE_URL || 'https://pepcalc.github.io/').replace(/\/?$/, '/')
+}
+
+function appUrl(): string {
+  return siteUrl() + webBase().slice(1)
 }
 
 function normalizeBase(value: string): string {
@@ -88,7 +93,7 @@ export default defineConfig(({ command, mode }) => {
       contentSecurityPolicy(),
       seo({
         enabled: !native,
-        siteUrl: siteUrl(),
+        appUrl: appUrl(),
         version: pkg.version,
         peptides: catalogPeptides(
           fileURLToPath(new URL('./src/data/peptides.json', import.meta.url)),

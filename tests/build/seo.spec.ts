@@ -6,16 +6,13 @@ import {
   catalogPeptides,
   DESCRIPTION,
   headTags,
-  llmsTxt,
-  robotsTxt,
   seo,
   shellHtml,
-  sitemapXml,
   structuredData,
 } from '../../build/seo'
 
 const peptides = catalogPeptides(resolve('src/data/peptides.json'))
-const options = { siteUrl: 'https://pepcalc.github.io/', version: '1.2.3', peptides }
+const options = { appUrl: 'https://pepcalc.github.io/app/', version: '1.2.3', peptides }
 const INDEX = readFileSync(resolve('index.html'), 'utf8')
 
 function transform(plugin: Plugin, html: string) {
@@ -38,14 +35,14 @@ describe('seo plugin', () => {
     }
     expect(result.html).toContain('<div id="app"><main class="pc-shell">')
     const canonical = result.tags.find((t) => t.attrs?.rel === 'canonical')
-    expect(canonical?.attrs?.href).toBe('https://pepcalc.github.io/')
+    expect(canonical?.attrs?.href).toBe('https://pepcalc.github.io/app/')
     const og = Object.fromEntries(
       result.tags
         .filter((t) => t.attrs?.property)
         .map((t) => [t.attrs!.property, t.attrs!.content]),
     )
-    expect(og['og:url']).toBe('https://pepcalc.github.io/')
-    expect(og['og:image']).toBe('https://pepcalc.github.io/og.png')
+    expect(og['og:url']).toBe('https://pepcalc.github.io/app/')
+    expect(og['og:image']).toBe('https://pepcalc.github.io/app/og.png')
   })
 
   it('leaves the Android bundle alone', () => {
@@ -62,13 +59,7 @@ describe('seo plugin', () => {
     expect(json).not.toContain('<')
     const data = JSON.parse(json) as ReturnType<typeof structuredData>
     expect(data['@type']).toBe('WebApplication')
-    expect(data.url).toBe('https://pepcalc.github.io/')
+    expect(data.url).toBe('https://pepcalc.github.io/app/')
     expect(data.isAccessibleForFree).toBe(true)
-  })
-
-  it('points robots.txt at the sitemap, which lists the one page', () => {
-    expect(robotsTxt(options)).toContain('Sitemap: https://pepcalc.github.io/sitemap.xml')
-    expect(sitemapXml(options)).toContain('<loc>https://pepcalc.github.io/</loc>')
-    expect(llmsTxt(options)).toMatch(/^# PepCalc\n/)
   })
 })
