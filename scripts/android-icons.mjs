@@ -4,6 +4,9 @@
  *
  * The adaptive foreground drops the rounded tile (the launcher draws its own shape on the brand
  * colour) and centres the glyph in the 72dp of the 108dp canvas that every mask keeps visible.
+ *
+ * The 512px store icon (Google Play and F-Droid) is the tile with square corners: Play applies its
+ * own rounding and shadow, so a pre-rounded icon would show transparent corners inside the mask.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import sharp from 'sharp'
@@ -19,6 +22,8 @@ const glyph = inner.replace(tile, '')
 const foreground = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
   <svg x="18" y="18" width="72" height="72" viewBox="0 0 512 512">${glyph}</svg></svg>`
 const round = svg.replace(tile, '<circle cx="256" cy="256" r="256" fill="#3f6b52"/>')
+const square = svg.replace(tile, (rect) => rect.replace(/\s*rx="[^"]*"/, ''))
+if (square === svg) throw new Error('favicon.svg tile has no rx to square off')
 
 // Launcher icons are 48dp (legacy) and 108dp (adaptive layer) at each density bucket.
 const DENSITIES = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 }
@@ -43,3 +48,11 @@ for (const [bucket, scale] of Object.entries(DENSITIES)) {
 }
 
 console.log('Android launcher icons written to', RES)
+
+const STORE_ICON = 'fastlane/metadata/android/en-US/images/icon.png'
+await sharp(Buffer.from(square), { density: 288 })
+  .resize(512, 512)
+  .ensureAlpha()
+  .png({ compressionLevel: 9 })
+  .toFile(STORE_ICON)
+console.log('Store icon written to', STORE_ICON)

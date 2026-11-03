@@ -1,14 +1,15 @@
 /*
- * Captures the phone screenshots for the F-Droid and Google Play listings from the Android
- * bundle (`vite build --mode android`, so no install hint or service worker), with the made-up
- * shelf in sample-backup.mjs restored through Settings. Run `npm run screenshots:store` after a
- * visible change; docs/releasing.md has the steps.
+ * Captures the screenshots for the F-Droid and Google Play listings from the Android bundle
+ * (`vite build --mode android`, so no install hint or service worker), with the made-up shelf
+ * in sample-backup.mjs restored through Settings. Run `npm run screenshots:store` after a visible
+ * change; docs/releasing.md has the steps.
  *
- * The files are 1080 x 2400 PNGs (a 360 x 800 phone at 3x) named 1.png, 2.png, ... because the
- * stores order screenshots by file name.
+ * Each device writes PNGs named 1.png, 2.png, ... into its folder under IMAGES, because the
+ * stores order screenshots by file name. Tablet and Chromebook sizes are 16:9 or 9:16 with
+ * every side at least 1080px, which Play needs to feature an app on large screens.
  *
- * Usage: node scripts/store-screenshots.mjs [output dir]
- * The default output is fastlane/metadata/android/en-US/images/phoneScreenshots.
+ * Usage: node scripts/store-screenshots.mjs [device ...]
+ * Devices: phone, sevenInch, tenInch, chromebook. With none, all are taken.
  */
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -17,10 +18,39 @@ import { chromium } from '@playwright/test'
 import { preview } from 'vite'
 import { sampleBackup } from './sample-backup.mjs'
 
-const OUT = resolve(process.argv[2] ?? 'fastlane/metadata/android/en-US/images/phoneScreenshots')
+const IMAGES = 'fastlane/metadata/android/en-US/images'
 const PORT = 4179
-const VIEWPORT = { width: 360, height: 800 }
-const SCALE = 3
+
+/** Viewports in CSS pixels; the files are `scale` times larger. */
+const DEVICES = {
+  // 1080 x 2400
+  phone: { dir: 'phoneScreenshots', viewport: { width: 360, height: 800 }, scale: 3, mobile: true },
+  // 1216 x 2160, a 7-inch tablet held upright
+  sevenInch: {
+    dir: 'sevenInchScreenshots',
+    viewport: { width: 608, height: 1080 },
+    scale: 2,
+    mobile: true,
+  },
+  // 2560 x 1440, a 10-inch tablet held sideways (the wide layout)
+  tenInch: {
+    dir: 'tenInchScreenshots',
+    viewport: { width: 1280, height: 720 },
+    scale: 2,
+    mobile: true,
+  },
+  // 3200 x 1800, a Chromebook window; Play takes these by upload only (fastlane has no folder)
+  chromebook: {
+    dir: 'chromebookScreenshots',
+    viewport: { width: 1600, height: 900 },
+    scale: 2,
+    mobile: false,
+  },
+}
+
+const names = process.argv.slice(2)
+for (const name of names) if (!DEVICES[name]) throw new Error(`Unknown device: ${name}`)
+const devices = (names.length ? names : Object.keys(DEVICES)).map((name) => DEVICES[name])
 // The margin above a section scrolled to the top (the app bar scrolls away with the page).
 const MARGIN = 16
 
@@ -55,7 +85,10 @@ const SHOTS = [
         .getByRole('button', { name: '0.5 mg', exact: true })
         .click()
       await page.getByTestId('draw-headline').filter({ hasText: '30' }).waitFor()
-      await scrollTo(page, page.getByText('3 · Dose'))
+      // The wide layout (840px and up) shows the draw beside the inputs, so it returns to the top
+      // the click scrolled away from; phones scroll down to the dose instead.
+      if (page.viewportSize().width < 840) await scrollTo(page, page.getByText('3 · Dose'))
+      else await page.evaluate(() => window.scrollTo(0, 0))
     },
   },
   {
@@ -92,42 +125,48 @@ const SHOTS = [
 const work = mkdtempSync(join(tmpdir(), 'pepcalc-store-shots-'))
 const backupPath = join(work, 'sample-backup.json')
 writeFileSync(backupPath, JSON.stringify(sampleBackup()))
-mkdirSync(OUT, { recursive: true })
-for (const file of readdirSync(OUT)) if (file.endsWith('.png')) rmSync(join(OUT, file))
 
 const server = await preview({ mode: 'android', preview: { port: PORT, strictPort: true } })
 const browser = await chromium.launch()
 try {
-  for (const [index, shot] of SHOTS.entries()) {
-    const context = await browser.newContext({
-      viewport: VIEWPORT,
-      deviceScaleFactor: SCALE,
-      isMobile: true,
-      hasTouch: true,
-      colorScheme: shot.scheme,
-      locale: 'en-US',
-      reducedMotion: 'reduce',
-      // Lets the shot hide notifications with a style tag under the app's CSP.
-      bypassCSP: true,
-    })
-    const page = await context.newPage()
-    await page.goto(`http://localhost:${PORT}/`)
-    await page.getByRole('button', { name: /or older and understand/ }).click()
-    await openTab(page, 'Settings')
-    await page.getByLabel('Backup file').setInputFiles(backupPath)
-    await page.getByRole('dialog').getByRole('button', { name: 'Restore backup' }).click()
-    await page.getByText('Backup restored').waitFor()
-    await page.addStyleTag({ content: '.v-snackbar { display: none !important; }' })
-    await shot.show(page)
-    // Fonts and the charts' first paint settle after the content is in the tree.
-    await page.waitForTimeout(1500)
-    const file = join(OUT, `${index + 1}.png`)
-    await page.screenshot({ path: file })
-    console.log(`wrote ${file}`)
-    await context.close()
+  for (const device of devices) {
+    const out = resolve(IMAGES, device.dir)
+    mkdirSync(out, { recursive: true })
+    for (const file of readdirSync(out)) if (file.endsWith('.png')) rmSync(join(out, file))
+    for (const [index, shot] of SHOTS.entries()) {
+      await capture(device, shot, join(out, `${index + 1}.png`))
+    }
   }
 } finally {
   await browser.close()
   await new Promise((done) => server.httpServer.close(done))
   rmSync(work, { recursive: true, force: true })
+}
+
+async function capture(device, shot, file) {
+  const context = await browser.newContext({
+    viewport: device.viewport,
+    deviceScaleFactor: device.scale,
+    isMobile: device.mobile,
+    hasTouch: device.mobile,
+    colorScheme: shot.scheme,
+    locale: 'en-US',
+    reducedMotion: 'reduce',
+    // Lets the shot hide notifications with a style tag under the app's CSP.
+    bypassCSP: true,
+  })
+  const page = await context.newPage()
+  await page.goto(`http://localhost:${PORT}/`)
+  await page.getByRole('button', { name: /or older and understand/ }).click()
+  await openTab(page, 'Settings')
+  await page.getByLabel('Backup file').setInputFiles(backupPath)
+  await page.getByRole('dialog').getByRole('button', { name: 'Restore backup' }).click()
+  await page.getByText('Backup restored').waitFor()
+  await page.addStyleTag({ content: '.v-snackbar { display: none !important; }' })
+  await shot.show(page)
+  // Fonts and the charts' first paint settle after the content is in the tree.
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: file })
+  console.log(`wrote ${file}`)
+  await context.close()
 }

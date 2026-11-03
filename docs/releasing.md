@@ -80,12 +80,26 @@ The title, descriptions, changelogs, icon and screenshots come from
 `fastlane/metadata/android/en-US/` in this repository. The icon is `public/pwa-512x512.png`;
 copy it again after changing the logo.
 
-The phone screenshots in `images/phoneScreenshots/` are rendered, not taken on a device: `make
-store-screenshots` builds the Android bundle, restores the made-up shelf in
-`scripts/sample-backup.mjs` through Settings in a 360 x 800 phone viewport at 3x, and writes
-1080 x 2400 PNGs named in display order. Retake them after a visible change to the screens they
-show (the calculator and its draw, Shelf, a vial, Protocols, and Journal in dark), and look at
-each one before committing.
+The screenshots are rendered, not taken on a device: `make store-screenshots` builds the Android
+bundle, restores the made-up shelf in `scripts/sample-backup.mjs` through Settings, and writes
+PNGs named in display order for each device:
+
+| Folder under `images/`   | Device                   | Viewport, scale | File        |
+| ------------------------ | ------------------------ | --------------- | ----------- |
+| `phoneScreenshots/`      | Phone                    | 360 x 800, 3x   | 1080 x 2400 |
+| `sevenInchScreenshots/`  | 7-inch tablet, upright   | 608 x 1080, 2x  | 1216 x 2160 |
+| `tenInchScreenshots/`    | 10-inch tablet, sideways | 1280 x 720, 2x  | 2560 x 1440 |
+| `chromebookScreenshots/` | Chromebook window        | 1600 x 900, 2x  | 3200 x 1800 |
+
+`node scripts/store-screenshots.mjs tenInch` retakes one device. Fastlane and F-Droid have no
+Chromebook folder, so upload those in Play Console by hand. Retake them after a visible change
+to the screens they show (the calculator and its draw, Shelf, a vial, Protocols, and Journal in
+dark), and look at each one before committing.
+
+The store icon (`images/icon.png`, 512 x 512) is the logo tile with square corners, since Play
+rounds it itself; `npm run icons:android` writes it with the launcher icons. The feature graphic
+(`images/featureGraphic.png`, 1024 x 500) was made by hand from the icon and the calculator
+screenshot, with no brand names on it.
 
 ## iOS
 

@@ -46,6 +46,6 @@ ios:
 screenshots:
 	$(NODE) npm run screenshots:site
 
-## Retake the phone screenshots for the F-Droid and Play listings (fastlane/metadata).
+## Retake the phone, tablet and Chromebook screenshots for the store listings (fastlane/metadata).
 store-screenshots:
 	$(NODE) npm run screenshots:store
