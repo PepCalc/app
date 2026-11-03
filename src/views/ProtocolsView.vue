@@ -12,7 +12,8 @@ import type { NewProtocol } from '@/db/repository'
 import type { PeptideLevels } from '@/domain/levels'
 import { sameProductKey, sortByTime, type SortDirection } from '@/domain/listing'
 import { anyDoseInEffect } from '@/domain/pk'
-import { OVERLAY_MAX, assignSlots, type OverlayInput } from '@/domain/overlay'
+import { OVERLAY_MAX, type OverlayInput } from '@/domain/overlay'
+import { useLevelPickStore } from '@/stores/levelPick'
 import { roundTo, unitLabel } from '@/domain/units'
 import { formatDate, formatDateTime, formatHours, toEpochMs } from '@/services/time'
 import DrawList from '@/components/shelf/DrawList.vue'
@@ -94,22 +95,17 @@ const cleared = computed(() =>
 
 /*
  * Overlay: several peptides on one chart. The choice starts with the most recently dosed ones and
- * is kept while the user stays on the page; a peptide keeps its colour as others come and go.
+ * is kept while the app is open; a peptide keeps its colour as others come and go.
  */
 const levelsMode = ref<'separate' | 'overlay'>('separate')
-const chosen = ref<string[]>([])
-const slots = ref(new Map<string, number>())
-
-watch(
-  charted,
-  (groups) => {
-    const keys = new Set(groups.map((g) => g.key))
-    const kept = chosen.value.filter((k) => keys.has(k))
-    chosen.value = kept.length ? kept : groups.slice(0, OVERLAY_MAX).map((g) => g.key)
-  },
-  { immediate: true },
-)
-watch(chosen, (keys) => (slots.value = assignSlots(keys, slots.value)), { immediate: true })
+// Shared with the trend card, so a peptide keeps its pick and colour on both.
+const levelPick = useLevelPickStore()
+const chosen = computed({
+  get: () => levelPick.picked(charted.value.map((g) => g.key)),
+  set: (keys: string[]) => levelPick.choose(keys),
+})
+const slots = computed(() => levelPick.slots)
+watch(chosen, (keys) => levelPick.assign(keys), { immediate: true })
 
 const overlayInputs = computed<OverlayInput[]>(() =>
   charted.value
@@ -310,7 +306,7 @@ async function deleteDraw(draw: DrawRow) {
                 <v-chip v-for="g in charted" :key="g.key" :value="g.key" filter variant="outlined">
                   <span
                     v-if="slots.has(g.key)"
-                    :class="['overlay-swatch', `overlay-swatch--${slots.get(g.key)! + 1}`]"
+                    :class="['pc-swatch', `pc-swatch--${slots.get(g.key)! + 1}`]"
                     aria-hidden="true"
                   />
                   {{ g.label }}
@@ -359,10 +355,7 @@ async function deleteDraw(draw: DrawRow) {
               <strong>No curve for {{ withoutPk.join(', ') }}.</strong> No reliable human data. Add
               a half-life and time to peak on the vial to see one.
             </p>
-            <p v-if="cleared.length">
-              <strong>Cleared:</strong> {{ cleared.join(', ') }}. Logged doses are estimated to have
-              left the body.
-            </p>
+            <p v-if="cleared.length"><strong>Cleared:</strong> {{ cleared.join(', ') }}.</p>
           </v-card-text>
         </v-card>
       </div>
@@ -410,30 +403,6 @@ async function deleteDraw(draw: DrawRow) {
 .protocols-levels {
   display: grid;
   gap: 16px;
-}
-
-.overlay-swatch--1 {
-  background: var(--pc-chart-series-1);
-}
-
-.overlay-swatch--2 {
-  background: var(--pc-chart-series-2);
-}
-
-.overlay-swatch--3 {
-  background: var(--pc-chart-series-3);
-}
-
-.overlay-swatch--4 {
-  background: var(--pc-chart-series-4);
-}
-
-.overlay-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-inline-end: 6px;
-  border-radius: 50%;
 }
 
 .protocols-filter {

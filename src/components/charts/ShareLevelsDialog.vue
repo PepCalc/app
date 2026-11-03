@@ -103,9 +103,7 @@ async function share() {
           <v-switch v-model="showName" label="Show peptide name" hide-details />
           <v-switch v-model="showAmounts" label="Show amounts" hide-details />
         </div>
-        <p class="text-body-small pc-muted">
-          Even without the name, the half-life and curve may reveal the peptide.
-        </p>
+        <p class="text-body-small pc-muted">The curve may still reveal the peptide.</p>
       </v-card-text>
       <v-card-actions>
         <v-spacer />

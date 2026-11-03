@@ -186,6 +186,51 @@ test('overlays the levels of several peptides on one chart', async ({ page }) =>
   await expect(page.getByRole('columnheader', { name: 'Tirzepatide' })).toBeVisible()
 })
 
+test('shows doses and levels of several peptides under the weight chart', async ({ page }) => {
+  await page.goto('./')
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await page.getByRole('button', { name: 'Log this draw now' }).click()
+  await page.goto('./#/')
+  await expect(page.getByRole('button', { name: 'Save vial to shelf' })).toBeVisible()
+  await page.locator('.v-select').first().click()
+  await page
+    .getByRole('option', { name: /Tirzepatide/ })
+    .first()
+    .click()
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await page.getByRole('button', { name: 'Log this draw now' }).click()
+  await expect(page.getByText(/Logged .+ of Tirzepatide/)).toBeVisible()
+
+  await page.goto('./#/journal')
+  await page.getByRole('button', { name: 'Log weight' }).first().click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Weight').fill('90')
+  await dialog.getByRole('button', { name: 'Save' }).click()
+
+  const doses = page.getByRole('button', { name: 'Doses', exact: true })
+  await expect(doses).toHaveAttribute('aria-pressed', 'false')
+  await doses.click()
+  await page.getByRole('button', { name: 'Levels', exact: true }).click()
+  // Two peptides: their amounts are not comparable, so levels read as percent of peak.
+  const chart = page.getByRole('img', { name: /^Weight .+Doses below: / })
+  await expect(chart).toHaveAttribute('aria-label', /Tirzepatide, 1 dose .+Semaglutide, 1 dose/)
+  await expect(chart).toHaveAttribute('aria-label', /% of peak/)
+
+  // One peptide reads in its own unit.
+  await page.locator('.v-chip').filter({ hasText: 'Semaglutide' }).click()
+  await expect(chart).toHaveAttribute('aria-label', /Tirzepatide \d[\d.]* mg\.$/)
+
+  await page.getByRole('button', { name: 'Show as table' }).first().click()
+  await expect(page.getByRole('columnheader', { name: 'Doses' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Share weight as an image' }).click()
+  const share = page.getByRole('dialog', { name: 'Share as an image' })
+  await share.getByLabel('Include my doses').check()
+  await expect(share.getByText('Shown as Peptide A, Peptide B.')).toBeVisible()
+  await expect(share.getByAltText('Preview of the image to share')).toBeVisible()
+})
+
 test('works offline after the first visit, including stored data', async ({
   page,
   context,

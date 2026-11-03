@@ -248,6 +248,36 @@
     min-height: 40px;
   }
 
+  /* A peptide's colour beside its name, where a chart line or dose row uses it. */
+  .pc-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-inline-end: 6px;
+    border-radius: 50%;
+  }
+
+  .pc-swatch--1 {
+    background: var(--pc-chart-series-1);
+  }
+
+  .pc-swatch--2 {
+    background: var(--pc-chart-series-2);
+  }
+
+  .pc-swatch--3 {
+    background: var(--pc-chart-series-3);
+  }
+
+  .pc-swatch--4 {
+    background: var(--pc-chart-series-4);
+  }
+
+  /* A short list of options (share privacy switches): labels at the buttons' size. */
+  .pc-options .v-selection-control .v-label {
+    font-size: 0.875rem;
+  }
+
   .v-btn:focus-visible {
     box-shadow: var(--pc-shadow-focus);
   }

@@ -525,8 +525,8 @@ const formatMb = (bytes: number | null) =>
         </v-card-item>
         <v-card-text class="pc-stack">
           <p>
-            Your data is only on this device. Clearing site data or uninstalling deletes it, so keep
-            a backup.
+            Your data is only on this device. Clearing site data or uninstalling deletes it. Back up
+            regularly.
           </p>
           <v-alert v-if="backupStale" type="warning" variant="tonal" density="compact">
             {{
@@ -545,10 +545,7 @@ const formatMb = (bytes: number | null) =>
               color="primary"
               hide-details
             />
-            <p class="text-body-small pc-muted">
-              With photos, the backup is a .zip file. Keep it somewhere private: it holds your
-              photos as ordinary images.
-            </p>
+            <p class="text-body-small pc-muted">Saved as a .zip file that includes your photos.</p>
           </div>
           <div class="d-flex flex-wrap ga-2">
             <v-btn
@@ -663,11 +660,7 @@ const formatMb = (bytes: number | null) =>
           </ul>
           <p class="text-body-small pc-muted">
             Storage:
-            {{
-              storage.state.persisted
-                ? 'protected'
-                : 'not protected (the browser may clear it when space is low)'
-            }}
+            {{ storage.state.persisted ? 'protected' : 'not protected' }}
             <template v-if="storage.state.usageBytes !== null">
               · {{ formatMb(storage.state.usageBytes) }} used
             </template>

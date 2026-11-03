@@ -26,6 +26,8 @@ Part of the `front-end` skill.
 | `protocols/ProtocolCard.vue`, `ProtocolDialog.vue`, `DoseCountdown.vue` | A peptide's protocol with a countdown ring to the next dose; add or edit one (`domain/schedule.ts`)                       |
 | `shelf/VialAgeBadge.vue`, `VialAgePanel.vue`                            | Days since mixing against the use window (text, not colour alone); the window's source and storage advice                 |
 | `shelf/VialFormDialog.vue`, `LogDrawDialog.vue`                         | Edit a vial (composition, PK override), log a draw                                                                        |
+| `charts/TrendCard.vue`, `BodyChart.vue`, `bodyChart.ts`                 | A body measure over time; photo pins; dose rows and a level strip for picked peptides (`usePeptidePanels`)                |
+| `share/ShareTrendDialog.vue`                                            | Trend image; doses, levels and peptide names each opt-in, first two picked peptides                                       |
 
 ## Patterns
 
@@ -36,6 +38,11 @@ Part of the `front-end` skill.
 - Level curves pool every draw of a peptide across its vials (`shelf.pooledDosesFor`,
   `shelf.levelGroups`), so the calculator, vial page and Protocols agree. Protocols shows one
   `PkPanel` per peptide (small multiples), never several peptides on one axis.
+- The trend card's dose rows and level strip use the same pick and colours as the Protocols
+  overlay (`stores/levelPick.ts`). Several peptides always read as percent of peak; one peptide
+  beside a measure in real units reads in its own unit (`domain/levelStrip.ts`). Rows label only
+  a change of strength (`domain/doseLanes.ts`). Every panel shares one left edge so dates align.
+- Share dialogs render their privacy switches compact through `ShareImageDialog`'s slot.
 - A protocol belongs to a peptide, not a vial (`sameProductKey`, as vial numbering uses): its
   last dose is the newest draw from any of the peptide's vials, and a blend is its own product.
   The interval is always the user's own; nothing is pre-filled from the catalog.

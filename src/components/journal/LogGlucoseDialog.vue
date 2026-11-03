@@ -215,7 +215,7 @@ async function remove() {
           </v-chip-group>
           <p class="text-body-small pc-muted">
             Fasting: before eating or drinking anything but water, usually first thing in the
-            morning. Fasting readings are charted as the line; others as separate points.
+            morning.
           </p>
         </div>
         <v-text-field v-model="form.measuredAt" label="When" type="datetime-local" />

@@ -89,8 +89,8 @@ const fileStem = computed(() => {
     <p class="text-body-small pc-muted">
       {{
         showName
-          ? "The image shows the vial, the water to add and the draw for this dose. Check the numbers against the vial's label before sharing."
-          : "The peptide's name and a blend's contents are left off."
+          ? "Check the numbers against your vial's label before sharing."
+          : 'Name and blend contents are hidden.'
       }}
     </p>
   </ShareImageDialog>

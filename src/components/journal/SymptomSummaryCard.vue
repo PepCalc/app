@@ -96,7 +96,7 @@ function timingText(s: SymptomSummary): string {
       <p v-else class="pc-muted">Nothing logged in this period.</p>
       <SourceList
         :sources="SYMPTOM_SOURCES"
-        note="The list follows the side effects reported in the clinical trials of the approved peptides’ labels. Timing counts from the draw before each entry, of any peptide."
+        note="From the approved peptides’ label trials. Timing is from the last draw of any peptide."
       />
     </v-card-text>
   </v-card>

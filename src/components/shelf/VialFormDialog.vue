@@ -217,11 +217,9 @@ function save() {
             <p class="text-body-small pc-muted">
               <template v-if="catalogPk">
                 Replaces the published values (t½ {{ catalogPk.halfLifeHours }} h, peak
-                {{ catalogPk.tmaxHours }} h). The chart is marked user-supplied.
+                {{ catalogPk.tmaxHours }} h).
               </template>
-              <template v-else>
-                No reliable human data for this peptide. The chart is marked user-supplied.
-              </template>
+              <template v-else> No reliable human data for this peptide. </template>
             </p>
           </div>
           <div v-if="form.useCustomPk" class="d-flex ga-3 align-start">

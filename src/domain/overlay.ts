@@ -111,13 +111,14 @@ export function overlayTable(
 
 /**
  * A colour slot (0 to max - 1) for each chosen key. Keys that already had a slot keep it, so
- * removing one curve never repaints the others; a newly chosen key takes the lowest free slot.
- * Keys past `max` get none.
+ * removing one curve never repaints the others; a newly chosen key takes the first free slot in
+ * `order` (lowest first by default). Keys past `max` get none.
  */
 export function assignSlots(
   chosen: readonly string[],
   previous: ReadonlyMap<string, number>,
   max = OVERLAY_MAX,
+  order: readonly number[] = Array.from({ length: max }, (_, i) => i),
 ): Map<string, number> {
   const slots = new Map<string, number>()
   for (const key of chosen) {
@@ -127,7 +128,7 @@ export function assignSlots(
   const used = new Set(slots.values())
   for (const key of chosen) {
     if (slots.has(key)) continue
-    const free = Array.from({ length: max }, (_, i) => i).find((i) => !used.has(i))
+    const free = order.find((i) => i < max && !used.has(i))
     if (free === undefined) break
     slots.set(key, free)
     used.add(free)

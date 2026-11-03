@@ -194,7 +194,7 @@ async function render(): Promise<Blob> {
       stats,
       caption:
         showChange.value && change.value !== null
-          ? 'Weight change between the weigh-ins logged nearest the first and last photo.'
+          ? 'Weight change between the first and last photo.'
           : 'Progress photos kept in PepCalc, in the order they were taken.',
       from: formatDate(first.at),
       to: formatDate(last.at),
@@ -274,14 +274,10 @@ async function render(): Promise<Blob> {
     <template v-if="change !== null">
       <v-switch v-model="showChange" label="Show weight change" hide-details />
       <p class="text-body-small pc-muted">
-        {{
-          showChange
-            ? 'The percent change between the weigh-ins nearest the first and last photo.'
-            : 'No weights are shown.'
-        }}
+        {{ showChange ? 'Change between the first and last photo.' : 'No weights are shown.' }}
       </p>
     </template>
-    <p class="text-body-small pc-muted">Anyone you send this to will see these photos.</p>
+    <p class="text-body-small pc-muted">Anyone you share with can see these photos.</p>
   </ShareImageDialog>
 </template>
 

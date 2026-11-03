@@ -67,9 +67,7 @@ const ariaSummary = computed(() => {
       :aria-label="ariaSummary"
     />
     <p class="text-body-small pc-muted">
-      Estimated amounts in your body, from each peptide's half-life and time to peak. Each line is
-      scaled to its own peak in this window, so the chart compares when levels rise and fall, not
-      how much of each peptide is in the body. Tap a line for its amount.
+      Estimated levels, each scaled to its own peak to compare timing. Tap a line for its amount.
     </p>
     <v-btn variant="text" size="small" @click="showTable = !showTable">
       {{ showTable ? 'Hide table' : 'Show as table' }}

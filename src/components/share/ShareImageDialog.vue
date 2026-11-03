@@ -29,6 +29,9 @@ const props = withDefaults(
 )
 
 const open = defineModel<boolean>({ required: true })
+
+/** A plain switch on a 48px row: the preview is the focus, and the row keeps a touch target. */
+const OPTION_DEFAULTS = { VSwitch: { inset: false, density: 'comfortable' } }
 const notify = useNotifyStore()
 const { colors } = useChartColors()
 const titleId = useId()
@@ -104,9 +107,12 @@ async function share() {
           />
           <v-progress-circular v-else-if="busy" indeterminate color="primary" />
         </div>
-        <div class="pc-stack pc-stack--tight">
-          <slot />
-        </div>
+        <!-- Privacy options sit under the preview as a short list, sized like the buttons. -->
+        <v-defaults-provider :defaults="OPTION_DEFAULTS">
+          <div class="pc-stack pc-stack--tight pc-options">
+            <slot />
+          </div>
+        </v-defaults-provider>
       </v-card-text>
       <v-card-actions>
         <v-spacer />

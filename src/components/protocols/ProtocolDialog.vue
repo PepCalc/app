@@ -117,10 +117,7 @@ function save() {
             />
           </div>
           <v-text-field v-model="form.notes" label="Notes (optional)" />
-          <p class="text-body-small pc-muted">
-            Used to show when your next dose is due, from your last draw of this peptide from any
-            vial. PepCalc restates your schedule; it doesn't suggest one.
-          </p>
+          <p class="text-body-small pc-muted">Used to show when your next dose is due.</p>
         </v-form>
       </v-card-text>
       <v-card-actions>

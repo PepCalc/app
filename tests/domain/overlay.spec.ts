@@ -96,3 +96,10 @@ describe('assignSlots', () => {
     expect(added.get('c')).toBe(2)
   })
 })
+
+describe('assignSlots order', () => {
+  it('hands out slots in the given order', () => {
+    const slots = assignSlots(['a', 'b'], new Map(), OVERLAY_MAX, [1, 2, 3, 0])
+    expect([...slots.values()]).toEqual([1, 2])
+  })
+})
