@@ -1,8 +1,8 @@
 /*
  * A made-up shelf, never real records, as a PepCalc backup file: semaglutide drawn weekly from a
  * finished vial and then a fresh one after a step-up, a BPC-157 vial drawn daily, and weekly
- * weigh-ins. Every vial in use is inside its 28-day limit. The store screenshot script
- * restores it through Settings, the same path a user takes. Dates are relative to now.
+ * weigh-ins, with a protocol for each. Every vial in use is inside its 28-day limit. The site
+ * and store screenshot scripts restore it through Settings, the same path a user takes. Dates are relative to now.
  */
 const DAY = 86_400_000
 const now = Date.now()
@@ -74,12 +74,26 @@ export function sampleBackup() {
     notes: '',
     createdAt: created,
   }))
+  // The user's own schedules, as they set them on the Protocols tab.
+  const protocols = [
+    ['p-sema', 'semaglutide', 'Semaglutide', 168],
+    ['p-bpc', 'bpc-157', 'BPC-157', 24],
+  ].map(([id, key, name, intervalHours]) => ({
+    id,
+    key,
+    name,
+    intervalHours,
+    notes: '',
+    createdAt: created,
+    updatedAt: created,
+  }))
   return {
     format: 'pepcalc-backup',
-    version: 3,
+    version: 4,
     exportedAt: iso(now),
     vials,
     draws,
+    protocols,
     measurements,
     symptoms: [],
     glucose: [],

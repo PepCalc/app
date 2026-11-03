@@ -5,13 +5,17 @@ import type {
   PepcalcDb,
   PhotoBytesRow,
   PhotoRow,
+  ProtocolRow,
   SymptomRow,
   VialRow,
 } from './database'
+import { sameProductKey } from '@/domain/listing'
+import { protocolFollowingRename } from '@/domain/schedule'
 import { nowIso, systemClock, type Clock } from '@/services/time'
 
 export type NewVial = Omit<VialRow, 'id' | 'createdAt' | 'updatedAt'>
 export type NewDraw = Omit<DrawRow, 'id' | 'createdAt'>
+export type NewProtocol = Omit<ProtocolRow, 'id' | 'createdAt' | 'updatedAt'>
 export type NewMeasurement = Omit<MeasurementRow, 'id' | 'createdAt'>
 export type NewSymptom = Omit<SymptomRow, 'id' | 'createdAt'>
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
@@ -40,8 +44,32 @@ export function createRepository(db: PepcalcDb, clock: Clock = systemClock) {
       return row
     },
 
+    /**
+     * Updates the vial. A rename that moves the last vial of a peptide to a new name takes its
+     * protocol along (see protocolFollowingRename), in the same transaction.
+     */
     async updateVial(id: string, changes: Partial<NewVial>): Promise<void> {
-      await db.vials.update(id, { ...changes, updatedAt: nowIso(clock) })
+      await db.transaction('rw', db.vials, db.protocols, async () => {
+        const before = await db.vials.get(id)
+        const now = nowIso(clock)
+        await db.vials.update(id, { ...changes, updatedAt: now })
+        if (!before) return
+        const after = { ...before, ...changes }
+        const others = (await db.vials.toArray()).filter((v) => v.id !== id)
+        const protocolId = protocolFollowingRename(
+          sameProductKey(before),
+          sameProductKey(after),
+          others,
+          await db.protocols.toArray(),
+        )
+        if (protocolId) {
+          await db.protocols.update(protocolId, {
+            key: sameProductKey(after),
+            name: after.name.trim(),
+            updatedAt: now,
+          })
+        }
+      })
     },
 
     /** Deletes the vial and its draw history in one transaction. */
@@ -72,6 +100,25 @@ export function createRepository(db: PepcalcDb, clock: Clock = systemClock) {
 
     async deleteDraw(id: string): Promise<void> {
       await db.draws.delete(id)
+    },
+
+    async listProtocols(): Promise<ProtocolRow[]> {
+      return db.protocols.orderBy('key').toArray()
+    },
+
+    async addProtocol(input: NewProtocol): Promise<ProtocolRow> {
+      const now = nowIso(clock)
+      const row: ProtocolRow = { ...input, id: crypto.randomUUID(), createdAt: now, updatedAt: now }
+      await db.protocols.add(row)
+      return row
+    },
+
+    async updateProtocol(id: string, changes: Partial<NewProtocol>): Promise<void> {
+      await db.protocols.update(id, { ...changes, updatedAt: nowIso(clock) })
+    },
+
+    async deleteProtocol(id: string): Promise<void> {
+      await db.protocols.delete(id)
     },
 
     async listMeasurements(): Promise<MeasurementRow[]> {

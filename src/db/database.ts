@@ -40,6 +40,23 @@ export interface DrawRow {
 }
 
 /**
+ * The user's own schedule for one peptide, so the app can show when the next dose is due. It
+ * belongs to the peptide, not a vial: every vial of it counts, so a fresh vial carries on.
+ */
+export interface ProtocolRow {
+  id: string
+  /** The peptide's `sameProductKey`: a catalog id, or `name:<custom name>`. */
+  key: string
+  /** The peptide's name when the protocol was made, shown if no vial matches any more. */
+  name: string
+  /** Hours between doses: 12 for twice daily, 24 daily, 168 weekly. */
+  intervalHours: number
+  notes: string
+  createdAt: string
+  updatedAt: string
+}
+
+/**
  * One body measure at one time: a weigh-in today, and body fat or a waist later, without a
  * schema change (see `METRICS`). `value` is in the metric's canonical unit (kg, cm, percent),
  * unrounded, so switching units never compounds rounding.
@@ -112,6 +129,7 @@ export interface SettingRow {
 export type PepcalcDb = Dexie & {
   vials: EntityTable<VialRow, 'id'>
   draws: EntityTable<DrawRow, 'id'>
+  protocols: EntityTable<ProtocolRow, 'id'>
   measurements: EntityTable<MeasurementRow, 'id'>
   symptoms: EntityTable<SymptomRow, 'id'>
   glucose: EntityTable<GlucoseRow, 'id'>
@@ -144,6 +162,10 @@ export function createDatabase(name = DB_NAME): PepcalcDb {
     photos: 'id, takenAt',
     photoImages: 'id',
     photoThumbs: 'id',
+  })
+  // Protocols: a new table only, so existing rows need no upgrade.
+  db.version(3).stores({
+    protocols: 'id, key',
   })
   return db
 }

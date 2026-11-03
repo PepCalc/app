@@ -145,6 +145,15 @@
     --pc-chart-grid: #e8ddcc;
     --pc-chart-axis: #7a6c54;
     --pc-chart-now: #877960;
+    /*
+     * Overlay series, in slot order. Checked as a set against the light surface for every pair
+     * (colour-vision separation and lightness); orange sits under 3:1, so overlays always carry
+     * a legend, a dash pattern per line and a table view.
+     */
+    --pc-chart-series-1: #1a7046;
+    --pc-chart-series-2: #2a78d6;
+    --pc-chart-series-3: #d4824f;
+    --pc-chart-series-4: #a34d9c;
   }
 
   .v-theme--dark {
@@ -212,5 +221,10 @@
     --pc-chart-grid: #3a342a;
     --pc-chart-axis: #b3a286;
     --pc-chart-now: #b3a286;
+    /* The same four hues stepped for the dark surface, checked as a set for every pair. */
+    --pc-chart-series-1: #3fab73;
+    --pc-chart-series-2: #3987e5;
+    --pc-chart-series-3: #bd592f;
+    --pc-chart-series-4: #b866b4;
   }
 }

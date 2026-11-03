@@ -17,7 +17,7 @@ src/
   services/      time.ts (the only clock and date formatter), fileTransfer.ts (share/download),
                  pdf/ (dependency-free PDF writer), report/ (the PDF report: data, layout, charts)
   components/    calculator/, charts/, history/, shelf/, common/
-  views/         one per route: Calculator, Shelf, Vial, History, Settings
+  views/         one per route: Calculator, Shelf, Vial, Journal, Protocols, Settings
   plugins/       vuetify.ts (themes, defaults), icons.ts (inline SVG icons), fonts.ts
   styles/        tokens.css (design tokens), theme.css (global and Vuetify overrides)
 public/          icons, favicon, layers.css (cascade layer order, linked before bundles)

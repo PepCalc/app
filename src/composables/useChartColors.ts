@@ -7,6 +7,8 @@ export interface ChartColors {
   grid: string
   axis: string
   now: string
+  /** Overlay series colours, in slot order. */
+  series: string[]
   text: string
   surface: string
   font: string
@@ -22,6 +24,7 @@ function readColors(): ChartColors {
     grid: read('--pc-chart-grid'),
     axis: read('--pc-chart-axis'),
     now: read('--pc-chart-now'),
+    series: [1, 2, 3, 4].map((n) => read(`--pc-chart-series-${n}`)),
     text: read('--pc-text-1'),
     surface: read('--pc-surface'),
     font: read('--pc-font'),

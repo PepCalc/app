@@ -27,11 +27,13 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Journal' },
   },
   {
-    path: '/history',
-    name: 'history',
-    component: () => import('@/views/HistoryView.vue'),
-    meta: { title: 'History' },
+    path: '/protocols',
+    name: 'protocols',
+    component: () => import('@/views/ProtocolsView.vue'),
+    meta: { title: 'Protocols' },
   },
+  // History became Protocols; bookmarks and installed apps opened on the old tab land here.
+  { path: '/history', redirect: { name: 'protocols' } },
   {
     path: '/settings',
     name: 'settings',

@@ -103,6 +103,79 @@ describe('backup', () => {
     await other.delete()
   })
 
+  it('adds, updates and deletes protocols, and carries them through a backup', async () => {
+    const repo = createRepository(db, fixedClock)
+    const p = await repo.addProtocol({
+      key: 'semaglutide',
+      name: 'Semaglutide',
+      intervalHours: 168,
+      notes: '',
+    })
+    expect(p.createdAt).toBe('2026-10-25T12:00:00.000Z')
+    await repo.updateProtocol(p.id, { intervalHours: 24 })
+    expect((await repo.listProtocols())[0]!.intervalHours).toBe(24)
+
+    const text = JSON.stringify(await exportBackup(db, fixedClock))
+    const other = createDatabase(`restore-protocols-${counter}`)
+    await other.open()
+    await restoreBackup(other, parseBackup(text))
+    expect((await createRepository(other).listProtocols())[0]).toMatchObject({
+      key: 'semaglutide',
+      intervalHours: 24,
+    })
+    await other.delete()
+
+    await repo.deleteProtocol(p.id)
+    expect(await repo.listProtocols()).toEqual([])
+  })
+
+  it('carries a protocol to a renamed custom vial only once no vial keeps the old name', async () => {
+    const repo = createRepository(db, fixedClock)
+    const custom = { ...vialInput, peptideId: null, name: 'My Peptide' }
+    const a = await repo.addVial(custom)
+    const b = await repo.addVial(custom)
+    await repo.addProtocol({
+      key: 'name:my peptide',
+      name: 'My Peptide',
+      intervalHours: 24,
+      notes: '',
+    })
+
+    await repo.updateVial(a.id, { name: 'Renamed' })
+    expect((await repo.listProtocols())[0]!.key).toBe('name:my peptide')
+
+    await repo.updateVial(b.id, { name: 'Renamed' })
+    expect((await repo.listProtocols())[0]).toMatchObject({ key: 'name:renamed', name: 'Renamed' })
+  })
+
+  it('restores a version 3 backup, which predates protocols, with none', async () => {
+    const repo = createRepository(db, fixedClock)
+    await repo.addProtocol({
+      key: 'semaglutide',
+      name: 'Semaglutide',
+      intervalHours: 24,
+      notes: '',
+    })
+    const { protocols: _p, ...rest } = await exportBackup(db, fixedClock)
+    const parsed = parseBackup(JSON.stringify({ ...rest, version: 3 }))
+    expect(parsed.protocols).toEqual([])
+    await restoreBackup(db, parsed)
+    expect(await repo.listProtocols()).toEqual([])
+  })
+
+  it('rejects a protocol without a positive interval', async () => {
+    const repo = createRepository(db, fixedClock)
+    await repo.addProtocol({
+      key: 'semaglutide',
+      name: 'Semaglutide',
+      intervalHours: 24,
+      notes: '',
+    })
+    const backup = await exportBackup(db, fixedClock)
+    backup.protocols[0]!.intervalHours = 0
+    expect(() => parseBackup(JSON.stringify(backup))).toThrow(/Protocol 1/)
+  })
+
   it('rejects files that are not PepCalc backups', () => {
     expect(() => parseBackup('not json')).toThrow(BackupFormatError)
     expect(() => parseBackup('{"format":"other"}')).toThrow(BackupFormatError)
@@ -308,7 +381,7 @@ describe('journal', () => {
   it('round-trips everything through a backup file', async () => {
     await seed()
     const parsed = parseBackup(JSON.stringify(await exportBackup(db, fixedClock)))
-    expect(parsed.version).toBe(3)
+    expect(parsed.version).toBe(4)
     expect(parsed.measurements).toHaveLength(1)
     expect(parsed.symptoms).toHaveLength(1)
     expect(parsed.glucose).toHaveLength(1)

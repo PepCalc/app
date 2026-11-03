@@ -84,7 +84,7 @@ The phone screenshots in `images/phoneScreenshots/` are rendered, not taken on a
 store-screenshots` builds the Android bundle, restores the made-up shelf in
 `scripts/sample-backup.mjs` through Settings in a 360 x 800 phone viewport at 3x, and writes
 1080 x 2400 PNGs named in display order. Retake them after a visible change to the screens they
-show (the calculator and its draw, Shelf, a vial, History, and Journal in dark), and look at
+show (the calculator and its draw, Shelf, a vial, Protocols, and Journal in dark), and look at
 each one before committing.
 
 ## iOS

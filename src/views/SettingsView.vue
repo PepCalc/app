@@ -29,6 +29,7 @@ import {
   type VialAgeMode,
 } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
+import { useProtocolsStore } from '@/stores/protocols'
 import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
 import { useNotifyStore } from '@/stores/notify'
@@ -52,6 +53,7 @@ import {
 
 const settings = useSettingsStore()
 const shelf = useShelfStore()
+const protocols = useProtocolsStore()
 const journal = useJournalStore()
 const photos = usePhotosStore()
 const notify = useNotifyStore()
@@ -263,7 +265,13 @@ async function importData(event: Event) {
     })
     if (!ok) return
     await restoreBackup(db, backup, photoFiles)
-    await Promise.all([shelf.load(), journal.load(), photos.load(), settings.load()])
+    await Promise.all([
+      shelf.load(),
+      protocols.load(),
+      journal.load(),
+      photos.load(),
+      settings.load(),
+    ])
     theme.change(settings.theme)
     notify.show('Backup restored', 'success')
   } catch (e) {

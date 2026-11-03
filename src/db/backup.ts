@@ -6,6 +6,7 @@ import type {
   PepcalcDb,
   PhotoBytesRow,
   PhotoRow,
+  ProtocolRow,
   SettingRow,
   SymptomRow,
   VialRow,
@@ -26,10 +27,11 @@ import { nowIso, systemClock, type Clock } from '@/services/time'
 const BACKUP_FORMAT = 'pepcalc-backup'
 /*
  * 2 linked blend components to the catalog; 3 added the journal (measurements, side effects,
- * blood sugar, photos). An older file restores with the journal empty; an app that only knows
- * an older version refuses a newer file rather than dropping what it cannot read.
+ * blood sugar, photos); 4 added protocols. An older file restores with what it predates empty;
+ * an app that only knows an older version refuses a newer file rather than dropping what it
+ * cannot read.
  */
-const BACKUP_VERSION = 3
+const BACKUP_VERSION = 4
 
 /** The data's name inside a zip backup; photos sit beside it as `photos/<id>.jpg`. */
 const ARCHIVE_DATA = 'pepcalc-backup.json'
@@ -48,6 +50,7 @@ export interface BackupFile {
   exportedAt: string
   vials: VialRow[]
   draws: DrawRow[]
+  protocols: ProtocolRow[]
   measurements: MeasurementRow[]
   symptoms: SymptomRow[]
   glucose: GlucoseRow[]
@@ -76,21 +79,24 @@ export async function exportBackup(
   clock: Clock = systemClock,
   withPhotos = false,
 ): Promise<BackupFile> {
-  const [vials, draws, measurements, symptoms, glucose, photos, settings] = await Promise.all([
-    db.vials.toArray(),
-    db.draws.toArray(),
-    db.measurements.toArray(),
-    db.symptoms.toArray(),
-    db.glucose.toArray(),
-    withPhotos ? db.photos.toArray() : [],
-    db.settings.toArray(),
-  ])
+  const [vials, draws, protocols, measurements, symptoms, glucose, photos, settings] =
+    await Promise.all([
+      db.vials.toArray(),
+      db.draws.toArray(),
+      db.protocols.toArray(),
+      db.measurements.toArray(),
+      db.symptoms.toArray(),
+      db.glucose.toArray(),
+      withPhotos ? db.photos.toArray() : [],
+      db.settings.toArray(),
+    ])
   return {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
     exportedAt: nowIso(clock),
     vials,
     draws,
+    protocols,
     measurements,
     symptoms,
     glucose,
@@ -203,6 +209,20 @@ function checkDraw(
   if (!ok) throw new BackupFormatError(`Draw ${i + 1} is invalid or refers to a missing vial.`)
 }
 
+function checkProtocol(p: unknown, i: number): asserts p is ProtocolRow {
+  const ok =
+    isRecord(p) &&
+    typeof p.id === 'string' &&
+    typeof p.key === 'string' &&
+    p.key.length > 0 &&
+    typeof p.name === 'string' &&
+    isPositive(p.intervalHours) &&
+    typeof p.notes === 'string' &&
+    isIso(p.createdAt) &&
+    isIso(p.updatedAt)
+  if (!ok) throw new BackupFormatError(`Protocol ${i + 1} is missing required fields.`)
+}
+
 function checkMeasurement(m: unknown, i: number): asserts m is MeasurementRow {
   const ok =
     isRecord(m) &&
@@ -292,9 +312,12 @@ export function parseBackup(text: string): BackupFile {
   const symptoms = journal ? data.symptoms : []
   const glucose = journal ? data.glucose : []
   const photos = journal ? data.photos : []
+  // Files before version 4 predate protocols.
+  const protocols = data.version >= 4 ? data.protocols : []
   if (
     !Array.isArray(vials) ||
     !Array.isArray(draws) ||
+    !Array.isArray(protocols) ||
     !Array.isArray(measurements) ||
     !Array.isArray(symptoms) ||
     !Array.isArray(glucose) ||
@@ -307,6 +330,7 @@ export function parseBackup(text: string): BackupFile {
   vials.forEach(checkVial)
   const vialUnits = new Map((vials as VialRow[]).map((v) => [v.id, v.unit]))
   draws.forEach((d, i) => checkDraw(d, i, vialUnits))
+  protocols.forEach(checkProtocol)
   measurements.forEach(checkMeasurement)
   symptoms.forEach(checkSymptom)
   glucose.forEach(checkGlucose)
@@ -320,6 +344,7 @@ export function parseBackup(text: string): BackupFile {
     exportedAt: isIso(data.exportedAt) ? (data.exportedAt as string) : '',
     vials: vials as VialRow[],
     draws: draws as DrawRow[],
+    protocols: protocols as ProtocolRow[],
     measurements: measurements as MeasurementRow[],
     symptoms: symptoms as SymptomRow[],
     glucose: glucose as GlucoseRow[],
@@ -400,6 +425,7 @@ export async function restoreBackup(
     await Promise.all(db.tables.map((t) => t.clear()))
     await db.vials.bulkAdd(backup.vials)
     await db.draws.bulkAdd(backup.draws)
+    await db.protocols.bulkAdd(backup.protocols)
     await db.measurements.bulkAdd(backup.measurements)
     await db.symptoms.bulkAdd(backup.symptoms)
     await db.glucose.bulkAdd(backup.glucose)

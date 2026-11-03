@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { useShelfStore } from '@/stores/shelf'
+import { useProtocolsStore } from '@/stores/protocols'
 import { useSettingsStore } from '@/stores/settings'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
@@ -36,6 +37,7 @@ import {
 const props = defineProps<{ id: string }>()
 const router = useRouter()
 const shelf = useShelfStore()
+const protocols = useProtocolsStore()
 const settings = useSettingsStore()
 const notify = useNotifyStore()
 const confirm = useConfirmStore()
@@ -99,7 +101,7 @@ watch(direction, reset)
 const chartUnit = computed(
   () => vial.value?.typicalDose?.unit ?? draws.value[0]?.dose.unit ?? vial.value?.unit ?? 'mg',
 )
-/** Doses of this peptide from every vial, so the curve matches History. */
+/** Doses of this peptide from every vial, so the curve matches the Protocols tab. */
 const pooled = computed(() =>
   vial.value ? shelf.pooledDosesFor(vial.value, chartUnit.value) : { doses: [], vialCount: 0 },
 )
@@ -119,6 +121,8 @@ const concentrationText = computed(() => {
 async function saveVial(changes: Partial<NewVial>) {
   if (!vial.value) return
   await shelf.updateVial(vial.value.id, changes)
+  // A rename can carry the peptide's protocol to the new name.
+  await protocols.load()
   notify.show('Vial updated', 'success')
 }
 
@@ -323,21 +327,26 @@ async function deleteVial() {
 
 .vial-title-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 
-/* A long name wraps under itself so the actions keep their place at the right. */
+/*
+ * A name too long to sit beside the actions takes the whole row and the actions drop to the
+ * next line, still at the right; a word breaks only if it cannot fit a line on its own.
+ */
 .vial-title {
   flex: 1 1 auto;
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .vial-manage {
   display: flex;
   flex: 0 0 auto;
   gap: 4px;
+  margin-inline-start: auto;
 }
 
 .vial-remaining {

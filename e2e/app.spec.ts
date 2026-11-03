@@ -96,7 +96,7 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
   await expect(page.getByRole('link', { name: /^Semaglutide #2/ })).toBeVisible()
   await expect(page.getByText('Day 0 of 28')).toHaveCount(2)
 
-  await page.goto('./#/history')
+  await page.goto('./#/protocols')
   await expect(page.getByText('1–10 of 11 draws')).toBeVisible()
   await expect(page.getByText(/· Semaglutide #2/)).toHaveCount(10)
   await page
@@ -106,6 +106,84 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
   await expect(page.getByText('11–11 of 11 draws')).toBeVisible()
   await page.getByRole('button', { name: 'Oldest first' }).click()
   await expect(page.getByText('1–10 of 11 draws')).toBeVisible()
+})
+
+test('sets a protocol, counts down to the next dose, and filters draws by peptide', async ({
+  page,
+}) => {
+  await page.goto('./')
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await page.getByRole('button', { name: 'Log this draw now' }).click()
+  await expect(page.getByText(/Logged 0.25 mg of Semaglutide/)).toBeVisible()
+  await page.goto('./#/')
+  await expect(page.getByTestId('draw-headline')).toHaveText('15')
+  await page.locator('.v-select').first().click()
+  await page.getByRole('option', { name: /BPC-157/ }).click()
+  await choose(page, 'Peptide in vial', '5 mg')
+  await choose(page, 'Bacteriostatic water added', '2 mL')
+  await choose(page, 'Dose', '250 mcg')
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await page.getByRole('button', { name: 'Log this draw now' }).click()
+  await expect(page.getByText(/Logged 250 mcg of BPC-157/)).toBeVisible()
+
+  // The old History tab's address still opens the tab that replaced it.
+  await page.goto('./#/history')
+  await expect(page).toHaveURL(/#\/protocols$/)
+  await expect(page.getByText('No protocols yet.')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Add a protocol' }).click()
+  const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
+  await dialog.locator('.v-select').filter({ hasText: 'Peptide' }).click()
+  await page.getByRole('option', { name: 'Semaglutide' }).click()
+  await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
+  await page.getByRole('option', { name: 'Weekly' }).click()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
+  await expect(page.getByText(/^Next dose .+, in 7 days$/)).toBeVisible()
+
+  await page.getByRole('button', { name: 'Edit protocol for Semaglutide' }).click()
+  const edit = page.getByRole('dialog').filter({ hasText: 'Protocol for Semaglutide' })
+  await edit.locator('.v-select').filter({ hasText: 'How often' }).click()
+  await page.getByRole('option', { name: 'Twice daily' }).click()
+  await edit.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText(/^Next dose at .+, in about 12 hours$/)).toBeVisible()
+
+  await expect(page.getByText(/· (Semaglutide|BPC-157)$/)).toHaveCount(2)
+  await page.locator('.v-select').filter({ hasText: 'All peptides' }).click()
+  await page.getByRole('option', { name: 'BPC-157' }).click()
+  await expect(page.getByText(/· BPC-157$/)).toHaveCount(1)
+  await expect(page.getByText(/· Semaglutide$/)).toHaveCount(0)
+})
+
+test('overlays the levels of several peptides on one chart', async ({ page }) => {
+  await page.goto('./')
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await page.getByRole('button', { name: 'Log this draw now' }).click()
+  await page.goto('./#/')
+  await expect(page.getByRole('button', { name: 'Save vial to shelf' })).toBeVisible()
+  await page.locator('.v-select').first().click()
+  await page
+    .getByRole('option', { name: /Tirzepatide/ })
+    .first()
+    .click()
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await page.getByRole('button', { name: 'Log this draw now' }).click()
+  await expect(page.getByText(/Logged .+ of Tirzepatide/)).toBeVisible()
+
+  await page.goto('./#/protocols')
+  await expect(page.getByRole('img', { name: /Estimated amount in the body now/ })).toHaveCount(2)
+  await page.getByRole('button', { name: 'Overlay' }).click()
+  const chart = page.getByRole('img', { name: /each scaled to its own peak/ })
+  await expect(chart).toHaveAttribute(
+    'aria-label',
+    /Semaglutide .+Tirzepatide|Tirzepatide .+Semaglutide/,
+  )
+  await page.locator('.v-chip').filter({ hasText: 'Semaglutide' }).click()
+  await expect(chart).not.toHaveAttribute('aria-label', /Semaglutide/)
+  await page.getByRole('button', { name: 'Show as table' }).click()
+  await expect(page.getByRole('columnheader', { name: 'Tirzepatide' })).toBeVisible()
 })
 
 test('works offline after the first visit, including stored data', async ({
@@ -368,7 +446,7 @@ test('exports draws and estimated levels as a PDF, offline', async ({
 
   // The PDF writer is a lazily loaded chunk; it must come from the precache.
   await context.setOffline(true)
-  await page.getByRole('link', { name: 'History' }).first().click()
+  await page.getByRole('link', { name: 'Protocols' }).first().click()
   await page.getByRole('button', { name: 'Export PDF' }).click()
   await page.getByRole('group', { name: 'Period' }).getByRole('button', { name: '30 days' }).click()
   const download = page.waitForEvent('download')

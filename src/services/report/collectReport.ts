@@ -526,7 +526,7 @@ function titleFor(sections: ReadonlySet<ReportSection>): string {
  * Gather what the report prints for `period` and the chosen sections, formatted for the
  * reader's locale and units. Level curves count every logged dose, including those before the
  * period, because earlier doses are still in the body; the chart starts at the period. Tables
- * are newest first, as History lists them.
+ * are newest first, as the Protocols tab lists them.
  */
 export function collectReport(source: ReportSource): ReportData {
   const { period, now, units } = source

@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 NODE := source $$HOME/.nvm/nvm.sh >/dev/null 2>&1 && nvm use >/dev/null 2>&1; 
 
-.PHONY: install dev check check-all test e2e build preview icons android ios store-screenshots
+.PHONY: install dev check check-all test e2e build preview icons android ios screenshots store-screenshots
 
 install:
 	$(NODE) npm ci
@@ -41,6 +41,10 @@ android:
 ## Build the iOS bundle and sync it into ios/ (the app itself is built in GitHub Actions).
 ios:
 	$(NODE) npm run build:ios
+
+## Retake the draw, Protocols and shelf screenshots for the website (writes to ../pepcalc.github.io).
+screenshots:
+	$(NODE) npm run screenshots:site
 
 ## Retake the phone screenshots for the F-Droid and Play listings (fastlane/metadata).
 store-screenshots:

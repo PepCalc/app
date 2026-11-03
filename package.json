@@ -25,6 +25,7 @@
     "check:tokens": "node scripts/check-tokens.mjs",
     "icons": "pwa-assets-generator",
     "icons:android": "node scripts/android-icons.mjs",
+    "screenshots:site": "vite build && node scripts/site-screenshots.mjs",
     "screenshots:store": "vite build --mode android && node scripts/store-screenshots.mjs",
     "build:android": "vite build --mode android && cap sync android",
     "build:ios": "vite build --mode ios && PEPCALC_PLATFORM=ios cap sync ios",
