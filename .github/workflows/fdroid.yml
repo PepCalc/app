@@ -19,7 +19,7 @@ jobs:
     # The image fdroiddata's own CI builds merge requests in.
     container: registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie
     env:
-      APP_ID: io.github.pepcalc
+      APP_ID: io.github.pepcalc.app
     steps:
       - uses: actions/checkout@v7
         with:

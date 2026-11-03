@@ -1,4 +1,4 @@
-package io.github.pepcalc;
+package io.github.pepcalc.app;
 
 import com.getcapacitor.BridgeActivity;
 

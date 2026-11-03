@@ -49,7 +49,7 @@ pages in Play Console before each submission rather than relying on this list.
 F-Droid builds from source and signs with its own key, so nothing proprietary may be in the
 build: Capacitor and its plugins are open source, there are no Google Play Services, and
 `dependenciesInfo` is off in `android/app/build.gradle` so no encrypted dependency report is
-added. The recipe, [fdroid/io.github.pepcalc.yml](fdroid/io.github.pepcalc.yml), is kept exactly
+added. The recipe, [fdroid/io.github.pepcalc.app.yml](fdroid/io.github.pepcalc.app.yml), is kept exactly
 as it will be submitted:
 
 - `sudo` installs the Node version in `.nvmrc` from nodejs.org, checked against its SHA-256.
@@ -69,7 +69,7 @@ green; a failure there is a failure F-Droid would hit.
 
 1. Tag the release (`v<version>`) and push the tag. The recipe's `commit` names that tag, and
    its `versionName`, `versionCode`, `CurrentVersion` and `CurrentVersionCode` match it.
-2. Fork `fdroid/fdroiddata` on GitLab, copy the recipe to `metadata/io.github.pepcalc.yml`, and
+2. Fork `fdroid/fdroiddata` on GitLab, copy the recipe to `metadata/io.github.pepcalc.app.yml`, and
    open a merge request using the "App inclusion" template. Its pipeline repeats the lint and
    build.
 3. Later releases need only a new tag: F-Droid's update checker adds the build.
@@ -118,7 +118,7 @@ certificate or profile is kept in the repository.
 ### One-time setup
 
 1. Join the Apple Developer Program, and note the Team ID (Membership details).
-2. In Certificates, Identifiers & Profiles, register the App ID `io.github.pepcalc`. It must
+2. In Certificates, Identifiers & Profiles, register the App ID `io.github.pepcalc.app`. It must
    match `appId` in `capacitor.config.ts` and is permanent once published.
 3. In App Store Connect, create the app with that bundle ID.
 4. In App Store Connect, Users and Access, Integrations, create a Team API key with the Admin

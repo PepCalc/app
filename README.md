@@ -122,7 +122,7 @@ artifact. `.github/workflows/release.yml` builds a signed App Bundle (Google Pla
 repository and backed up, because a lost key means the app can never be updated. The version
 comes from `package.json` (`versionCode` is `major * 10000 + minor * 100 + patch`).
 
-The app id `io.github.pepcalc`, and the WebView origin `https://localhost` that holds the
+The app id `io.github.pepcalc.app`, and the WebView origin `https://localhost` that holds the
 app's IndexedDB, must never change after release. Data in the browser-installed PWA does not
 carry over to the Android app (and vice versa); move it with a backup file.
 

@@ -8,7 +8,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  * published on Google Play and the App Store.
  */
 const config: CapacitorConfig = {
-  appId: 'io.github.pepcalc',
+  appId: 'io.github.pepcalc.app',
   appName: 'PepCalc',
   webDir: process.env.PEPCALC_PLATFORM === 'ios' ? 'dist-ios' : 'dist-android',
   server: {

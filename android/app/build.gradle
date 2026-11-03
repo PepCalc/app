@@ -19,10 +19,10 @@ if (pkg.versionCode != appVersionCode) {
 def releaseKeystore = System.getenv('PEPCALC_KEYSTORE')
 
 android {
-    namespace = "io.github.pepcalc"
+    namespace = "io.github.pepcalc.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "io.github.pepcalc"
+        applicationId "io.github.pepcalc.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode
