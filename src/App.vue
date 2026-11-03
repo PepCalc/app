@@ -135,7 +135,7 @@ onMounted(async () => {
       </v-app-bar-title>
     </v-app-bar>
 
-    <v-navigation-drawer v-if="wide" permanent rail rail-width="96">
+    <v-navigation-drawer v-if="wide" permanent rail rail-width="96" class="rail">
       <v-list nav density="comfortable" class="pt-4">
         <v-list-item
           v-for="item in NAV"
@@ -155,7 +155,7 @@ onMounted(async () => {
       </v-list>
     </v-navigation-drawer>
 
-    <v-main @click="onContentTap">
+    <v-main class="app-main" @click="onContentTap">
       <v-banner
         v-if="showInstallBanner"
         :icon="mdiCellphoneArrowDown"
@@ -223,6 +223,19 @@ onMounted(async () => {
   padding-top: var(--safe-area-inset-top, env(safe-area-inset-top));
   padding-left: var(--safe-area-inset-left, env(safe-area-inset-left));
   padding-right: var(--safe-area-inset-right, env(safe-area-inset-right));
+}
+
+/*
+ * Vuetify offsets the page and the rail by the bar's 48px only, not the inset padding above it.
+ * The Android app draws edge to edge from Android 15, so without this the page title sits
+ * under the bar.
+ */
+.app-main {
+  padding-top: calc(var(--v-layout-top) + var(--safe-area-inset-top, env(safe-area-inset-top)));
+}
+
+.rail :deep(.v-navigation-drawer__content) {
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top));
 }
 
 .bottom-nav {
