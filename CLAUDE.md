@@ -21,6 +21,7 @@ All commands run on the Node version in `.nvmrc` (`nvm use`); never system Node.
 | `make android`           | Build the Capacitor bundle (`dist-android/`) and sync it into `android/`                         |
 | `make ios`               | Build the iOS bundle (`dist-ios/`) and sync it into `ios/`; the app builds in CI, not locally    |
 | `make store-screenshots` | Retake the F-Droid and Play phone, tablet and Chromebook screenshots in `fastlane/metadata`      |
+| `make brand-images`      | Redraw the site link preview and store feature graphic from `scripts/brand-images.mjs`           |
 
 ## Skills and rules
 
@@ -42,4 +43,6 @@ F-Droid recipe are in `docs/releasing.md`.
 - Arithmetic lives in `src/domain/` (pure, unit tested). IU never converts to mass.
 - Every number shown to users carries a source; PK curves only from human data or
   clearly labelled user-supplied values.
+- All user-facing text is short and direct: no AI slop, no trailing ", so X" clauses, no filler.
+  Legal and safety wording is the exception.
 - PepCalc does arithmetic and shows sourced references; it never recommends a dose.

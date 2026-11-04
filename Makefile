@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 NODE := source $$HOME/.nvm/nvm.sh >/dev/null 2>&1 && nvm use >/dev/null 2>&1; 
 
-.PHONY: install dev check check-all test e2e build preview icons android ios screenshots store-screenshots
+.PHONY: install dev check check-all test e2e build preview icons android ios screenshots store-screenshots brand-images
 
 install:
 	$(NODE) npm ci
@@ -49,3 +49,7 @@ screenshots:
 ## Retake the phone, tablet and Chromebook screenshots for the store listings (fastlane/metadata).
 store-screenshots:
 	$(NODE) npm run screenshots:store
+
+## Redraw the site link preview and the store feature graphic from their tag lines.
+brand-images:
+	$(NODE) npm run images:brand

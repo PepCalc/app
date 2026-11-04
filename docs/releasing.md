@@ -98,8 +98,8 @@ dark), and look at each one before committing.
 
 The store icon (`images/icon.png`, 512 x 512) is the logo tile with square corners, since Play
 rounds it itself; `npm run icons:android` writes it with the launcher icons. The feature graphic
-(`images/featureGraphic.png`, 1024 x 500) was made by hand from the icon and the calculator
-screenshot, with no brand names on it.
+(`images/featureGraphic.png`, 1024 x 500) comes from `make brand-images`. It carries no brand
+names and no price wording such as "free".
 
 ## iOS
 
