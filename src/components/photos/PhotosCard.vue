@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { PhotoRow } from '@/db/database'
 import { POSE_LABELS } from '@/domain/photos'
 import { usePaging } from '@/composables/usePaging'
+import { useCameraAccess } from '@/composables/useCameraAccess'
 import { useStoragePersistence } from '@/composables/useStoragePersistence'
 import {
   clearNativeCaptures,
@@ -13,8 +14,10 @@ import {
 import { formatDate, nowIso, toIso } from '@/services/time'
 import { usePhotosStore } from '@/stores/photos'
 import { useNotifyStore } from '@/stores/notify'
+import { cameraSettingsSteps } from '@/services/platform'
 import { mdiCameraOutline, mdiCompare, mdiImageOutline, mdiViewGridOutline } from '@/plugins/icons'
 import ListPager from '@/components/common/ListPager.vue'
+import CameraAccessDialog from './CameraAccessDialog.vue'
 import PhotoDialog from './PhotoDialog.vue'
 import PhotoCompareDialog from './PhotoCompareDialog.vue'
 import ShareCollageDialog from '@/components/share/ShareCollageDialog.vue'
@@ -29,6 +32,7 @@ const storage = useStoragePersistence()
 
 const cameraInput = ref<HTMLInputElement | null>(null)
 const libraryInput = ref<HTMLInputElement | null>(null)
+const camera = useCameraAccess(() => cameraInput.value?.click())
 const reading = ref(false)
 
 const dialog = ref(false)
@@ -43,6 +47,7 @@ const pages = usePaging(() => photosStore.photos, PAGE)
 const canCompare = computed(() => photosStore.photos.length >= 2)
 
 async function onFile(event: Event, fromCamera: boolean) {
+  if (fromCamera) void camera.actions.settle()
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
@@ -61,6 +66,25 @@ async function onFile(event: Event, fromCamera: boolean) {
     if (fromCamera) void clearNativeCaptures()
   }
 }
+
+/** The camera or the permission dialog closed with no photo, which can leave an empty file. */
+function onCaptureCancel() {
+  void camera.actions.settle()
+  void clearNativeCaptures()
+}
+
+async function openCameraSettings() {
+  if (await camera.actions.openSettings()) camera.state.explaining = false
+  else notify.show(cameraSettingsSteps, 'info')
+}
+
+function chooseInstead() {
+  camera.state.explaining = false
+  libraryInput.value?.click()
+}
+
+// A capture the app never finished importing, cut off by a crash, keeps its location data.
+onMounted(() => void clearNativeCaptures())
 
 function view(photo: PhotoRow) {
   prepared.value = null
@@ -108,7 +132,7 @@ function onSaved() {
           variant="flat"
           :prepend-icon="mdiCameraOutline"
           :loading="reading"
-          @click="cameraInput?.click()"
+          @click="camera.actions.takePhoto"
         >
           Take a photo
         </v-btn>
@@ -140,6 +164,7 @@ function onSaved() {
         class="d-none"
         aria-label="Take a photo"
         @change="onFile($event, true)"
+        @cancel="onCaptureCancel"
       />
       <input
         ref="libraryInput"
@@ -154,6 +179,13 @@ function onSaved() {
       </p>
     </v-card-text>
 
+    <CameraAccessDialog
+      v-model="camera.state.explaining"
+      :access="camera.state.access"
+      @allow="camera.actions.allow"
+      @settings="openCameraSettings"
+      @library="chooseInstead"
+    />
     <PhotoDialog
       v-model="dialog"
       :photo="viewing"

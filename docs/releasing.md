@@ -33,6 +33,8 @@ app signing key and this one is only the upload key.
 
 - **Listing.** Title and short description come from `fastlane/metadata/android/en-US/`.
 - **Privacy policy.** `https://pepcalc.github.io/privacy.html`.
+- **Camera.** The app asks for the camera only when Take a photo is tapped. Photos stay on the
+  device, so the permission adds nothing to the data safety form.
 - **Data safety.** No data collected, no data shared. The app has no network permission, so no
   data is transmitted; data stays on the device and the user can delete it.
 - **Health apps declaration.** PepCalc is a calculator and journal, not a medical device, and
@@ -148,6 +150,9 @@ certificate or profile is kept in the repository.
 
 The workflow proves the app compiles; these need an iPhone, through TestFlight:
 
-1. Take a progress photo with the camera and choose one from the library.
-2. Share a level chart image and export a PDF report through the share sheet.
-3. Save a backup with photos and restore it.
+1. Take a photo shows the explanation first, then the iOS camera dialog, then the camera.
+2. Refuse it: the blocked screen appears, and Open settings opens the app's page in Settings.
+3. Allow the camera there and return: Take a photo opens the camera with no explanation.
+4. Choose a photo from the library.
+5. Share a level chart image and export a PDF report through the share sheet.
+6. Save a backup with photos and restore it.

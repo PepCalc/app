@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Backup files are written to the app cache and shared from there; nothing else is exposed. -->
+<!--
+    Backup files are written to the app cache and shared from there. Progress photos taken with
+    the camera land briefly in the app's own Pictures folder (the WebView's capture target) and
+    are deleted once PepCalc has stored its own copy; nothing else is exposed.
+-->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="cache" path="." />
+    <external-files-path name="captures" path="Pictures/" />
 </paths>

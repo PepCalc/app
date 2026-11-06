@@ -101,9 +101,12 @@ export function cropPhoto(photo: PreparedPhoto, crop: CropRect): Promise<Prepare
 
 /**
  * The Android WebView saves a camera capture in the app's own Pictures folder before handing it
- * over. PepCalc keeps its own stripped copy, so the original (with its location data) is
- * deleted. Never throws: a leftover file is private to the app and removed on uninstall. iOS
- * hands over a temporary file the system removes itself.
+ * over. That folder suits it: private to the app, needing no storage permission, kept out of the
+ * gallery and removed on uninstall, and the FileProvider shares only this one folder. PepCalc
+ * keeps its own stripped copy, so the original (with its location data) is deleted after each
+ * capture, after a cancelled one (which leaves an empty file) and on opening the photos, in case
+ * a crash skipped both. Never throws: a leftover file stays private to the app. iOS hands over a
+ * temporary file the system removes itself.
  */
 export async function clearNativeCaptures(): Promise<void> {
   if (__PLATFORM__ !== 'android') return

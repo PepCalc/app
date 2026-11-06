@@ -37,6 +37,23 @@
     </application>
 
     <!--
+        Take a photo opens the system camera app. Android 11 and later hide other apps from this
+        one unless the intent is listed in queries; without it the WebView finds no camera and
+        opens the gallery instead. PepCalc asks for CAMERA only when Take a photo is tapped, after
+        saying why. Declaring it would otherwise mark a camera as required, and Google Play would
+        drop the app from devices without one, such as Chromebooks, so both features are optional.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
+    <!--
         PepCalc never touches the network. Removing INTERNET at merge time means no library can
         add it back, and the store listings show the app has no network access. Backups stay off
         so health data never leaves the device through Google's cloud backup; the in-app backup
