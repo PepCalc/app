@@ -5,6 +5,8 @@ import {
   rateConstants,
   simulate,
   singleDoseAmount,
+  steadyAmount,
+  steadyLevels,
   summarizeLevels,
   tmaxFor,
 } from '@/domain/pk'
@@ -116,5 +118,48 @@ describe('summarizeLevels', () => {
       peak: null,
       clearsAt: null,
     })
+  })
+})
+
+describe('steady state', () => {
+  /** The sum the closed form replaces, taken far enough back that older doses add nothing. */
+  const superposed = (hours: number, interval: number, k: { ka: number; ke: number }) => {
+    let total = 0
+    for (let n = 0; n < 4000; n++) total += singleDoseAmount(1, hours + n * interval, k)
+    return total
+  }
+
+  it.each([
+    ['ordinary absorption', 168, rateConstants({ halfLifeHours: 168, tmaxHours: 56 })],
+    ['flip-flop kinetics', 24, rateConstants({ halfLifeHours: 4, tmaxHours: 30 })],
+    ['equal rate constants', 24, { ka: 0.05, ke: 0.05 }],
+  ])('matches explicit superposition with %s', (_, interval, k) => {
+    for (const fraction of [0.1, 0.4, 0.8, 1]) {
+      const hours = interval * fraction
+      expect(steadyAmount(1, hours, interval, k)).toBeCloseTo(superposed(hours, interval, k), 8)
+    }
+  })
+
+  it('doubles a weekly dose of a medicine with a one-week half-life, near enough', () => {
+    const k = rateConstants({ halfLifeHours: 168, tmaxHours: 56 })
+    const { peak, trough } = steadyLevels(1, 168, k)
+    expect(peak).toBeGreaterThan(trough)
+    // Trough over a dose's own decay at one interval: the textbook 1 / (1 - 2^-1).
+    expect(trough / singleDoseAmount(1, 168, k)).toBeCloseTo(2, 0)
+  })
+
+  it('finds the highest point of the interval', () => {
+    const k = rateConstants({ halfLifeHours: 120, tmaxHours: 24 })
+    const { peak, peakHours } = steadyLevels(1, 168, k)
+    for (let h = 0; h <= 168; h += 0.5) {
+      expect(steadyAmount(1, h, 168, k)).toBeLessThanOrEqual(peak + 1e-9)
+    }
+    expect(peakHours).toBeGreaterThan(0)
+    expect(peakHours).toBeLessThan(24)
+  })
+
+  it('scales with the dose', () => {
+    const k = rateConstants({ halfLifeHours: 168, tmaxHours: 56 })
+    expect(steadyLevels(2.4, 168, k).peak).toBeCloseTo(steadyLevels(1, 168, k).peak * 2.4, 9)
   })
 })

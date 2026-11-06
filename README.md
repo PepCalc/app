@@ -34,6 +34,8 @@ account, server or tracking.
 - Level charts: an estimate of the amount remaining in the body, based on a simple model from
   published human data (semaglutide, tirzepatide, retatrutide, cagrilintide, tesamorelin). For
   other peptides you can enter your own half-life, and the chart is marked user-supplied.
+- Projected levels: set a frequency and see where levels head, up to 16 weeks out, with the date
+  they turn steady. The protocol card draws the same curve behind it.
 - Share and export: share a level chart as an image, with or without the peptide name and
   amounts, or export a PDF report for the last 30 days, 90 days or all time. Both are made on
   the device.

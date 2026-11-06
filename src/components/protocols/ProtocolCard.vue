@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ProtocolRow } from '@/db/database'
+import { levelTrace } from '@/domain/projection'
 import { dueState, intervalText, remainingFraction } from '@/domain/schedule'
-import { roundTo, unitLabel } from '@/domain/units'
+import { formatAmount, roundTo, unitLabel } from '@/domain/units'
 import { useProtocolsStore } from '@/stores/protocols'
 import { useShelfStore } from '@/stores/shelf'
 import {
@@ -13,6 +14,8 @@ import {
   toEpochMs,
 } from '@/services/time'
 import { mdiPencilOutline } from '@/plugins/icons'
+import LevelBackdrop from '@/components/charts/LevelBackdrop.vue'
+import { outlookShort } from '@/components/charts/projectionText'
 import DoseCountdown from './DoseCountdown.vue'
 
 /**
@@ -67,10 +70,24 @@ const lastText = computed(() => {
     vial && shelf.vialNumber(vial) !== undefined ? ` from ${shelf.displayName(vial)}` : ''
   return `${roundTo(d.dose.value, 4)} ${unitLabel(d.dose.unit)}${from}, ${formatDateTime(toEpochMs(d.takenAt))}`
 })
+
+/** The card's curve and the line that says the same in words; none before a first draw. */
+const levels = computed(() => {
+  const found = protocols.projectionOf(props.protocol, props.now)
+  if (!found) return null
+  const { projection, unit, userSupplied } = found
+  const reading = `Est. ${formatAmount(projection.summary.now, unitLabel(unit))} now`
+  const own = userSupplied ? ' · User-supplied values' : ''
+  return {
+    trace: levelTrace(projection, props.now),
+    text: `${reading} · ${outlookShort(projection.outlook)}${own}`,
+  }
+})
 </script>
 
 <template>
   <v-card class="protocol-card">
+    <LevelBackdrop v-if="levels" :trace="levels.trace" active />
     <v-card-item>
       <v-card-title class="text-wrap">{{ name }}</v-card-title>
       <v-card-subtitle>{{ intervalText(protocol.intervalHours) }}</v-card-subtitle>
@@ -92,11 +109,23 @@ const lastText = computed(() => {
         Last: <span class="pc-num">{{ lastText }}</span>
       </p>
       <p v-if="protocol.notes" class="text-body-small pc-muted">{{ protocol.notes }}</p>
+      <p v-if="levels" class="text-body-small pc-muted pc-num">{{ levels.text }}</p>
+      <div v-if="levels" class="protocol-card__band" />
     </v-card-text>
   </v-card>
 </template>
 
 <style scoped>
+.protocol-card {
+  --level-band: 88px;
+  isolation: isolate;
+}
+
+/* Keeps text out of the backdrop's line. */
+.protocol-card__band {
+  height: 64px;
+}
+
 .protocol-card__due {
   display: flex;
   align-items: center;

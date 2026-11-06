@@ -98,6 +98,11 @@ export function formatAxisTick(epochMs: number, spanMs: number): string {
     : `${axisDayFormat.format(new Date(epochMs))}, ${axisHourFormat.format(new Date(epochMs))}`
 }
 
+/** "Oct 29" in the device's locale. */
+export function formatMonthDay(epochMs: number): string {
+  return axisDayFormat.format(new Date(epochMs))
+}
+
 /** "Sep 29 – Oct 29, 2026" in the device's locale. */
 export function formatDateRange(startMs: number, endMs: number): string {
   return dateFormat.formatRange(new Date(startMs), new Date(endMs))

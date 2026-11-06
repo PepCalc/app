@@ -59,6 +59,15 @@ export function pooledDoses(
   unit: AmountUnit,
 ): { doses: DoseEvent[]; vialCount: number } {
   const ids = new Set(vials.filter((v) => levelKey(v) === key).map((v) => v.id))
+  return dosesFromVials(draws, ids, unit)
+}
+
+/** Doses in `unit` from the given vials, oldest first, leaving out draws it cannot express. */
+export function dosesFromVials(
+  draws: readonly LevelDraw[],
+  ids: ReadonlySet<string>,
+  unit: AmountUnit,
+): { doses: DoseEvent[]; vialCount: number } {
   const matching = draws
     .filter((d) => ids.has(d.vialId) && areCompatible(d.dose.unit, unit))
     .sort((a, b) => a.at - b.at)

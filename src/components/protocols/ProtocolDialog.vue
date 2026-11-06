@@ -2,7 +2,10 @@
 import { computed, reactive, watch } from 'vue'
 import type { ProtocolRow } from '@/db/database'
 import type { NewProtocol } from '@/db/repository'
-import type { ProtocolProduct } from '@/stores/protocols'
+import { intervalText } from '@/domain/schedule'
+import { unitLabel } from '@/domain/units'
+import { useProtocolsStore, type ProtocolProduct } from '@/stores/protocols'
+import ProjectionPanel from '@/components/charts/ProjectionPanel.vue'
 
 /**
  * Add or edit a protocol: which peptide, and how often the user takes it. Nothing is pre-filled
@@ -72,6 +75,9 @@ const everyError = computed(() =>
 
 const valid = computed(() => form.key !== null && intervalHours.value !== null)
 
+const protocols = useProtocolsStore()
+const levels = computed(() => (form.key ? protocols.levelsOf(form.key) : null))
+
 function save() {
   if (!valid.value) return
   const key = form.key!
@@ -116,8 +122,20 @@ function save() {
               class="protocol-dialog__unit"
             />
           </div>
-          <v-text-field v-model="form.notes" label="Notes (optional)" />
           <p class="text-body-small pc-muted">Used to show when your next dose is due.</p>
+          <v-expand-transition>
+            <ProjectionPanel
+              v-if="levels && intervalHours !== null"
+              :peptide="levels.peptide"
+              :override="levels.pk?.userSupplied ? levels.pk.params : null"
+              :interval-hours="intervalHours"
+              :interval-label="intervalText(intervalHours)"
+              :amount="levels.amount"
+              :history="levels.history"
+              :unit-label="unitLabel(levels.unit)"
+            />
+          </v-expand-transition>
+          <v-text-field v-model="form.notes" label="Notes (optional)" />
         </v-form>
       </v-card-text>
       <v-card-actions>

@@ -79,6 +79,68 @@ export function amountAt(at: number, doses: readonly DoseEvent[], k: RateConstan
 }
 
 /**
+ * Amount `hours` after a dose once a schedule has run forever: `singleDoseAmount` summed over
+ * endless doses `intervalHours` apart, which is a geometric series in each exponential. `hours`
+ * runs from 0 (the moment of a dose, before it absorbs) to `intervalHours`.
+ */
+export function steadyAmount(
+  amount: number,
+  hours: number,
+  intervalHours: number,
+  k: RateConstants,
+): number {
+  const { ka, ke } = k
+  const keepE = -Math.expm1(-ke * intervalHours)
+  if (Math.abs(ka - ke) < 1e-9 * ke) {
+    const carried = (intervalHours * Math.exp(-ke * intervalHours)) / keepE ** 2
+    return amount * ke * Math.exp(-ke * hours) * (hours / keepE + carried)
+  }
+  const keepA = -Math.expm1(-ka * intervalHours)
+  return (
+    ((amount * ka) / (ka - ke)) * (Math.exp(-ke * hours) / keepE - Math.exp(-ka * hours) / keepA)
+  )
+}
+
+export interface SteadyLevels {
+  /** Highest amount in each interval at steady state. */
+  peak: number
+  /** Hours after a dose that the peak falls. */
+  peakHours: number
+  /** Amount just before each dose at steady state. */
+  trough: number
+}
+
+/**
+ * The plateau a regular schedule settles on. One interval of the steady curve has a single
+ * maximum, so a ternary search finds it for any ka and ke, flip-flop kinetics included.
+ */
+export function steadyLevels(
+  amount: number,
+  intervalHours: number,
+  k: RateConstants,
+): SteadyLevels {
+  let lo = 0
+  let hi = intervalHours
+  for (let i = 0; i < 80; i++) {
+    const third = (hi - lo) / 3
+    if (
+      steadyAmount(amount, lo + third, intervalHours, k) <
+      steadyAmount(amount, hi - third, intervalHours, k)
+    ) {
+      lo += third
+    } else {
+      hi -= third
+    }
+  }
+  const peakHours = (lo + hi) / 2
+  return {
+    peak: steadyAmount(amount, peakHours, intervalHours, k),
+    peakHours,
+    trough: steadyAmount(amount, 0, intervalHours, k),
+  }
+}
+
+/**
  * How long a dose stays relevant: after this the remaining amount is below ~1% of the dose.
  * Uses the slower of absorption and elimination so flip-flop kinetics are covered.
  */
@@ -117,13 +179,17 @@ export interface SimulationWindow {
 /**
  * Sample the curve adaptively. A uniform grid misses short-lived peaks (tesamorelin peaks
  * about nine minutes after injection), so every dose gets dense samples around its own rise
- * and peak, merged with a coarse grid across the whole window.
+ * and peak, merged with a coarse grid across the whole window. `doseSamples` and `localHours` set
+ * how many of those dense samples each dose gets and how far they reach: a long schedule spreads
+ * fewer over one interval, which keeps its cost flat however many doses it holds.
  */
 export function simulate(
   doses: readonly DoseEvent[],
   params: PkParameters,
   window: SimulationWindow,
   baseSamples = 240,
+  doseSamples = 60,
+  localHours?: number,
 ): PkPoint[] {
   const k = rateConstants(params)
   const span = window.end - window.start
@@ -133,14 +199,14 @@ export function simulate(
     times.add(Math.round(window.start + (span * i) / baseSamples))
   }
   const peakMs = tmaxFor(k.ka, k.ke) * MS_PER_HOUR
-  const localMs = Math.min(relevanceHorizonHours(k) * MS_PER_HOUR, span)
+  const localMs = Math.min((localHours ?? relevanceHorizonHours(k)) * MS_PER_HOUR, span)
   for (const dose of doses) {
     // Just before the dose so the line jumps from the prior level, then log-spaced afterwards.
     addIfInside(times, dose.at - 1, window)
     addIfInside(times, dose.at, window)
     addIfInside(times, dose.at + peakMs, window)
-    for (let i = 1; i <= 60; i++) {
-      const offset = (localMs * (Math.exp((i / 60) * Math.log(1001)) - 1)) / 1000
+    for (let i = 1; i <= doseSamples; i++) {
+      const offset = (localMs * (Math.exp((i / doseSamples) * Math.log(1001)) - 1)) / 1000
       addIfInside(times, dose.at + offset, window)
     }
   }

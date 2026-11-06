@@ -156,6 +156,67 @@ test('sets a protocol, counts down to the next dose, and filters draws by peptid
   await expect(page.getByText(/· Semaglutide$/)).toHaveCount(0)
 })
 
+/** The pulse is infinite, so merely shortening it, as the app's global rule does, would strobe. */
+async function expectStillDotWithReducedMotion(page: Page) {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const pulse = await page
+    .locator('.level-backdrop__dot--live')
+    .first()
+    .evaluate((dot) => getComputedStyle(dot, '::after').animationName)
+  expect(pulse).toBe('none')
+}
+
+test('projects levels while setting a protocol, then draws them on its card', async ({ page }) => {
+  await page.goto('./')
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await expect(page.getByText('From your shelf')).toBeVisible()
+  await page.goto('./#/')
+  await expect(page.getByTestId('draw-headline')).toHaveText('15')
+  await page.locator('.v-select').first().click()
+  await page.getByRole('option', { name: /BPC-157/ }).click()
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await expect(page.getByText('From your shelf')).toBeVisible()
+
+  await page.goto('./#/protocols')
+  await page.getByRole('button', { name: 'Add a protocol' }).click()
+  const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
+  const panel = dialog.getByRole('region', { name: 'Projected levels' })
+  const pick = async (peptide: string) => {
+    await dialog.locator('.v-select').filter({ hasText: 'Peptide' }).click()
+    await page.getByRole('option', { name: peptide }).click()
+  }
+
+  // No human data: the form says why rather than drawing a curve.
+  await pick('BPC-157')
+  await expect(dialog.getByText('No human pharmacokinetic data', { exact: false })).toBeVisible()
+  await expect(panel).toBeHidden()
+
+  // The vial's usual dose is the user's own, so the projection reads in it.
+  await pick('Semaglutide')
+  await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
+  await page.getByRole('option', { name: 'Weekly' }).click()
+  await expect(panel.getByText('At 0.25 mg weekly.')).toBeVisible()
+  await expect(panel.getByRole('img', { name: /Projected levels\. Steady by/ })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
+
+  // Nothing has been drawn, so the card has no level to show.
+  await expect(page.locator('.level-backdrop')).toHaveCount(0)
+  await page.goto('./#/shelf')
+  await page
+    .getByRole('link', { name: /Semaglutide/ })
+    .first()
+    .click()
+  await page.getByRole('button', { name: 'Log a draw' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Log draw' }).click()
+  await expect(page.getByRole('dialog')).toBeHidden()
+  await page.goto('./#/protocols')
+  await expect(page.locator('.level-backdrop svg')).toBeVisible()
+  await expect(page.getByText(/^Est\. .+ now · Steady by /)).toBeVisible()
+  await expectStillDotWithReducedMotion(page)
+})
+
 test('overlays the levels of several peptides on one chart', async ({ page }) => {
   await page.goto('./')
   await acceptDisclaimer(page)
@@ -370,6 +431,41 @@ test('the top bar scrolls away when reading and returns on scrolling up', async 
     .first()
     .click({ position: { x: 4, y: 200 } })
   await expect(bar).not.toHaveClass(/pc-app-bar--hidden/)
+})
+
+test('in a browser, Take a photo opens the file chooser from the tap itself', async ({ page }) => {
+  await page.goto('./#/journal')
+  await acceptDisclaimer(page)
+  const chooser = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Take a photo' }).click()
+  await chooser
+  await expect(page.getByText('Allow the camera')).toBeHidden()
+})
+
+test('a hidden top bar leaves only blank glass behind the status bar', async ({ page }) => {
+  await page.goto('./#/settings')
+  await acceptDisclaimer(page)
+  // What Capacitor sets on a phone that draws edge to edge, such as a Pixel 10 Pro.
+  const inset = 52
+  await page.evaluate((px) => {
+    document.documentElement.style.setProperty('--safe-area-inset-top', `${px}px`)
+  }, inset)
+  const bar = page.locator('.v-app-bar')
+  const row = bar.locator('.v-toolbar__content')
+  await expect(row).toHaveCSS('opacity', '1')
+  await scrollInSteps(page, 150, 4)
+  await expect(bar).toHaveClass(/pc-app-bar--hidden/)
+  await expect(row).toHaveCSS('opacity', '0')
+  await expect(row).toHaveCSS('pointer-events', 'none')
+  await expect
+    .poll(async () => {
+      const box = await bar.boundingBox()
+      return box ? Math.round(box.y + box.height) : null
+    })
+    .toBe(inset)
+
+  await scrollInSteps(page, -80, 1)
+  await expect(row).toHaveCSS('opacity', '1')
 })
 
 /*

@@ -99,6 +99,19 @@
     box-shadow: none;
   }
 
+  /*
+   * The strip left on screen is the bottom of the bar, which is the row holding the logo, so the
+   * row fades or it would sit behind the clock. A tap on the strip lands on the bar and reveals it.
+   */
+  .v-app-bar.v-toolbar .v-toolbar__content {
+    transition: opacity var(--pc-dur-base) var(--pc-ease-standard);
+  }
+
+  .v-app-bar.v-toolbar.pc-app-bar--hidden .v-toolbar__content {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .v-bottom-navigation {
     border-top: 1px solid var(--pc-glass-edge);
     box-shadow: var(--pc-glass-sheen);

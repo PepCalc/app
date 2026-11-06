@@ -7,6 +7,7 @@ import { vialBalance, type VialBalance } from '@/domain/inventory'
 import { findPeptide, syringeCatalog } from '@/data'
 import { sortByTime, vialNumbers } from '@/domain/listing'
 import {
+  dosesFromVials,
   groupLevelsByPeptide,
   levelKey,
   pooledDoses,
@@ -117,6 +118,11 @@ export const useShelfStore = defineStore('shelf', () => {
     return pooledDoses(levelVials.value, levelDraws.value, levelKey(vial), unit)
   }
 
+  /** Doses from exactly these vials, in `unit`: a protocol's vials can span level groups. */
+  function dosesOf(vialIds: ReadonlySet<string>, unit: AmountUnit) {
+    return dosesFromVials(levelDraws.value, vialIds, unit).doses
+  }
+
   const timedDraws = computed(() => draws.value.map((d) => ({ ...d, at: toEpochMs(d.takenAt) })))
 
   function startingDoseFor(vial: VialRow): StartingDose<DrawRow & { at: number }> | null {
@@ -184,6 +190,7 @@ export const useShelfStore = defineStore('shelf', () => {
     vials,
     draws,
     loaded,
+    byLastUsed,
     activeVials,
     archivedVials,
     load,
@@ -193,6 +200,7 @@ export const useShelfStore = defineStore('shelf', () => {
     drawsFor,
     balanceOf,
     pkFor,
+    dosesOf,
     levelGroups,
     pooledDosesFor,
     drawDefaultsFor,
