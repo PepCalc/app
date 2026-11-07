@@ -35,8 +35,6 @@ export interface DrawCardContent {
   components: string[]
   /** Short warnings about this draw: more than the vial holds, or the syringe cannot measure it. */
   warnings: string[]
-  /** "4.5 units (5% off)" when the reading falls between marks; null when it is on one. */
-  nearestMark: string | null
   /** When the card was made, formatted for the device's locale. */
   madeAt: string
 }
@@ -186,15 +184,11 @@ export async function renderDrawCard(content: DrawCardContent): Promise<Blob> {
     inner + 12,
   )
 
-  // Below the syringe, most important first, in the room above the footer: warnings, the
-  // nearest mark when the reading falls between marks, a blend's contents, and the reminder to
-  // check the label. Each is ellipsised rather than cut silently.
+  // Below the syringe, most important first, in the room above the footer: warnings, a blend's
+  // contents, and the reminder to check the label. Each is ellipsised rather than cut silently.
   y += syringeH + 46
   const blocks: { text: string; weight: number; colour: string }[] = [
     ...content.warnings.map((text) => ({ text, weight: 600, colour: t['notice-fg'] })),
-    ...(content.nearestMark
-      ? [{ text: `Nearest mark: ${content.nearestMark}`, weight: 600, colour: t['text-2'] }]
-      : []),
     ...(content.components.length
       ? [
           {

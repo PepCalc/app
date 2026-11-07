@@ -9,7 +9,6 @@ describe('syringe readings', () => {
     const r = readSyringe(0.1, u100)
     expect(r.scaleValue).toBeCloseTo(10, 9)
     expect(r.scaleUnit).toBe('units')
-    expect(r.nearestTickValue).toBe(10)
     expect(r.fits).toBe(true)
     expect(r.belowResolution).toBe(false)
   })
@@ -26,7 +25,6 @@ describe('syringe readings', () => {
 
   it('rounds to the nearest unit mark on a 1 mL U-100 syringe and reports the error', () => {
     const r = readSyringe(0.125, u100)
-    expect(r.nearestTickValue).toBe(13)
     expect(r.tickRoundingError).toBeCloseTo(0.04, 6)
   })
 

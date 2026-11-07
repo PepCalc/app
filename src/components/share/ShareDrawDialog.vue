@@ -61,10 +61,6 @@ const figures = computed<Omit<DrawCardContent, 'madeAt'>>(() => {
           ? ['Too small to measure on this syringe.']
           : []),
     ],
-    nearestMark:
-      r.fits && !r.belowResolution && r.tickRoundingError > 0.001
-        ? `${r.nearestTickValue} ${r.scaleUnit} (${Math.round(r.tickRoundingError * 100)}% off)`
-        : null,
   }
 })
 

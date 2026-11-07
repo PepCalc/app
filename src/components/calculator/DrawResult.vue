@@ -97,13 +97,6 @@ const syringeItems = syringeCatalog.syringes.map((s) => ({ title: s.label, value
           <dt class="pc-faint">Doses per vial</dt>
           <dd class="pc-num">{{ plan.dosesPerVial }}</dd>
         </div>
-        <div v-if="reading.fits && reading.tickRoundingError > 0.001">
-          <dt class="pc-faint">Nearest mark</dt>
-          <dd class="pc-num">
-            {{ reading.nearestTickValue }} {{ reading.scaleUnit }}
-            <span class="pc-faint">({{ Math.round(reading.tickRoundingError * 100) }}% off)</span>
-          </dd>
-        </div>
       </dl>
 
       <div v-if="componentDoses.length" class="pc-inset pa-3">

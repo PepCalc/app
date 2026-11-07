@@ -67,7 +67,6 @@ function tagsFor(o: DiluentOption) {
     )
   }
   if (!o.fitsVial) tags.push({ text: 'Needs a larger vial', tone: 'notice' })
-  if (o.marks === 'between') tags.push({ text: 'Between marks', tone: 'notice' })
   return tags
 }
 

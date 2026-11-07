@@ -24,8 +24,6 @@ export interface SyringeReading {
   /** The reading in the syringe's own scale: units for insulin syringes, mL for luer. */
   scaleValue: number
   scaleUnit: 'units' | 'mL'
-  /** Nearest tick mark at or below capacity, in the syringe's scale. */
-  nearestTickValue: number
   /** Relative error of drawing to the nearest tick instead of the exact volume. */
   tickRoundingError: number
   fits: boolean
@@ -56,7 +54,6 @@ export function readSyringe(volumeMl: number, syringe: SyringeSpec): SyringeRead
     volumeMl,
     scaleValue,
     scaleUnit: scaleUnit(syringe),
-    nearestTickValue: Number(nearestTickValue.toFixed(6)),
     tickRoundingError,
     fits: volumeMl <= syringe.capacityMl + 1e-9,
     belowResolution: volumeMl < syringe.tickMl - 1e-9,
