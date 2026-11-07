@@ -10,6 +10,12 @@ import {
 } from '@/domain/glucose'
 import { formatPercentChange, formatWeight, formatWeightChange, fromKg } from '@/domain/bodyUnits'
 import { roundTo } from '@/domain/units'
+import {
+  formatBloodPressure,
+  formatBloodPressureChange,
+  formatHeartRate,
+  formatHeartRateChange,
+} from '@/domain/vitals'
 import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
 import { valueAt } from '@/domain/photos'
@@ -28,9 +34,10 @@ import ShareImageDialog from './ShareImageDialog.vue'
 import type { ShareCardContent } from './shareCard'
 
 /**
- * Share a trend (weight, BMI, HbA1c or glucose) as an image for friends. Numbers are off by
- * default: weight then shows as percent change and the other measures as change only, with no
- * axis values, so a card can be shared without revealing a weight or a lab result.
+ * Share a trend (weight, BMI, HbA1c, glucose, blood pressure or heart rate) as an image.
+ * Numbers are off by default: weight then shows as percent change and the other measures as
+ * change only, with no axis values, so a card can be shared without revealing a weight or a
+ * lab result.
  *
  * Dose rows and estimated levels can go under the line, for the first SHARE_PEPTIDES peptides
  * picked in the app; both are off by default. Names are off too, since several of these
@@ -38,7 +45,7 @@ import type { ShareCardContent } from './shareCard'
  * numbers choice: in the peptide's unit beside values, as percent of peak beside a change only.
  */
 const props = defineProps<{
-  measure: 'weight' | 'bmi' | 'a1c' | 'glucose'
+  measure: 'weight' | 'bmi' | 'a1c' | 'glucose' | 'bp' | 'hr'
   now: number
   /** Photos that can be pinned to the weight line (see TrendCard). */
   photos?: { id: string; at: number }[]
@@ -270,6 +277,80 @@ function glucoseCard(): ShareCardContent | null {
   )
 }
 
+function bpCard(): ShareCardContent | null {
+  const readings = byTime(
+    journal.vitals.flatMap((v) =>
+      v.kind === 'bp'
+        ? [{ at: toEpochMs(v.measuredAt), systolic: v.systolic, diastolic: v.diastolic }]
+        : [],
+    ),
+  )
+  const first = readings[0]
+  const last = readings[readings.length - 1]
+  if (!first || !last) return null
+  const stats: [string, string][] = [['Since', formatDate(first.at)]]
+  if (showNumbers.value) stats.push(['Latest', formatBloodPressure(last.systolic, last.diastolic)])
+  stats.push(['Readings', String(readings.length)])
+  const change = formatBloodPressureChange(
+    last.systolic - first.systolic,
+    last.diastolic - first.diastolic,
+  )
+  return card(
+    'Blood pressure',
+    // A single reading has no change to show, so with numbers off the title names the measure.
+    readings.length > 1
+      ? change
+      : showNumbers.value
+        ? formatBloodPressure(last.systolic, last.diastolic)
+        : 'Blood pressure',
+    stats,
+    {
+      points: readings.map((r) => ({ at: r.at, value: r.systolic })),
+      secondary: {
+        name: 'Diastolic',
+        joined: true,
+        points: readings.map((r) => ({ at: r.at, value: r.diastolic })),
+      },
+      unitLabel: 'mmHg',
+      measure: 'Systolic',
+      decimals: 0,
+      guides: [],
+    },
+    'Blood pressure logged in PepCalc: systolic as a solid line, diastolic dashed.',
+  )
+}
+
+function hrCard(): ShareCardContent | null {
+  const readings = byTime(
+    journal.vitals.flatMap((v) =>
+      v.kind === 'hr' ? [{ at: toEpochMs(v.measuredAt), value: v.bpm }] : [],
+    ),
+  )
+  const first = readings[0]
+  const last = readings[readings.length - 1]
+  if (!first || !last) return null
+  const stats: [string, string][] = [['Since', formatDate(first.at)]]
+  if (showNumbers.value) stats.push(['Latest', formatHeartRate(last.value)])
+  stats.push(['Readings', String(readings.length)])
+  return card(
+    'Resting heart rate',
+    readings.length > 1
+      ? formatHeartRateChange(last.value - first.value)
+      : showNumbers.value
+        ? formatHeartRate(last.value)
+        : 'Heart rate',
+    stats,
+    {
+      points: readings,
+      unitLabel: 'bpm',
+      measure: 'Resting heart rate',
+      decimals: 0,
+      guides: [],
+    },
+    'Resting heart rate logged in PepCalc.',
+  )
+}
+
 const content = computed<ShareCardContent | null>(() => {
   if (!open.value) return null
   switch (props.measure) {
@@ -279,12 +360,23 @@ const content = computed<ShareCardContent | null>(() => {
       return a1cCard()
     case 'glucose':
       return glucoseCard()
+    case 'bp':
+      return bpCard()
+    case 'hr':
+      return hrCard()
     default:
       return weightCard()
   }
 })
 
-const NAMES = { weight: 'weight', bmi: 'bmi', a1c: 'hba1c', glucose: 'glucose' } as const
+const NAMES = {
+  weight: 'weight',
+  bmi: 'bmi',
+  a1c: 'hba1c',
+  glucose: 'glucose',
+  bp: 'blood-pressure',
+  hr: 'heart-rate',
+} as const
 </script>
 
 <template>

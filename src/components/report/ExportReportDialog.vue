@@ -32,6 +32,7 @@ const SECTIONS: Record<ReportSection, { title: string; detail: string }> = {
   levels: { title: 'Estimated levels', detail: 'Each peptide’s totals, level chart and sources' },
   weight: { title: 'Weight and BMI', detail: 'Change over the period, with charts' },
   sugar: { title: 'Blood sugar', detail: 'HbA1c and glucose charts and readings' },
+  vitals: { title: 'Blood pressure and heart rate', detail: 'Charts and readings' },
   symptoms: { title: 'Side effects', detail: 'How often, how strong, and when after a draw' },
   draws: { title: 'Draw log', detail: 'Every draw, with its notes' },
 }

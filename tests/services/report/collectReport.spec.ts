@@ -123,10 +123,35 @@ describe('collectReport sections', () => {
 
   it('offers only sections with something in the period', () => {
     const { sections: _, ...source } = sampleSource('30d')
-    const bare = availableSections({ ...source, weights: [], glucose: [], symptoms: [] })
+    const bare = availableSections({
+      ...source,
+      weights: [],
+      glucose: [],
+      vitals: [],
+      symptoms: [],
+    })
     expect([...bare].sort()).toEqual(['combined', 'draws', 'levels'])
     const empty = availableSections({ ...source, now: NOW + 400 * DAY })
     expect(empty.size).toBe(0)
+  })
+
+  it('charts systolic and diastolic, with the change in both', () => {
+    const vitals = only(['vitals']).vitals!
+    expect(vitals.stats).toContainEqual(['Latest blood pressure', '126/81 mmHg'])
+    expect(vitals.stats).toContainEqual(['Change', '−8/−5 mmHg'])
+    expect(vitals.bloodPressureChart!.series.map((s) => [s.label, s.style])).toEqual([
+      ['Systolic', 'line'],
+      ['Diastolic', 'dashed'],
+    ])
+    // One heart rate reading has no span to chart; it still prints in the table.
+    expect(vitals.heartRateChart).toBeNull()
+    expect(vitals.heartRate.rows).toEqual([[expect.any(String), '66 bpm', '', '']])
+    expect(only(['vitals']).title).toBe('Journal')
+    const combined = only(['combined', 'vitals']).combined!
+    expect(combined.panels.map((p) => p.title)).toEqual([
+      'Blood pressure (mmHg)',
+      'Resting heart rate (bpm)',
+    ])
   })
 
   it('reports weight change and BMI with its WHO band, in the chosen unit', () => {
@@ -179,8 +204,14 @@ describe('collectReport sections', () => {
     const combined = collectReport(sampleSource('90d')).combined!
     expect(combined.window).toEqual({ start: NOW - 90 * DAY, end: NOW })
     const titles = combined.panels.map((p) => p.title)
-    expect(titles.slice(0, 3)).toEqual(['Weight (kg)', 'HbA1c (%)', 'Glucose (mg/dL)'])
-    expect(titles.slice(3).sort()).toEqual([
+    expect(titles.slice(0, 5)).toEqual([
+      'Weight (kg)',
+      'HbA1c (%)',
+      'Glucose (mg/dL)',
+      'Blood pressure (mmHg)',
+      'Resting heart rate (bpm)',
+    ])
+    expect(titles.slice(5).sort()).toEqual([
       expect.stringMatching(/^Lab peptide .*, estimated \(mg\)$/),
       'Semaglutide, estimated (mg)',
     ])

@@ -4,6 +4,7 @@ import { BMI_SOURCE } from '@/domain/body'
 import { formatPercentChange, formatWeight, formatWeightChange } from '@/domain/bodyUnits'
 import { formatA1c, formatGlucose, GLUCOSE_CONTEXT_LABELS } from '@/domain/glucose'
 import { summarizeSymptoms } from '@/domain/symptoms'
+import { formatBloodPressure, formatHeartRate } from '@/domain/vitals'
 import { roundTo } from '@/domain/units'
 import { useJournalStore } from '@/stores/journal'
 import { useSettingsStore } from '@/stores/settings'
@@ -11,7 +12,13 @@ import { useShelfStore } from '@/stores/shelf'
 import { useNow } from '@/composables/useNow'
 import { useBodyMetrics } from '@/composables/useBodyMetrics'
 import { formatDate, formatDateTime, toEpochMs } from '@/services/time'
-import { mdiFilePdfBox, mdiScaleBathroom, mdiStethoscope, mdiWaterOutline } from '@/plugins/icons'
+import {
+  mdiFilePdfBox,
+  mdiHeartPulse,
+  mdiScaleBathroom,
+  mdiStethoscope,
+  mdiWaterOutline,
+} from '@/plugins/icons'
 import SourceList from '@/components/common/SourceList.vue'
 import TrendCard from '@/components/charts/TrendCard.vue'
 import PhotosCard from '@/components/photos/PhotosCard.vue'
@@ -20,10 +27,11 @@ import JournalEntries from '@/components/journal/JournalEntries.vue'
 import LogWeightDialog from '@/components/journal/LogWeightDialog.vue'
 import LogSymptomDialog from '@/components/journal/LogSymptomDialog.vue'
 import LogGlucoseDialog from '@/components/journal/LogGlucoseDialog.vue'
+import LogVitalsDialog from '@/components/journal/LogVitalsDialog.vue'
 import ExportReportDialog from '@/components/report/ExportReportDialog.vue'
 
 /**
- * The journal: body measurements, blood sugar, side effects and progress photos, beside the
+ * The journal: body measurements, blood sugar, vitals, side effects and progress photos, beside the
  * shelf's draws. Logging sits at the top; trends, photos and the full list of entries below.
  */
 const journal = useJournalStore()
@@ -36,6 +44,7 @@ const weightDialog = ref(false)
 const exporting = ref(false)
 const symptomDialog = ref(false)
 const glucoseDialog = ref(false)
+const vitalsDialog = ref(false)
 
 const latest = computed(() => journal.latestWeight)
 const change = computed(() => journal.change)
@@ -44,6 +53,9 @@ const hasChange = computed(() => journal.weights.length > 1 && change.value !== 
 
 const latestA1c = computed(() => journal.glucose.find((g) => g.kind === 'a1c'))
 const latestGlucose = computed(() => journal.glucose.find((g) => g.kind === 'glucose'))
+
+const latestBp = computed(() => journal.vitals.find((v) => v.kind === 'bp'))
+const latestHr = computed(() => journal.vitals.find((v) => v.kind === 'hr'))
 
 /** The last week of side effects, most frequent first. */
 const RECENT_DAYS = 7
@@ -55,7 +67,9 @@ const recentSymptoms = computed(() =>
   ),
 )
 
-const hasTrend = computed(() => journal.weights.length > 0 || journal.glucose.length > 0)
+const hasTrend = computed(
+  () => journal.weights.length > 0 || journal.glucose.length > 0 || journal.vitals.length > 0,
+)
 const hasAnything = computed(
   () => hasTrend.value || journal.symptoms.length > 0 || shelf.draws.length > 0,
 )
@@ -162,6 +176,40 @@ const hasAnything = computed(
 
       <v-card>
         <v-card-item>
+          <p class="pc-eyebrow">Vitals</p>
+          <v-card-title>
+            <span v-if="latestBp?.kind === 'bp'" class="pc-num">{{
+              formatBloodPressure(latestBp.systolic, latestBp.diastolic)
+            }}</span>
+            <span v-else-if="latestHr?.kind === 'hr'" class="pc-num">{{
+              formatHeartRate(latestHr.bpm)
+            }}</span>
+            <span v-else>No readings yet</span>
+          </v-card-title>
+          <v-card-subtitle v-if="latestBp ?? latestHr">{{
+            formatDateTime((latestBp ?? latestHr)!.measuredAt)
+          }}</v-card-subtitle>
+        </v-card-item>
+        <v-card-text class="pc-stack">
+          <dl v-if="latestBp && latestHr?.kind === 'hr'" class="stats">
+            <div>
+              <dt class="pc-faint">Resting heart rate</dt>
+              <dd class="pc-num">{{ formatHeartRate(latestHr.bpm) }}</dd>
+            </div>
+          </dl>
+          <p v-else-if="!latestBp && !latestHr" class="pc-muted">
+            Log blood pressure and resting heart rate.
+          </p>
+          <div class="pc-actions">
+            <v-btn variant="tonal" :prepend-icon="mdiHeartPulse" @click="vitalsDialog = true">
+              Log vitals
+            </v-btn>
+          </div>
+        </v-card-text>
+      </v-card>
+
+      <v-card>
+        <v-card-item>
           <p class="pc-eyebrow">Side effects</p>
           <v-card-title>Last {{ RECENT_DAYS }} days</v-card-title>
         </v-card-item>
@@ -210,6 +258,7 @@ const hasAnything = computed(
     <LogWeightDialog v-model="weightDialog" :weight="null" />
     <LogSymptomDialog v-model="symptomDialog" :symptom="null" />
     <LogGlucoseDialog v-model="glucoseDialog" :reading="null" />
+    <LogVitalsDialog v-model="vitalsDialog" :reading="null" />
   </div>
 </template>
 

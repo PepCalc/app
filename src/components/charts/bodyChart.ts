@@ -31,8 +31,11 @@ interface BodyPoint {
 
 export interface BodyChartInput {
   points: BodyPoint[]
-  /** Readings drawn as unjoined hollow points (glucose at other times of day). */
-  secondary?: { name: string; points: BodyPoint[] }
+  /**
+   * A second set of readings. Unjoined hollow points by default (glucose at other times of
+   * day); `joined` draws a dashed line with hollow points instead (diastolic blood pressure).
+   */
+  secondary?: { name: string; points: BodyPoint[]; joined?: boolean }
   unitLabel: string
   /** "Weight", "BMI", "HbA1c": names the line and the table column. */
   measure: string
@@ -158,6 +161,7 @@ function measureOption(
 ): BodyChartOption {
   const fmt = (v: number) => `${roundTo(v, props.decimals)} ${props.unitLabel}`.trim()
   const extra = props.secondary?.points ?? []
+  const joined = !!props.secondary?.joined
   const values = [...props.points, ...extra].map((p) => p.value)
   const all = [...values, ...props.guides.map((g) => g.value)]
   const min = Math.min(...all)
@@ -181,7 +185,8 @@ function measureOption(
           top: 0,
           left: 0,
           itemGap: 20,
-          itemWidth: 14,
+          // Wide enough to show a joined second line's dashes.
+          itemWidth: joined ? 28 : 14,
           itemHeight: 10,
           textStyle: { color: c.axis, fontFamily: c.font, fontSize: 11 },
           data: [props.measure, props.secondary!.name],
@@ -189,7 +194,7 @@ function measureOption(
       : undefined,
     // Unjoined points have no axis position to snap to, so a chart with them reads per point.
     tooltip: {
-      trigger: extra.length ? 'item' : 'axis',
+      trigger: extra.length && !joined ? 'item' : 'axis',
       backgroundColor: c.surface,
       borderColor: c.grid,
       textStyle: { color: c.text, fontFamily: c.font },
@@ -242,18 +247,36 @@ function measureOption(
             }
           : undefined,
       },
-      ...(extra.length
+      ...(extra.length && joined
         ? [
             {
               name: props.secondary!.name,
-              type: 'scatter' as const,
+              type: 'line' as const,
               symbol: 'emptyCircle',
-              symbolSize: 8,
+              showSymbol: extra.length < 40,
+              symbolSize: 6,
+              lineStyle: {
+                width: 2,
+                color: c.preview,
+                type: 'dashed' as const,
+                cap: 'round' as const,
+              },
               itemStyle: { color: c.preview, borderWidth: 2 },
               data: extra.map((p) => [p.at, p.value]),
             },
           ]
-        : []),
+        : extra.length
+          ? [
+              {
+                name: props.secondary!.name,
+                type: 'scatter' as const,
+                symbol: 'emptyCircle',
+                symbolSize: 8,
+                itemStyle: { color: c.preview, borderWidth: 2 },
+                data: extra.map((p) => [p.at, p.value]),
+              },
+            ]
+          : []),
       // The pin's tip, at the bottom centre of its image, sits on the line.
       ...(props.photos?.length
         ? [

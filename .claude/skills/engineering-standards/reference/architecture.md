@@ -37,7 +37,10 @@ per-visit; anything that must survive a reload goes into the database.
 
 ## Storage
 
-- IndexedDB via Dexie, database `pepcalc`. Tables: `vials`, `draws`, `settings` (key/value).
+- IndexedDB via Dexie, database `pepcalc`. Tables: `vials`, `draws`, `settings` (key/value);
+  the journal's `measurements`, `symptoms`, `glucose`, `photos`, `photoImages` and
+  `photoThumbs` (version 2); `protocols` (version 3); `vitals` (version 4: blood pressure and
+  resting heart rate, stored as typed in mmHg and bpm, with no unit setting).
 - Ids are `crypto.randomUUID()`; timestamps are UTC ISO strings.
 - Deleting a vial deletes its draws in the same transaction. Archiving keeps both.
 - `navigator.storage.persist()` is requested on launch (Settings shows the result). Safari may
@@ -73,7 +76,7 @@ third-party code handles the user's data, and the output is easy to audit.
 | `report/printPalette.ts`  | Light-theme colours for paper, tested against `tokens.css`                    |
 
 The reader picks the period and the sections: combined chart, estimated levels, weight and
-BMI, blood sugar, side effects, draw log. Sections with nothing in the period are offered but
+BMI, blood sugar, blood pressure and heart rate, side effects, draw log. Sections with nothing in the period are offered but
 disabled. The combined chart stacks the other chosen sections on one time axis (separate
 panels, never a second value axis), so a section left out is left out of the whole file.
 

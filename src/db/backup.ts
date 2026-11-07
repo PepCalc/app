@@ -10,11 +10,13 @@ import type {
   SettingRow,
   SymptomRow,
   VialRow,
+  VitalRow,
 } from './database'
 import { isValidMeasurement } from '@/domain/body'
 import { A1C_UNITS, GLUCOSE_CONTEXTS, GLUCOSE_UNITS } from '@/domain/glucose'
 import { PHOTO_POSES } from '@/domain/photos'
 import { SEVERITIES, SYMPTOMS } from '@/domain/symptoms'
+import { isValidBloodPressure, isValidHeartRate } from '@/domain/vitals'
 import { AMOUNT_UNITS, areCompatible, type AmountUnit } from '@/domain/units'
 import { nowIso, systemClock, type Clock } from '@/services/time'
 
@@ -27,11 +29,11 @@ import { nowIso, systemClock, type Clock } from '@/services/time'
 const BACKUP_FORMAT = 'pepcalc-backup'
 /*
  * 2 linked blend components to the catalog; 3 added the journal (measurements, side effects,
- * blood sugar, photos); 4 added protocols. An older file restores with what it predates empty;
+ * blood sugar, photos); 4 added protocols; 5 added blood pressure and heart rate. An older file restores with what it predates empty;
  * an app that only knows an older version refuses a newer file rather than dropping what it
  * cannot read.
  */
-const BACKUP_VERSION = 4
+const BACKUP_VERSION = 5
 
 /** The data's name inside a zip backup; photos sit beside it as `photos/<id>.jpg`. */
 const ARCHIVE_DATA = 'pepcalc-backup.json'
@@ -54,6 +56,7 @@ export interface BackupFile {
   measurements: MeasurementRow[]
   symptoms: SymptomRow[]
   glucose: GlucoseRow[]
+  vitals: VitalRow[]
   /** Photo details; the JPEGs travel beside them in a zip backup. */
   photos: PhotoRow[]
   settings: SettingRow[]
@@ -79,7 +82,7 @@ export async function exportBackup(
   clock: Clock = systemClock,
   withPhotos = false,
 ): Promise<BackupFile> {
-  const [vials, draws, protocols, measurements, symptoms, glucose, photos, settings] =
+  const [vials, draws, protocols, measurements, symptoms, glucose, vitals, photos, settings] =
     await Promise.all([
       db.vials.toArray(),
       db.draws.toArray(),
@@ -87,6 +90,7 @@ export async function exportBackup(
       db.measurements.toArray(),
       db.symptoms.toArray(),
       db.glucose.toArray(),
+      db.vitals.toArray(),
       withPhotos ? db.photos.toArray() : [],
       db.settings.toArray(),
     ])
@@ -100,6 +104,7 @@ export async function exportBackup(
     measurements,
     symptoms,
     glucose,
+    vitals,
     photos,
     settings,
   }
@@ -268,6 +273,23 @@ function checkGlucose(g: unknown, i: number): asserts g is GlucoseRow {
     )
 }
 
+function checkVital(v: unknown, i: number): asserts v is VitalRow {
+  const ok =
+    isRecord(v) &&
+    typeof v.id === 'string' &&
+    isIso(v.measuredAt) &&
+    typeof v.notes === 'string' &&
+    ((v.kind === 'bp' &&
+      typeof v.systolic === 'number' &&
+      typeof v.diastolic === 'number' &&
+      isValidBloodPressure(v.systolic, v.diastolic)) ||
+      (v.kind === 'hr' && typeof v.bpm === 'number' && isValidHeartRate(v.bpm)))
+  if (!ok)
+    throw new BackupFormatError(
+      `Vitals reading ${i + 1} is missing required fields or has invalid values.`,
+    )
+}
+
 function checkPhoto(p: unknown, i: number): asserts p is PhotoRow {
   const ok =
     isRecord(p) &&
@@ -314,6 +336,8 @@ export function parseBackup(text: string): BackupFile {
   const photos = journal ? data.photos : []
   // Files before version 4 predate protocols.
   const protocols = data.version >= 4 ? data.protocols : []
+  // Files before version 5 predate vitals.
+  const vitals = data.version >= 5 ? data.vitals : []
   if (
     !Array.isArray(vials) ||
     !Array.isArray(draws) ||
@@ -321,6 +345,7 @@ export function parseBackup(text: string): BackupFile {
     !Array.isArray(measurements) ||
     !Array.isArray(symptoms) ||
     !Array.isArray(glucose) ||
+    !Array.isArray(vitals) ||
     !Array.isArray(photos) ||
     !Array.isArray(settings)
   ) {
@@ -334,6 +359,7 @@ export function parseBackup(text: string): BackupFile {
   measurements.forEach(checkMeasurement)
   symptoms.forEach(checkSymptom)
   glucose.forEach(checkGlucose)
+  vitals.forEach(checkVital)
   photos.forEach(checkPhoto)
   const validSettings = settings.filter(
     (s): s is SettingRow => isRecord(s) && typeof s.key === 'string',
@@ -348,6 +374,7 @@ export function parseBackup(text: string): BackupFile {
     measurements: measurements as MeasurementRow[],
     symptoms: symptoms as SymptomRow[],
     glucose: glucose as GlucoseRow[],
+    vitals: vitals as VitalRow[],
     photos: photos as PhotoRow[],
     settings: validSettings,
   }
@@ -429,6 +456,7 @@ export async function restoreBackup(
     await db.measurements.bulkAdd(backup.measurements)
     await db.symptoms.bulkAdd(backup.symptoms)
     await db.glucose.bulkAdd(backup.glucose)
+    await db.vitals.bulkAdd(backup.vitals)
     await db.photos.bulkAdd(backup.photos)
     await db.photoImages.bulkAdd(photoFiles.map((f) => ({ id: f.id, bytes: f.image })))
     await db.photoThumbs.bulkAdd(photoFiles.map((f) => ({ id: f.id, bytes: f.thumb })))

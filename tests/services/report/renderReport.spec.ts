@@ -40,6 +40,9 @@ describe('renderReport', () => {
       '(Blood sugar)',
       '(HbA1c)',
       '(Blood glucose)',
+      '(Blood pressure and heart rate)',
+      '(126/81 mmHg)',
+      '(66 bpm)',
       '(Side effects)',
       '(Events)',
     ]) {

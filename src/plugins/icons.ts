@@ -18,6 +18,7 @@ export {
   mdiFilePdfBox,
   mdiCalendarClockOutline,
   mdiFilterVariant,
+  mdiHeartPulse,
   mdiPencilOutline,
   mdiPlus,
   mdiShieldLockOutline,

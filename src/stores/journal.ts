@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { repository } from '@/db'
-import type { GlucoseRow, MeasurementRow, SymptomRow } from '@/db/database'
-import type { NewGlucose, NewMeasurement, NewSymptom } from '@/db/repository'
+import type { GlucoseRow, MeasurementRow, SymptomRow, VitalRow } from '@/db/database'
+import type { NewGlucose, NewMeasurement, NewSymptom, NewVital } from '@/db/repository'
 import { weightChange, type BodyMetric, type WeightChange } from '@/domain/body'
 import type { WeightUnit } from '@/domain/bodyUnits'
 import { toEpochMs } from '@/services/time'
@@ -36,7 +36,7 @@ const toMeasurement = (w: Partial<NewWeight>): Partial<NewMeasurement> => ({
 })
 
 /**
- * The journal: body measurements, side effects and blood sugar. Photos have their own store, as
+ * The journal: body measurements, side effects, blood sugar and vitals. Photos have their own store, as
  * their thumbnails are object URLs. The whole dataset is small enough to hold in memory, so the
  * store loads everything once and reloads after each write.
  */
@@ -47,17 +47,21 @@ export const useJournalStore = defineStore('journal', () => {
   const symptoms = ref<SymptomRow[]>([])
   /** HbA1c results and glucose readings, newest first. */
   const glucose = ref<GlucoseRow[]>([])
+  /** Blood pressure and resting heart rate readings, newest first. */
+  const vitals = ref<VitalRow[]>([])
   const loaded = ref(false)
 
   async function load() {
-    const [m, s, g] = await Promise.all([
+    const [m, s, g, v] = await Promise.all([
       repository.listMeasurements(),
       repository.listSymptoms(),
       repository.listGlucose(),
+      repository.listVitals(),
     ])
     measurements.value = m
     symptoms.value = s
     glucose.value = g
+    vitals.value = v
     loaded.value = true
   }
 
@@ -125,10 +129,27 @@ export const useJournalStore = defineStore('journal', () => {
     await load()
   }
 
+  async function addVital(input: NewVital): Promise<VitalRow> {
+    const row = await repository.addVital(input)
+    await load()
+    return row
+  }
+
+  async function updateVital(id: string, changes: NewVital) {
+    await repository.updateVital(id, changes)
+    await load()
+  }
+
+  async function deleteVital(id: string) {
+    await repository.deleteVital(id)
+    await load()
+  }
+
   return {
     measurements,
     symptoms,
     glucose,
+    vitals,
     loaded,
     weights,
     latestWeight,
@@ -144,5 +165,8 @@ export const useJournalStore = defineStore('journal', () => {
     addGlucose,
     updateGlucose,
     deleteGlucose,
+    addVital,
+    updateVital,
+    deleteVital,
   }
 })

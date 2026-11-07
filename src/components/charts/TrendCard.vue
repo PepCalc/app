@@ -35,13 +35,14 @@ import BodyChart from './BodyChart.vue'
 import ShareTrendDialog from '@/components/share/ShareTrendDialog.vue'
 
 /**
- * Every body measure over time in one card: weight, BMI, HbA1c and glucose. Glucose draws
- * fasting readings as the line and readings from other times of day as separate points, since
- * they are not comparable with each other. Whatever is shown can be shared as an image.
+ * Every body measure over time in one card: weight, BMI, HbA1c, glucose, blood pressure and
+ * resting heart rate. Glucose draws fasting readings as the line and readings from other times
+ * of day as separate points, since they are not comparable with each other. Blood pressure
+ * draws systolic as the line and diastolic as a dashed line below it. Whatever is shown can be shared as an image.
  * Progress photos can be pinned to the weight line, at the date each was taken. Doses show as
  * one row per peptide under the measure, and estimated levels in a strip below that.
  */
-type TrendMeasure = 'weight' | 'bmi' | 'a1c' | 'glucose'
+type TrendMeasure = 'weight' | 'bmi' | 'a1c' | 'glucose' | 'bp' | 'hr'
 
 const props = defineProps<{ now: number }>()
 
@@ -53,6 +54,8 @@ const shareOpen = ref(false)
 
 const a1c = computed(() => journal.glucose.filter((g) => g.kind === 'a1c'))
 const glucose = computed(() => journal.glucose.filter((g) => g.kind === 'glucose'))
+const pressure = computed(() => journal.vitals.flatMap((v) => (v.kind === 'bp' ? [v] : [])))
+const heartRate = computed(() => journal.vitals.flatMap((v) => (v.kind === 'hr' ? [v] : [])))
 
 const MEASURES = computed(() =>
   (
@@ -61,6 +64,8 @@ const MEASURES = computed(() =>
       { value: 'bmi', label: 'BMI', on: body.bmiSeries.value.length > 0 },
       { value: 'a1c', label: 'HbA1c', on: a1c.value.length > 0 },
       { value: 'glucose', label: 'Glucose', on: glucose.value.length > 0 },
+      { value: 'bp', label: 'Blood pressure', on: pressure.value.length > 0 },
+      { value: 'hr', label: 'Heart rate', on: heartRate.value.length > 0 },
     ] as const
   ).filter((m) => m.on),
 )
@@ -80,6 +85,8 @@ const TITLES: Record<TrendMeasure, string> = {
   bmi: 'Body mass index',
   a1c: 'HbA1c',
   glucose: 'Glucose',
+  bp: 'Blood pressure',
+  hr: 'Resting heart rate',
 }
 
 /** Band edges near the user's own values, so the axis is not stretched to far-off lines. */
@@ -139,6 +146,31 @@ const chart = computed(() => {
         guides: [],
       }
     }
+    case 'bp': {
+      const at = (v: (typeof pressure.value)[number]) => toEpochMs(v.measuredAt)
+      return {
+        points: oldestFirst(pressure.value.map((v) => ({ at: at(v), value: v.systolic }))),
+        secondary: {
+          name: 'Diastolic',
+          joined: true,
+          points: oldestFirst(pressure.value.map((v) => ({ at: at(v), value: v.diastolic }))),
+        },
+        unitLabel: 'mmHg',
+        measure: 'Systolic',
+        decimals: 0,
+        guides: [],
+      }
+    }
+    case 'hr':
+      return {
+        points: oldestFirst(
+          heartRate.value.map((v) => ({ at: toEpochMs(v.measuredAt), value: v.bpm })),
+        ),
+        unitLabel: 'bpm',
+        measure: 'Resting heart rate',
+        decimals: 0,
+        guides: [],
+      }
     default: {
       return {
         points: oldestFirst(

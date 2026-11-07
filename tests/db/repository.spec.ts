@@ -339,6 +339,13 @@ describe('journal', () => {
       context: null,
       notes: '',
     })
+    await repo.addVital({
+      kind: 'bp',
+      measuredAt: '2026-09-30T08:00:00.000Z',
+      systolic: 131,
+      diastolic: 84,
+      notes: '',
+    })
     await repo.setSetting('profile', { heightCm: 170 })
     return repo
   }
@@ -381,10 +388,11 @@ describe('journal', () => {
   it('round-trips everything through a backup file', async () => {
     await seed()
     const parsed = parseBackup(JSON.stringify(await exportBackup(db, fixedClock)))
-    expect(parsed.version).toBe(4)
+    expect(parsed.version).toBe(5)
     expect(parsed.measurements).toHaveLength(1)
     expect(parsed.symptoms).toHaveLength(1)
     expect(parsed.glucose).toHaveLength(1)
+    expect(parsed.vitals).toHaveLength(1)
 
     const other = createDatabase(`test-${++counter}`)
     await other.open()
@@ -394,14 +402,46 @@ describe('journal', () => {
     expect((await restored.listMeasurements())[0]!.value).toBe(95.2)
     expect((await restored.listSymptoms())[0]!.symptom).toBe('nausea')
     expect((await restored.listGlucose())[0]!.value).toBe(7.4)
+    expect((await restored.listVitals())[0]).toMatchObject({ systolic: 131, diastolic: 84 })
     expect(await restored.getSetting('profile')).toMatchObject({ heightCm: 170 })
     await other.delete()
+  })
+
+  it('restores a version 4 backup, which predates vitals, with none', async () => {
+    await seed()
+    const { vitals: _v, ...rest } = await exportBackup(db, fixedClock)
+    const parsed = parseBackup(JSON.stringify({ ...rest, version: 4 }))
+    expect(parsed.vitals).toEqual([])
+    await restoreBackup(db, parsed)
+    expect(await createRepository(db).listVitals()).toEqual([])
+  })
+
+  it('lists vitals newest first, and an edit that changes kind leaves no stale numbers', async () => {
+    const repo = createRepository(db, fixedClock)
+    const bp = await repo.addVital({
+      kind: 'bp',
+      measuredAt: '2026-10-01T07:00:00.000Z',
+      systolic: 128,
+      diastolic: 82,
+      notes: '',
+    })
+    await repo.addVital({ kind: 'hr', measuredAt: '2026-10-03T07:00:00.000Z', bpm: 61, notes: '' })
+    expect((await repo.listVitals()).map((v) => v.kind)).toEqual(['hr', 'bp'])
+    await repo.updateVital(bp.id, { kind: 'hr', measuredAt: bp.measuredAt, bpm: 70, notes: '' })
+    expect((await repo.listVitals()).find((v) => v.id === bp.id)).toEqual({
+      id: bp.id,
+      kind: 'hr',
+      measuredAt: bp.measuredAt,
+      bpm: 70,
+      notes: '',
+      createdAt: bp.createdAt,
+    })
   })
 
   it('restores a version 2 backup, which predates the journal, and clears the journal', async () => {
     await seed()
     const current = await exportBackup(db, fixedClock)
-    const { measurements: _m, symptoms: _s, glucose: _g, photos: _p, ...rest } = current
+    const { measurements: _m, symptoms: _s, glucose: _g, vitals: _v, photos: _p, ...rest } = current
     const parsed = parseBackup(JSON.stringify({ ...rest, version: 2 }))
     expect(parsed.measurements).toEqual([])
     expect(parsed.photos).toEqual([])
@@ -429,6 +469,8 @@ describe('journal', () => {
     expect(() => parseBackup(JSON.stringify(badSymptom))).toThrow(/Side effect 1/)
     const badUnit = { ...backup, glucose: [{ ...backup.glucose[0]!, enteredUnit: 'mg/dL' }] }
     expect(() => parseBackup(JSON.stringify(badUnit))).toThrow(/Blood sugar reading 1/)
+    const flipped = { ...backup, vitals: [{ ...backup.vitals[0]!, systolic: 70, diastolic: 90 }] }
+    expect(() => parseBackup(JSON.stringify(flipped))).toThrow(/Vitals reading 1/)
     const incomplete = { ...backup, measurements: undefined }
     expect(() => parseBackup(JSON.stringify(incomplete))).toThrow(/incomplete/)
   })

@@ -28,9 +28,10 @@ use([
 ])
 
 /**
- * One measure over time (weight, BMI, HbA1c or glucose) with optional labelled reference lines.
- * A secondary set (glucose at other times of day) is drawn as unjoined hollow points, so
- * readings taken under different conditions are never joined into one line. Doses can show as
+ * One measure over time (weight, BMI, HbA1c, glucose, blood pressure or heart rate) with
+ * optional labelled reference lines. A secondary set is drawn as unjoined hollow points (glucose
+ * at other times of day, never joined into one line with fasting readings) or as a dashed line
+ * (diastolic beside systolic blood pressure). Doses can show as
  * one row per peptide under it, and estimated levels in a strip at the bottom, on the same dates.
  */
 const props = defineProps<BodyChartInput>()
@@ -56,6 +57,10 @@ const ariaSummary = computed(() => {
   if (!pts.length) return `${props.measure}: no entries yet.`
   const first = pts[0]!
   const last = pts[pts.length - 1]!
+  const second = props.secondary?.joined ? props.secondary.points : []
+  const secondary = second.length
+    ? ` ${props.secondary!.name} from ${fmt(second[0]!.value)} to ${fmt(second[second.length - 1]!.value)}.`
+    : ''
   const photos = props.photos?.length
     ? ` ${props.photos.length} progress photo${props.photos.length === 1 ? '' : 's'} pinned to the line.`
     : ''
@@ -76,7 +81,7 @@ const ariaSummary = computed(() => {
         )
         .join(', ')}.`
     : ''
-  return `${props.measure} from ${fmt(first.value)} to ${fmt(last.value)}, ${formatDateRange(first.at, last.at)}, ${pts.length} entries.${photos}${doses}${levels}`
+  return `${props.measure} from ${fmt(first.value)} to ${fmt(last.value)}, ${formatDateRange(first.at, last.at)}, ${pts.length} entries.${secondary}${photos}${doses}${levels}`
 })
 </script>
 

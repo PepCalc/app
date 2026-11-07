@@ -1,26 +1,28 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { GlucoseRow, SymptomRow } from '@/db/database'
+import type { GlucoseRow, SymptomRow, VitalRow } from '@/db/database'
 import { formatWeight } from '@/domain/bodyUnits'
 import { formatA1c, formatGlucose, GLUCOSE_CONTEXT_LABELS } from '@/domain/glucose'
 import { SEVERITY_LABELS, symptomName } from '@/domain/symptoms'
+import { formatBloodPressure, formatHeartRate } from '@/domain/vitals'
 import { sortByTime, type SortDirection } from '@/domain/listing'
 import { useJournalStore, type WeightEntry } from '@/stores/journal'
 import { useSettingsStore } from '@/stores/settings'
 import { usePaging } from '@/composables/usePaging'
 import { formatDateTime, toEpochMs } from '@/services/time'
-import { mdiScaleBathroom, mdiStethoscope, mdiWaterOutline } from '@/plugins/icons'
+import { mdiHeartPulse, mdiScaleBathroom, mdiStethoscope, mdiWaterOutline } from '@/plugins/icons'
 import ListPager from '@/components/common/ListPager.vue'
 import SortToggle from '@/components/common/SortToggle.vue'
 import LogWeightDialog from './LogWeightDialog.vue'
 import LogSymptomDialog from './LogSymptomDialog.vue'
 import LogGlucoseDialog from './LogGlucoseDialog.vue'
+import LogVitalsDialog from './LogVitalsDialog.vue'
 
 /** Every journal entry by kind, paged, newest or oldest first; tapping one opens it to edit. */
 const journal = useJournalStore()
 const settings = useSettingsStore()
 
-const tab = ref<'weights' | 'glucose' | 'symptoms'>('weights')
+const tab = ref<'weights' | 'glucose' | 'vitals' | 'symptoms'>('weights')
 const direction = ref<SortDirection>('desc')
 
 const weights = computed(() =>
@@ -32,14 +34,19 @@ const symptoms = computed(() =>
 const readings = computed(() =>
   sortByTime(journal.glucose, (g) => toEpochMs(g.measuredAt), direction.value),
 )
+const vitals = computed(() =>
+  sortByTime(journal.vitals, (v) => toEpochMs(v.measuredAt), direction.value),
+)
 
 const weightPages = usePaging(weights)
 const symptomPages = usePaging(symptoms)
 const readingPages = usePaging(readings)
+const vitalPages = usePaging(vitals)
 watch([direction, tab], () => {
   weightPages.reset()
   symptomPages.reset()
   readingPages.reset()
+  vitalPages.reset()
 })
 
 const weightDialog = ref(false)
@@ -64,6 +71,23 @@ function editReading(row: GlucoseRow) {
   glucoseDialog.value = true
 }
 
+const vitalsDialog = ref(false)
+const editingVital = ref<VitalRow | null>(null)
+
+function editVital(row: VitalRow) {
+  editingVital.value = row
+  vitalsDialog.value = true
+}
+
+function vitalTitle(v: VitalRow): string {
+  return v.kind === 'bp' ? formatBloodPressure(v.systolic, v.diastolic) : formatHeartRate(v.bpm)
+}
+
+function vitalSubtitle(v: VitalRow): string {
+  const when = formatDateTime(v.measuredAt)
+  return `${v.kind === 'bp' ? 'Blood pressure' : 'Resting heart rate'} · ${when}`
+}
+
 function readingTitle(g: GlucoseRow): string {
   return g.kind === 'a1c'
     ? `HbA1c ${formatA1c(g.value, settings.a1cUnit)}`
@@ -81,6 +105,7 @@ function readingSubtitle(g: GlucoseRow): string {
     <v-tabs v-model="tab" color="primary" show-arrows>
       <v-tab value="weights">Weights ({{ journal.weights.length }})</v-tab>
       <v-tab value="glucose">Blood sugar ({{ journal.glucose.length }})</v-tab>
+      <v-tab value="vitals">Vitals ({{ journal.vitals.length }})</v-tab>
       <v-tab value="symptoms">Side effects ({{ journal.symptoms.length }})</v-tab>
     </v-tabs>
     <v-card-text class="pc-stack">
@@ -128,6 +153,27 @@ function readingSubtitle(g: GlucoseRow): string {
         />
       </template>
 
+      <template v-else-if="tab === 'vitals'">
+        <p v-if="!journal.vitals.length" class="pc-muted">No vitals logged yet.</p>
+        <v-list v-else class="bg-transparent" density="comfortable">
+          <v-list-item
+            v-for="row in vitalPages.current.value.items"
+            :key="row.id"
+            :prepend-icon="mdiHeartPulse"
+            :subtitle="vitalSubtitle(row)"
+            @click="editVital(row)"
+          >
+            <v-list-item-title class="pc-num">{{ vitalTitle(row) }}</v-list-item-title>
+            <p v-if="row.notes" class="text-body-small pc-muted note">{{ row.notes }}</p>
+          </v-list-item>
+        </v-list>
+        <ListPager
+          v-model="vitalPages.state.page"
+          :current="vitalPages.current.value"
+          noun="readings"
+        />
+      </template>
+
       <template v-else>
         <p v-if="!journal.weights.length" class="pc-muted">No weigh-ins yet.</p>
         <v-list v-else class="bg-transparent" density="comfortable">
@@ -156,6 +202,7 @@ function readingSubtitle(g: GlucoseRow): string {
   <LogWeightDialog v-model="weightDialog" :weight="editingWeight" />
   <LogSymptomDialog v-model="symptomDialog" :symptom="editingSymptom" />
   <LogGlucoseDialog v-model="glucoseDialog" :reading="editingReading" />
+  <LogVitalsDialog v-model="vitalsDialog" :reading="editingVital" />
 </template>
 
 <style scoped>

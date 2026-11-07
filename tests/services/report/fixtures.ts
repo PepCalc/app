@@ -1,5 +1,5 @@
 import { findPeptide } from '@/data'
-import type { DrawRow, GlucoseRow, SymptomRow, VialRow } from '@/db/database'
+import type { DrawRow, GlucoseRow, SymptomRow, VialRow, VitalRow } from '@/db/database'
 import { groupLevelsByPeptide, type LevelVial } from '@/domain/levels'
 import type { ReportPeriod } from '@/domain/report'
 import type { ReportSource } from '@/services/report/collectReport'
@@ -153,7 +153,35 @@ export function sampleJournal() {
       createdAt: created,
     })),
   ]
-  return { weights, symptoms, glucose }
+  const vitals: VitalRow[] = [
+    {
+      id: 'bp1',
+      kind: 'bp',
+      systolic: 134,
+      diastolic: 86,
+      measuredAt: iso(NOW - 20 * DAY),
+      notes: '',
+      createdAt: created,
+    },
+    {
+      id: 'bp2',
+      kind: 'bp',
+      systolic: 126,
+      diastolic: 81,
+      measuredAt: iso(NOW - 4 * DAY),
+      notes: '',
+      createdAt: created,
+    },
+    {
+      id: 'hr1',
+      kind: 'hr',
+      bpm: 66,
+      measuredAt: iso(NOW - 4 * DAY),
+      notes: '',
+      createdAt: created,
+    },
+  ]
+  return { weights, symptoms, glucose, vitals }
 }
 
 export function sampleSource(period: ReportPeriod = '90d', locale = 'en-GB'): ReportSource {

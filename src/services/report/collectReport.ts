@@ -1,5 +1,5 @@
 import { findPeptide } from '@/data'
-import type { DrawRow, GlucoseRow, SymptomRow, VialRow } from '@/db/database'
+import type { DrawRow, GlucoseRow, SymptomRow, VialRow, VitalRow } from '@/db/database'
 import { bmi, bmiBand, BMI_BANDS, BMI_SOURCE } from '@/domain/body'
 import {
   formatPercentChange,
@@ -25,6 +25,12 @@ import { amountAt, rateConstants, simulate, summarizeLevels } from '@/domain/pk'
 import { periodStart, reportWindow, totalsByUnit, type ReportPeriod } from '@/domain/report'
 import { SEVERITIES, SEVERITY_LABELS, SYMPTOM_SOURCES, summarizeSymptoms } from '@/domain/symptoms'
 import { formatAmount, roundTo, unitLabel, type Quantity } from '@/domain/units'
+import {
+  formatBloodPressure,
+  formatBloodPressureChange,
+  formatHeartRate,
+  formatHeartRateChange,
+} from '@/domain/vitals'
 import { A4, LETTER, type PageSize } from '@/services/pdf/pageSize'
 import {
   formatAxisTick,
@@ -42,6 +48,7 @@ import type {
   ReportSection,
   ReportSugar,
   ReportTimelineRow,
+  ReportVitals,
   ReportWeight,
 } from './reportData'
 
@@ -55,6 +62,8 @@ export interface ReportSource {
   weights: readonly { measuredAt: string; kg: number }[]
   symptoms: readonly SymptomRow[]
   glucose: readonly GlucoseRow[]
+  /** Blood pressure and resting heart rate readings. */
+  vitals: readonly VitalRow[]
   units: { weight: WeightUnit; a1c: A1cUnit; glucose: GlucoseUnit }
   profile: { heightCm: number | null }
   /** The sections the reader chose; those with nothing in the period are left out. */
@@ -107,6 +116,14 @@ function inPeriod(source: Omit<ReportSource, 'sections'>) {
       source.glucose.filter((g) => g.kind === 'glucose'),
       (g) => g.measuredAt,
     ),
+    pressure: within(
+      source.vitals.flatMap((v) => (v.kind === 'bp' ? [v] : [])),
+      (v) => v.measuredAt,
+    ),
+    heartRate: within(
+      source.vitals.flatMap((v) => (v.kind === 'hr' ? [v] : [])),
+      (v) => v.measuredAt,
+    ),
   }
 }
 
@@ -128,12 +145,15 @@ export function availableSections(source: Omit<ReportSource, 'sections'>): Set<R
   if (rows.draws.length) out.add('levels').add('draws')
   if (rows.weights.length) out.add('weight')
   if (rows.a1c.length || rows.glucose.length) out.add('sugar')
+  if (rows.pressure.length || rows.heartRate.length) out.add('vitals')
   if (rows.symptoms.length) out.add('symptoms')
   if (
     rows.draws.length ||
     rows.weights.length ||
     rows.a1c.length ||
     rows.glucose.length ||
+    rows.pressure.length ||
+    rows.heartRate.length ||
     rows.symptoms.length
   )
     out.add('combined')
@@ -445,9 +465,136 @@ function collectSugar(source: Omit<ReportSource, 'sections'>, rows: Rows): Repor
   }
 }
 
+function vitalChart(
+  title: string,
+  window: ReportChart['window'],
+  unitLabel: string,
+  series: ReportChart['series'],
+): ReportChart {
+  return {
+    title,
+    window,
+    scale: 'fit',
+    unitLabel,
+    decimals: 0,
+    series,
+    markers: [],
+    guides: [],
+    now: null,
+  }
+}
+
+/** Systolic as the line and diastolic dashed beneath it, on one mmHg axis. */
+function bloodPressureChart(rows: Rows, window: ReportChart['window']): ReportChart {
+  const all = chronological(rows.pressure)
+  const at = (v: (typeof all)[number]) => toEpochMs(v.measuredAt)
+  return vitalChart('Blood pressure (mmHg)', window, 'mmHg', [
+    {
+      label: 'Systolic',
+      style: 'line',
+      tone: 'logged',
+      points: all.map((v) => ({ at: at(v), value: v.systolic })),
+    },
+    {
+      label: 'Diastolic',
+      style: 'dashed',
+      tone: 'preview',
+      points: all.map((v) => ({ at: at(v), value: v.diastolic })),
+    },
+  ])
+}
+
+function heartRateChart(rows: Rows, window: ReportChart['window']): ReportChart {
+  return vitalChart('Resting heart rate (bpm)', window, 'bpm', [
+    {
+      label: 'Resting heart rate',
+      style: 'line',
+      tone: 'logged',
+      points: chronological(rows.heartRate).map((v) => ({
+        at: toEpochMs(v.measuredAt),
+        value: v.bpm,
+      })),
+    },
+  ])
+}
+
+function collectVitals(rows: Rows): ReportVitals {
+  const { pressure, heartRate } = rows
+  const stats: [string, string][] = []
+  const [bpLatest, bpFirst] = [pressure[0], pressure[pressure.length - 1]]
+  if (bpLatest && bpFirst) {
+    stats.push([
+      'Latest blood pressure',
+      formatBloodPressure(bpLatest.systolic, bpLatest.diastolic),
+    ])
+    if (pressure.length > 1)
+      stats.push([
+        'Change',
+        formatBloodPressureChange(
+          bpLatest.systolic - bpFirst.systolic,
+          bpLatest.diastolic - bpFirst.diastolic,
+        ),
+      ])
+  }
+  const [hrLatest, hrFirst] = [heartRate[0], heartRate[heartRate.length - 1]]
+  if (hrLatest && hrFirst) {
+    stats.push(['Latest resting heart rate', formatHeartRate(hrLatest.bpm)])
+    if (heartRate.length > 1)
+      stats.push(['Change', formatHeartRateChange(hrLatest.bpm - hrFirst.bpm)])
+  }
+  const bpWindow = spanOf(pressure.map((v) => toEpochMs(v.measuredAt)))
+  const hrWindow = spanOf(heartRate.map((v) => toEpochMs(v.measuredAt)))
+  return {
+    stats,
+    bloodPressureChart: bpWindow ? bloodPressureChart(rows, bpWindow) : null,
+    heartRateChart: hrWindow ? heartRateChart(rows, hrWindow) : null,
+    bloodPressure: {
+      columns: [
+        { title: 'When', width: 0.26, align: 'left' },
+        { title: 'Blood pressure', width: 0.2, align: 'right' },
+        { title: 'Change', width: 0.18, align: 'right' },
+        { title: 'Notes', width: 0.36, align: 'left', muted: true },
+      ],
+      rows: pressure.map((v, i) => {
+        const previous = pressure[i + 1]
+        return [
+          formatDateTime(v.measuredAt),
+          formatBloodPressure(v.systolic, v.diastolic),
+          previous
+            ? formatBloodPressureChange(
+                v.systolic - previous.systolic,
+                v.diastolic - previous.diastolic,
+              )
+            : '',
+          v.notes,
+        ]
+      }),
+      empty: 'No blood pressure readings in this period.',
+    },
+    heartRate: {
+      columns: [
+        { title: 'When', width: 0.26, align: 'left' },
+        { title: 'Heart rate', width: 0.16, align: 'right' },
+        { title: 'Change', width: 0.16, align: 'right' },
+        { title: 'Notes', width: 0.42, align: 'left', muted: true },
+      ],
+      rows: heartRate.map((v, i) => {
+        const previous = heartRate[i + 1]
+        return [
+          formatDateTime(v.measuredAt),
+          formatHeartRate(v.bpm),
+          previous ? formatHeartRateChange(v.bpm - previous.bpm) : '',
+          v.notes,
+        ]
+      }),
+      empty: 'No resting heart rate readings in this period.',
+    },
+  }
+}
+
 /**
  * The other chosen sections on one time axis, as stacked panels rather than a second value
- * axis: weight, blood sugar, and each peptide's estimated level over the whole period
+ * axis: weight, blood sugar, vitals, and each peptide's estimated level over the whole period
  * (short-acting peptides draw as a row of spikes). Peptides without a curve and side effects
  * are rows of events below. A section left out stays out of this chart too, so leaving out
  * side effects keeps them out of the whole file. Null when no chosen section has data.
@@ -466,6 +613,9 @@ function collectCombined(
     panels.push(a1cChart(source, rows, `HbA1c (${source.units.a1c})`, window))
   if (sugar && rows.glucose.length)
     panels.push(glucoseChart(source, rows, `Glucose (${source.units.glucose})`, window))
+  const vitals = chosen.has('vitals')
+  if (vitals && rows.pressure.length) panels.push(bloodPressureChart(rows, window))
+  if (vitals && rows.heartRate.length) panels.push(heartRateChart(rows, window))
 
   const timeline: ReportTimelineRow[] = []
   const peptides = chosen.has('levels') || chosen.has('draws')
@@ -515,7 +665,11 @@ const LEVELS_NOTE =
 /** A title naming what the report holds. */
 function titleFor(sections: ReadonlySet<ReportSection>): string {
   const shelf = sections.has('levels') || sections.has('draws')
-  const journal = sections.has('weight') || sections.has('sugar') || sections.has('symptoms')
+  const journal =
+    sections.has('weight') ||
+    sections.has('sugar') ||
+    sections.has('vitals') ||
+    sections.has('symptoms')
   if (shelf && journal) return 'Peptides and journal'
   if (shelf) return 'Draws and estimated levels'
   if (journal) return 'Journal'
@@ -540,6 +694,8 @@ export function collectReport(source: ReportSource): ReportData {
     ...rows.symptoms.map((s) => s.occurredAt),
     ...rows.a1c.map((g) => g.measuredAt),
     ...rows.glucose.map((g) => g.measuredAt),
+    ...rows.pressure.map((v) => v.measuredAt),
+    ...rows.heartRate.map((v) => v.measuredAt),
   ].map(toEpochMs)
   const oldest = Math.min(now, ...times)
   const start = Number.isFinite(rows.since) ? rows.since : oldest
@@ -573,6 +729,11 @@ export function collectReport(source: ReportSource): ReportData {
     ])
   }
   if (rows.a1c[0]) summary.push(['Latest HbA1c', formatA1c(rows.a1c[0].value, units.a1c)])
+  if (rows.pressure[0])
+    summary.push([
+      'Latest blood pressure',
+      formatBloodPressure(rows.pressure[0].systolic, rows.pressure[0].diastolic),
+    ])
   if (rows.symptoms.length) summary.push(['Side effects logged', String(rows.symptoms.length)])
 
   const symptoms = chosen.has('symptoms')
@@ -631,7 +792,8 @@ export function collectReport(source: ReportSource): ReportData {
       }
     : null
 
-  const journal = chosen.has('weight') || chosen.has('sugar') || chosen.has('symptoms')
+  const journal =
+    chosen.has('weight') || chosen.has('sugar') || chosen.has('vitals') || chosen.has('symptoms')
   const about = [
     'PepCalc does arithmetic and shows sourced references. It never recommends a dose and is ' +
       'not medical advice.',
@@ -641,8 +803,8 @@ export function collectReport(source: ReportSource): ReportData {
       'trial). Values marked user-supplied were entered by the person who made this report.',
     ...(journal
       ? [
-          'Weights, blood sugar and side effects are entered by the person who made this ' +
-            'report; PepCalc does not check them.',
+          'Weights, blood sugar, vitals and side effects are entered by the person who made ' +
+            'this report; PepCalc does not check them.',
         ]
       : []),
   ]
@@ -664,6 +826,7 @@ export function collectReport(source: ReportSource): ReportData {
     peptides,
     weight,
     sugar: chosen.has('sugar') ? collectSugar(source, rows) : null,
+    vitals: chosen.has('vitals') ? collectVitals(rows) : null,
     symptoms,
     draws,
     about,

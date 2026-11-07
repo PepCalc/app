@@ -119,6 +119,37 @@ test('logs side effects and blood sugar, in the units chosen in Settings', async
   await expect(page.getByText('Joint pain', { exact: true })).toBeVisible()
 })
 
+test('logs blood pressure and heart rate, charts them and lists them', async ({ page }) => {
+  await openTab(page, 'Journal')
+  await page.getByRole('button', { name: 'Log vitals' }).click()
+  const vitals = page.getByRole('dialog', { name: 'Vitals' })
+  await vitals.getByLabel('Systolic').fill('82')
+  await vitals.getByLabel('Diastolic').fill('90')
+  await expect(vitals.getByText('Lower than systolic')).toBeVisible()
+  await expect(vitals.getByRole('button', { name: 'Save' })).toBeDisabled()
+  await vitals.getByLabel('Systolic').fill('128')
+  await vitals.getByLabel('Diastolic').fill('82')
+  await vitals.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('Reading logged')).toBeVisible()
+  await expect(page.getByText('128/82 mmHg', { exact: true }).first()).toBeVisible()
+
+  await page.getByRole('button', { name: 'Log vitals' }).click()
+  await choose(vitals, 'Reading', 'Heart rate')
+  await vitals.getByLabel('Resting heart rate').fill('64')
+  await vitals.getByRole('button', { name: 'Save' }).click()
+  await expect(page.getByText('Reading logged')).toBeVisible()
+
+  await choose(page, 'Measure', 'Blood pressure')
+  await expect(page.getByRole('img', { name: /^Systolic from 128 mmHg/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Share blood pressure as an image' }).click()
+  await expect(page.getByRole('dialog', { name: 'Share as an image' })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  await page.getByRole('tab', { name: /Vitals/ }).click()
+  await expect(page.getByRole('listitem').filter({ hasText: '128/82 mmHg' })).toBeVisible()
+  await expect(page.getByRole('listitem').filter({ hasText: '64 bpm' })).toBeVisible()
+})
+
 test('shares a weight trend as an image without revealing the weight', async ({ page }) => {
   await openTab(page, 'Journal')
   await logWeight(page, '100', '2026-10-01T08:00')

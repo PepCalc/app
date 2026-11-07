@@ -116,6 +116,8 @@ function swatch(page: PdfPage, x: number, y: number, s: ReportSeries) {
   if (s.style === 'hollow')
     page.circle(x + 5, y, 2.6, { fill: [1, 1, 1], stroke: { color, width: 1.2 } })
   else if (s.style === 'points') page.circle(x + 5, y, 2.4, { fill: color })
+  else if (s.style === 'dashed')
+    page.line([x, y], [x + 10, y], { color, width: 1.5, dash: [2.5, 1.5] })
   else page.line([x, y], [x + 10, y], { color, width: 2 })
 }
 
@@ -198,6 +200,11 @@ export function drawChart(page: PdfPage, box: Box, chart: ReportChart, options: 
     } else if (s.style === 'line') {
       page.polyline(line, { color, width: 1.5 })
       if (line.length < 60) for (const [x, y] of line) page.circle(x, y, 1.8, { fill: color })
+    } else if (s.style === 'dashed') {
+      page.polyline(line, { color, width: 1.5, dash: [3, 2] })
+      if (line.length < 60)
+        for (const [x, y] of line)
+          page.circle(x, y, 1.9, { fill: [1, 1, 1], stroke: { color, width: 1 } })
     } else if (s.style === 'points') {
       for (const [x, y] of line) page.circle(x, y, 2.2, { fill: color })
     } else if (s.style === 'hollow') {
