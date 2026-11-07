@@ -1,0 +1,1 @@
+Calculate a draw straight from a protocol card. Switch vials in the calculator. The 1 mL syringe now shows every unit. Charts are cleaner, with notes under More information. Chart legends no longer overlap on phones.
