@@ -5,6 +5,7 @@ import type { DoseEvent, PkParameters } from '@/domain/pk'
 import { formatAmount } from '@/domain/units'
 import { useNow } from '@/composables/useNow'
 import { formatHours } from '@/services/time'
+import MoreInfo from '@/components/common/MoreInfo.vue'
 import SourceList from '@/components/common/SourceList.vue'
 import ProjectionChart from './ProjectionChart.vue'
 
@@ -59,11 +60,15 @@ const userSupplied = computed(() => props.override !== null)
       :unit-label="unitLabel"
       :now="now"
     />
-    <p class="text-body-small pc-muted">Estimate from the half-life and time to peak.</p>
-    <div v-if="!userSupplied && peptide?.pk" class="pc-stack pc-stack--tight">
-      <p class="text-body-small pc-muted">{{ peptide.pk.notes }}</p>
-      <SourceList :sources="peptide.pk.sources" />
-    </div>
+    <MoreInfo>
+      <p class="text-body-small pc-muted">Estimate from the half-life and time to peak.</p>
+      <SourceList
+        v-if="!userSupplied && peptide?.pk"
+        flat
+        :sources="peptide.pk.sources"
+        :note="peptide.pk.notes"
+      />
+    </MoreInfo>
   </section>
   <p v-else class="text-body-small pc-muted">
     {{ peptide?.pkUnavailableReason ?? 'No data for this peptide. Add a half-life on the vial.' }}

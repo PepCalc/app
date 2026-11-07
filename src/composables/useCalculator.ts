@@ -14,7 +14,6 @@ import {
   readSyringe,
   scaleLabel,
   suggestSyringe,
-  TICK_ERROR_WARNING,
   type SyringeReading,
   type SyringeSpec,
 } from '@/domain/syringe'
@@ -159,9 +158,7 @@ export function useCalculator(initial: Partial<CalculatorInput> = {}) {
     if (!plan.value) return null
     const family = syringeCatalog.syringes.filter((s) => s.unitsPerMl === syringe.value.unitsPerMl)
     const best = suggestSyringe(plan.value.volumeMl, family)
-    return best && best.id !== syringe.value.id && best.capacityMl < syringe.value.capacityMl
-      ? best
-      : null
+    return best && best.tickMl < syringe.value.tickMl ? best : null
   })
 
   const componentDoses = computed(() =>
@@ -207,11 +204,6 @@ export function useCalculator(initial: Partial<CalculatorInput> = {}) {
       list.push({
         tone: 'alert',
         text: 'Too small to measure on this syringe. Use a finer syringe or more water.',
-      })
-    } else if (r.tickRoundingError > TICK_ERROR_WARNING) {
-      list.push({
-        tone: 'notice',
-        text: `Falls between marks. The nearest mark is ${Math.round(r.tickRoundingError * 100)}% off. Change the water volume for a cleaner reading.`,
       })
     }
     const comfort = comfortWarning(p.volumeMl, r.syringe)

@@ -40,4 +40,24 @@ describe('useCalculator', () => {
     expect(calc.plan.value).toBeNull()
     expect(calc.error.value).toMatch(/IU and mass/)
   })
+
+  it('does not warn about a draw that falls between marks', () => {
+    const { warnings, reading } = useCalculator({
+      peptideId: 'bpc-157',
+      vialAmount: 5,
+      diluentMl: 2,
+      doseValue: 0.0312,
+      doseUnit: 'mg',
+    })
+    expect(reading.value!.tickRoundingError).toBeGreaterThan(0.05)
+    expect(warnings.value).toEqual([])
+  })
+
+  it('offers another syringe only when its marks are finer', () => {
+    const input = { vialAmount: 5, diluentMl: 2, doseValue: 0.25, doseUnit: 'mg' } as const
+    const u100 = useCalculator({ ...input, syringeId: 'u100-1ml' })
+    expect(u100.betterSyringe.value).toBeNull()
+    const luer = useCalculator({ ...input, syringeId: 'luer-3ml' })
+    expect(luer.betterSyringe.value?.id).toBe('luer-1ml')
+  })
 })

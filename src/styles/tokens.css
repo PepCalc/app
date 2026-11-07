@@ -148,7 +148,7 @@
     /*
      * Overlay series, in slot order. Checked as a set against the light surface for every pair
      * (colour-vision separation and lightness); orange sits under 3:1, so overlays always carry
-     * a legend, a dash pattern per line and a table view.
+     * a legend and a dash pattern per line.
      */
     --pc-chart-series-1: #1a7046;
     --pc-chart-series-2: #2a78d6;

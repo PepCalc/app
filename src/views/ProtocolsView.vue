@@ -20,6 +20,7 @@ import DrawList from '@/components/shelf/DrawList.vue'
 import PkPanel from '@/components/charts/PkPanel.vue'
 import OverlayChart from '@/components/charts/OverlayChart.vue'
 import ListPager from '@/components/common/ListPager.vue'
+import MoreInfo from '@/components/common/MoreInfo.vue'
 import SourceList from '@/components/common/SourceList.vue'
 import SortToggle from '@/components/common/SortToggle.vue'
 import ExportReportDialog from '@/components/report/ExportReportDialog.vue'
@@ -320,21 +321,27 @@ async function deleteDraw(draw: DrawRow) {
               :now="now"
             />
             <p v-else class="pc-muted">Choose a peptide to show.</p>
-            <div v-for="src in overlaySources" :key="src.key" class="pc-stack pc-stack--tight">
-              <div class="d-flex flex-wrap ga-2 align-center">
-                <strong class="text-body-medium">{{ src.label }}</strong>
-                <span class="pc-badge pc-badge--brand pc-num">
-                  t½ {{ formatHours(src.params.halfLifeHours) }}
-                </span>
-                <span class="pc-badge pc-badge--brand pc-num">
-                  peak {{ formatHours(src.params.tmaxHours) }}
-                </span>
-                <span v-if="src.userSupplied" class="pc-badge pc-badge--notice">
-                  <span class="pc-badge__dot" />User-supplied values
-                </span>
+            <MoreInfo v-if="overlayInputs.length">
+              <p class="text-body-small pc-muted">
+                Estimated levels, each scaled to its own peak to compare timing. Tap a line for its
+                amount.
+              </p>
+              <div v-for="src in overlaySources" :key="src.key" class="pc-stack pc-stack--tight">
+                <div class="d-flex flex-wrap ga-2 align-center">
+                  <strong class="text-body-medium">{{ src.label }}</strong>
+                  <span class="pc-badge pc-badge--brand pc-num">
+                    t½ {{ formatHours(src.params.halfLifeHours) }}
+                  </span>
+                  <span class="pc-badge pc-badge--brand pc-num">
+                    peak {{ formatHours(src.params.tmaxHours) }}
+                  </span>
+                  <span v-if="src.userSupplied" class="pc-badge pc-badge--notice">
+                    <span class="pc-badge__dot" />User-supplied values
+                  </span>
+                </div>
+                <SourceList v-if="src.pk" flat :sources="src.pk.sources" />
               </div>
-              <SourceList v-if="src.pk" :sources="src.pk.sources" />
-            </div>
+            </MoreInfo>
           </v-card-text>
         </v-card>
         <PkPanel

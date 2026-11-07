@@ -18,7 +18,7 @@ describe('useDiluentAdvisor', () => {
   it('starts from the calculator dose and recommends a volume', () => {
     const advisor = useDiluentAdvisor(contextFor('bpc-157', 5))
     advisor.actions.reset({ value: 250, unit: 'mcg' })
-    expect(advisor.selected.value?.waterMl).toBe(2)
+    expect(advisor.selected.value?.waterMl).toBe(3)
     expect(advisor.options.value).toContain(advisor.best.value)
   })
 

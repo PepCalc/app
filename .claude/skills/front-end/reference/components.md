@@ -18,7 +18,7 @@ Part of the `front-end` skill.
 | `calculator/DiluentAdvisor.vue`                                         | Bottom sheet: ranks water volumes for planned doses and vial size; emits the chosen mL                                    |
 | `calculator/DrawResult.vue`                                             | Headline reading, warnings, syringe picker, readings on every syringe                                                     |
 | `charts/PkPanel.vue`                                                    | Chooses catalog or user-supplied PK, shows sources and caveats, or why no curve exists; optional `title` and `caption`    |
-| `charts/PkChart.vue`                                                    | ECharts curve: logged doses (solid) and the previewed draw (dashed), "Now" marker, table view                             |
+| `charts/PkChart.vue`                                                    | ECharts curve: logged doses (solid) and the previewed draw (dashed), "Now" marker                                         |
 | `charts/levelsChart.ts`                                                 | The curve's model and ECharts option, shared by `PkChart` and the share card so both draw the same thing                  |
 | `charts/ShareLevelsDialog.vue`                                          | Previews the levels card (`levelsShareCard.ts`, a 1080x1350 PNG drawn on device) and shares it; name and amounts optional |
 | `report/ExportReportDialog.vue`                                         | Period and section choice, then PDF export (`useReportExport`); opened from Protocols and Journal                         |

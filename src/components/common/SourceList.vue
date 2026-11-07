@@ -5,17 +5,19 @@ import SourceBadge from './SourceBadge.vue'
 
 /**
  * Citations behind a card's figures, collapsed behind a toggle so they don't crowd the text.
- * `note` is how the figures were taken from those sources; it folds away with them.
+ * `note` is how the figures were taken from those sources; it folds away with them. `flat` drops
+ * the toggle for a list that already sits inside something folded.
  */
-defineProps<{ sources: readonly SourceRef[]; note?: string }>()
+const props = defineProps<{ sources: readonly SourceRef[]; note?: string; flat?: boolean }>()
 
-const open = ref(false)
+const open = ref(props.flat)
 const listId = useId()
 </script>
 
 <template>
   <div v-if="sources.length">
     <v-btn
+      v-if="!flat"
       variant="text"
       size="small"
       :aria-expanded="open"
@@ -25,7 +27,7 @@ const listId = useId()
       {{ open ? 'Hide sources' : `Sources (${sources.length})` }}
     </v-btn>
     <v-expand-transition>
-      <div v-show="open" :id="listId" class="source-panel">
+      <div v-show="open" :id="listId" :class="['source-panel', { 'source-panel--flat': flat }]">
         <p v-if="note" class="text-body-small pc-muted">{{ note }}</p>
         <ul class="source-list">
           <li v-for="source in sources" :key="source.citation" class="text-body-small">
@@ -46,6 +48,10 @@ const listId = useId()
   margin-top: 8px;
   display: grid;
   gap: 6px;
+}
+
+.source-panel--flat {
+  margin-top: 0;
 }
 
 .source-list {

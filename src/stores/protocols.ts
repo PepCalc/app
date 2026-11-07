@@ -113,6 +113,11 @@ export const useProtocolsStore = defineStore('protocols', () => {
     return { peptide: findPeptide(vial.peptideId), pk: shelf.pkFor(vial), unit, history, amount }
   }
 
+  /** The vial a draw comes from: the peptide's most recently used vial still in use. */
+  function drawVialOf(protocol: ProtocolRow): VialRow | undefined {
+    return shelf.activeVials.find((v) => sameProductKey(v) === protocol.key)
+  }
+
   /** Where a protocol's levels are heading; null without a half-life or a logged draw. */
   function projectionOf(protocol: ProtocolRow, now: number): ProtocolProjection | null {
     const levels = levelsOf(protocol.key)
@@ -157,6 +162,7 @@ export const useProtocolsStore = defineStore('protocols', () => {
     hasVial,
     lastDrawOf,
     nextDueOf,
+    drawVialOf,
     levelsOf,
     projectionOf,
     addProtocol,

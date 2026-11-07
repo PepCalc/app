@@ -29,6 +29,7 @@ import { OVERLAY_MAX } from '@/domain/overlay'
 import { stripScale } from '@/domain/levelStrip'
 import { usePeptidePanels } from '@/composables/usePeptidePanels'
 import { panelInput } from './bodyChart'
+import MoreInfo from '@/components/common/MoreInfo.vue'
 import SourceList from '@/components/common/SourceList.vue'
 import BodyChart from './BodyChart.vue'
 import ShareTrendDialog from '@/components/share/ShareTrendDialog.vue'
@@ -225,6 +226,14 @@ const convertedUnits = computed(
     (mode.value === 'a1c' && settings.a1cUnit !== '%') ||
     (mode.value === 'glucose' && settings.glucoseUnit !== 'mg/dL'),
 )
+
+const hasMore = computed(
+  () =>
+    !!extras.value.lanes ||
+    (showLevels.value && panels.peptides.value.length > 0) ||
+    mode.value === 'bmi' ||
+    convertedUnits.value,
+)
 </script>
 
 <template>
@@ -321,45 +330,47 @@ const convertedUnits = computed(
         :window="extras.window"
         @photo="openPhoto"
       />
-      <p v-if="extras.lanes" class="text-body-small pc-muted">
-        Each tick is a dose. Labels show new strengths.
+      <p v-if="showLevels && panels.withoutCurve.value.length" class="text-body-small pc-muted">
+        No curve for {{ panels.withoutCurve.value.join(', ') }}.
       </p>
-      <template v-if="showLevels && panels.peptides.value.length">
-        <p v-if="extras.levels" class="text-body-small pc-muted">
-          {{
-            extras.levels.scale === 'amount'
-              ? 'Estimated amount in your body, based on your doses.'
-              : "Estimated levels as a percent of each peptide's peak."
-          }}
-        </p>
-        <p v-if="panels.withoutCurve.value.length" class="text-body-small pc-muted">
-          No curve for {{ panels.withoutCurve.value.join(', ') }}.
-        </p>
-        <div v-for="src in panels.sources.value" :key="src.key" class="pc-stack pc-stack--tight">
-          <p class="text-body-small">
-            <strong>{{ src.label }}</strong>
-            <span v-if="src.userSupplied" class="pc-badge pc-badge--notice ms-2">
-              <span class="pc-badge__dot" />User-supplied values
-            </span>
-          </p>
-          <SourceList v-if="src.pk" :sources="src.pk.sources" />
-        </div>
-      </template>
       <p v-if="chartPhotos.length" class="text-body-small pc-muted">Tap a photo to open it.</p>
       <p v-if="mode === 'glucose' && !chart.points.length" class="text-body-small pc-muted">
         No fasting readings yet; readings from other times of day show as points.
       </p>
-      <template v-if="mode === 'bmi'">
-        <p class="text-body-small pc-muted">
-          Dashed lines are the WHO adult bands. BMI is a screening measure and doesn't tell muscle
-          from fat.
-        </p>
-        <SourceList :sources="[BMI_SOURCE]" />
-      </template>
-      <SourceList v-if="convertedUnits" :sources="GLUCOSE_UNIT_SOURCES" />
       <p v-if="mode === 'weight' && !body.heightCm.value" class="text-body-small pc-muted">
         Add your height in Settings to track BMI.
       </p>
+      <MoreInfo v-if="hasMore">
+        <p v-if="extras.lanes" class="text-body-small pc-muted">
+          Each tick is a dose. Labels show new strengths.
+        </p>
+        <template v-if="showLevels && panels.peptides.value.length">
+          <p v-if="extras.levels" class="text-body-small pc-muted">
+            {{
+              extras.levels.scale === 'amount'
+                ? 'Estimated amount in your body, based on your doses.'
+                : "Estimated levels as a percent of each peptide's peak."
+            }}
+          </p>
+          <div v-for="src in panels.sources.value" :key="src.key" class="pc-stack pc-stack--tight">
+            <p class="text-body-small">
+              <strong>{{ src.label }}</strong>
+              <span v-if="src.userSupplied" class="pc-badge pc-badge--notice ms-2">
+                <span class="pc-badge__dot" />User-supplied values
+              </span>
+            </p>
+            <SourceList v-if="src.pk" flat :sources="src.pk.sources" />
+          </div>
+        </template>
+        <template v-if="mode === 'bmi'">
+          <p class="text-body-small pc-muted">
+            Dashed lines are the WHO adult bands. BMI is a screening measure and doesn't tell muscle
+            from fat.
+          </p>
+          <SourceList flat :sources="[BMI_SOURCE]" />
+        </template>
+        <SourceList v-if="convertedUnits" flat :sources="GLUCOSE_UNIT_SOURCES" />
+      </MoreInfo>
     </v-card-text>
     <ShareTrendDialog
       v-model="shareOpen"

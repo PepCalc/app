@@ -7,6 +7,7 @@ import { useNow } from '@/composables/useNow'
 import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
 import { useNotifyStore } from '@/stores/notify'
+import { sameProductKey } from '@/domain/listing'
 import { formatQuantity, unitLabel } from '@/domain/units'
 import type { DoseEvent } from '@/domain/pk'
 import { nowIso } from '@/services/time'
@@ -155,6 +156,22 @@ async function logDraw() {
 function clearShelfVial() {
   void router.replace({ name: 'calculator' })
 }
+
+/** The rest of the shelf, this peptide's other vials first. */
+const otherVials = computed(() => {
+  const current = shelfVial.value
+  if (!current) return []
+  const others = shelf.activeVials.filter((v) => v.id !== current.id)
+  const key = sameProductKey(current)
+  return [
+    ...others.filter((v) => sameProductKey(v) === key),
+    ...others.filter((v) => sameProductKey(v) !== key),
+  ]
+})
+
+function useVial(id: string) {
+  void router.replace({ name: 'calculator', query: { vial: id } })
+}
 </script>
 
 <template>
@@ -179,10 +196,24 @@ function clearShelfVial() {
               </template>
             </v-card-subtitle>
           </v-card-item>
-          <v-card-actions>
+          <v-card-actions class="flex-wrap">
             <v-btn :to="{ name: 'vial', params: { id: shelfVial.id } }" variant="text"
               >Open vial</v-btn
             >
+            <v-menu v-if="otherVials.length">
+              <template #activator="{ props: menuProps }">
+                <v-btn v-bind="menuProps" variant="text">Use a different vial</v-btn>
+              </template>
+              <v-list>
+                <v-list-item
+                  v-for="v in otherVials"
+                  :key="v.id"
+                  :title="shelf.displayName(v)"
+                  :subtitle="`${formatQuantity({ value: v.amount, unit: v.unit })} in ${v.diluentMl} mL`"
+                  @click="useVial(v.id)"
+                />
+              </v-list>
+            </v-menu>
             <v-btn variant="text" @click="clearShelfVial">Use a different peptide</v-btn>
           </v-card-actions>
         </v-card>

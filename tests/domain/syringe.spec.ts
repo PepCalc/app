@@ -24,9 +24,9 @@ describe('syringe readings', () => {
     expect(r.scaleValue).toBeCloseTo(0.35, 9)
   })
 
-  it('rounds to the nearest 2-unit mark on a 1 mL U-100 syringe and reports the error', () => {
+  it('rounds to the nearest unit mark on a 1 mL U-100 syringe and reports the error', () => {
     const r = readSyringe(0.125, u100)
-    expect(r.nearestTickValue).toBe(12)
+    expect(r.nearestTickValue).toBe(13)
     expect(r.tickRoundingError).toBeCloseTo(0.04, 6)
   })
 
@@ -37,7 +37,8 @@ describe('syringe readings', () => {
   })
 
   it('flags volumes smaller than one mark', () => {
-    expect(readSyringe(0.01, u100).belowResolution).toBe(true)
+    expect(readSyringe(0.005, u100).belowResolution).toBe(true)
+    expect(readSyringe(0.01, u100).belowResolution).toBe(false)
   })
 
   it('suggests the smallest barrel that fits', () => {
@@ -63,6 +64,16 @@ describe('syringe graduations', () => {
       '25',
       '30',
     ])
+  })
+
+  it('marks every unit on a 1 mL U-100 syringe, with long numbered marks every 10', () => {
+    const ticks = syringeTicks(findSyringe('u100-1ml'))
+    expect(ticks).toHaveLength(101)
+    expect(ticks.filter((t) => t.kind === 'major').map((t) => t.label)).toEqual(
+      Array.from({ length: 11 }, (_, i) => String(i * 10)),
+    )
+    expect(ticks[5]!.kind).toBe('half')
+    expect(ticks[1]!.kind).toBe('minor')
   })
 
   it('adds a medium mark halfway between numbers when that falls on a tick', () => {

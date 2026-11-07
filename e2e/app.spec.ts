@@ -198,6 +198,9 @@ test('projects levels while setting a protocol, then draws them on its card', as
   await page.getByRole('option', { name: 'Weekly' }).click()
   await expect(panel.getByText('At 0.25 mg weekly.')).toBeVisible()
   await expect(panel.getByRole('img', { name: /Projected levels\. Steady by/ })).toBeVisible()
+  await expect(panel.getByText('Estimate from the half-life')).toBeHidden()
+  await panel.getByRole('button', { name: 'More information' }).click()
+  await expect(panel.getByText('Estimate from the half-life')).toBeVisible()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
 
@@ -215,6 +218,41 @@ test('projects levels while setting a protocol, then draws them on its card', as
   await expect(page.locator('.level-backdrop svg')).toBeVisible()
   await expect(page.getByText(/^Est\. .+ now · Steady by /)).toBeVisible()
   await expectStillDotWithReducedMotion(page)
+})
+
+test('calculates a draw from a protocol, then switches vial', async ({ page }) => {
+  await page.goto('./')
+  await acceptDisclaimer(page)
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await expect(page.getByText('From your shelf')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Use a different vial' })).toBeHidden()
+
+  // A second vial of the same peptide, used most recently, with less water.
+  await page.goto('./#/')
+  await expect(page.getByTestId('draw-headline')).toHaveText('15')
+  await choose(page, 'Bacteriostatic water added', '2 mL')
+  await page.getByRole('button', { name: 'Save vial to shelf' }).click()
+  await expect(page.getByText('From your shelf')).toBeVisible()
+  await page.getByRole('button', { name: 'Log this draw now' }).click()
+  await expect(page.getByText(/^Logged /)).toBeVisible()
+
+  await page.goto('./#/protocols')
+  await page.getByRole('button', { name: 'Add a protocol' }).click()
+  const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
+  await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
+  await page.getByRole('option', { name: 'Weekly' }).click()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(dialog).toBeHidden()
+
+  await page.getByRole('link', { name: 'Calculate draw' }).click()
+  await expect(page.getByText('From your shelf')).toBeVisible()
+  await expect(page.getByText('5 mg in 2 mL')).toBeVisible()
+  await expect(page.getByTestId('draw-headline')).toHaveText('10')
+
+  await page.getByRole('button', { name: 'Use a different vial' }).click()
+  await page.getByRole('listitem').filter({ hasText: '5 mg in 3 mL' }).click()
+  await expect(page.getByText('5 mg in 3 mL')).toBeVisible()
+  await expect(page.getByTestId('draw-headline')).toHaveText('15')
 })
 
 test('overlays the levels of several peptides on one chart', async ({ page }) => {
@@ -243,8 +281,10 @@ test('overlays the levels of several peptides on one chart', async ({ page }) =>
   )
   await page.locator('.v-chip').filter({ hasText: 'Semaglutide' }).click()
   await expect(chart).not.toHaveAttribute('aria-label', /Semaglutide/)
-  await page.getByRole('button', { name: 'Show as table' }).click()
-  await expect(page.getByRole('columnheader', { name: 'Tirzepatide' })).toBeVisible()
+  const more = page.getByRole('button', { name: 'More information' }).first()
+  await expect(page.getByText('each scaled to its own peak')).toBeHidden()
+  await more.click()
+  await expect(page.getByText('each scaled to its own peak')).toBeVisible()
 })
 
 test('shows doses and levels of several peptides under the weight chart', async ({ page }) => {
@@ -282,8 +322,7 @@ test('shows doses and levels of several peptides under the weight chart', async 
   await page.locator('.v-chip').filter({ hasText: 'Semaglutide' }).click()
   await expect(chart).toHaveAttribute('aria-label', /Tirzepatide \d[\d.]* mg\.$/)
 
-  await page.getByRole('button', { name: 'Show as table' }).first().click()
-  await expect(page.getByRole('columnheader', { name: 'Doses' })).toBeVisible()
+  await expect(chart).toHaveAttribute('aria-label', /Doses below: /)
 
   await page.getByRole('button', { name: 'Share weight as an image' }).click()
   const share = page.getByRole('dialog', { name: 'Share as an image' })
@@ -409,6 +448,8 @@ async function scrollInSteps(page: Page, step: number, steps: number) {
 }
 
 test('the top bar scrolls away when reading and returns on scrolling up', async ({ page }) => {
+  // Short enough that the calculator scrolls on a tablet too.
+  await page.setViewportSize({ width: page.viewportSize()!.width, height: 480 })
   await page.goto('./')
   await acceptDisclaimer(page)
   await page.locator('.v-select').first().click()

@@ -74,6 +74,7 @@ export function overlayOption(
     legend: {
       top: 0,
       left: 0,
+      itemGap: 20,
       textStyle: { color: c.text, fontFamily: c.font },
       itemWidth: 28,
       itemHeight: 10,

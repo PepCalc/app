@@ -136,6 +136,12 @@ const syringeItems = syringeCatalog.syringes.map((s) => ({ title: s.label, value
 </template>
 
 <style scoped>
+/* Top right, level with the eyebrow: centred, it would float halfway down the tall headline. */
+.draw-result :deep(.v-card-item__append) {
+  align-self: start;
+  margin: -8px -12px 0 0;
+}
+
 .draw-result__headline {
   display: flex;
   align-items: baseline;

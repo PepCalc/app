@@ -4,6 +4,7 @@ import { SOURCE_KIND_LABELS, type CatalogPeptide } from '@/domain/catalog'
 import { lookbackHoursFor, type DoseEvent, type PkParameters } from '@/domain/pk'
 import { formatHours } from '@/services/time'
 import { mdiShareVariantOutline } from '@/plugins/icons'
+import MoreInfo from '@/components/common/MoreInfo.vue'
 import SourceList from '@/components/common/SourceList.vue'
 import PkChart from './PkChart.vue'
 import ShareLevelsDialog from './ShareLevelsDialog.vue'
@@ -79,13 +80,17 @@ const shareSource = computed(() => {
           :now="now"
           :lookback-hours="lookbackHours"
         />
-        <p class="text-body-small pc-muted">
-          Estimated amount in your body, from the half-life and time to peak.
-        </p>
-        <div v-if="!userSupplied && peptide?.pk" class="pc-stack pc-stack--tight">
-          <p class="text-body-small pc-muted">{{ peptide.pk.notes }}</p>
-          <SourceList :sources="peptide.pk.sources" />
-        </div>
+        <MoreInfo>
+          <p class="text-body-small pc-muted">
+            Estimated amount in your body, from the half-life and time to peak.
+          </p>
+          <SourceList
+            v-if="!userSupplied && peptide?.pk"
+            flat
+            :sources="peptide.pk.sources"
+            :note="peptide.pk.notes"
+          />
+        </MoreInfo>
         <ShareLevelsDialog
           v-model="sharing"
           :input="{ params, doses, preview, unitLabel, now, lookbackHours }"

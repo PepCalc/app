@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { use } from 'echarts/core'
 import { LineChart, ScatterChart } from 'echarts/charts'
 import {
@@ -11,11 +11,10 @@ import {
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import VChart from 'vue-echarts'
-import { amountAt, rateConstants, type DoseEvent, type PkParameters } from '@/domain/pk'
+import type { DoseEvent, PkParameters } from '@/domain/pk'
 import { projectLevels } from '@/domain/projection'
 import { formatAmount, roundTo } from '@/domain/units'
 import { useChartColors } from '@/composables/useChartColors'
-import { formatShort } from '@/services/time'
 import { levelsOption } from './levelsChart'
 import { outlookStat } from './projectionText'
 
@@ -45,7 +44,6 @@ const props = defineProps<{
 }>()
 
 const { colors } = useChartColors()
-const showTable = ref(false)
 
 const model = computed(() => projectLevels(props))
 const unit = computed(() => (model.value.relative ? '%' : props.unitLabel))
@@ -83,16 +81,6 @@ const ariaSummary = computed(() => {
   }
   return parts.join(' ')
 })
-
-/** A dozen evenly spaced readings from now to the end of the projection. */
-const tableRows = computed(() => {
-  const { end } = model.value.window
-  const k = rateConstants(props.params)
-  return Array.from({ length: 13 }, (_, i) => {
-    const at = props.now + ((end - props.now) * i) / 12
-    return { at, amount: amountAt(at, model.value.allDoses, k) }
-  })
-})
 </script>
 
 <template>
@@ -125,32 +113,13 @@ const tableRows = computed(() => {
       role="img"
       :aria-label="ariaSummary"
     />
-    <v-btn variant="text" size="small" class="mt-1" @click="showTable = !showTable">
-      {{ showTable ? 'Hide table' : 'Show as table' }}
-    </v-btn>
-    <v-expand-transition>
-      <v-table v-if="showTable" density="compact" class="projection-chart__table">
-        <thead>
-          <tr>
-            <th scope="col">Time</th>
-            <th scope="col" class="text-end">Projected</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in tableRows" :key="row.at">
-            <td>{{ formatShort(row.at) }}</td>
-            <td class="text-end pc-num">{{ fmt(row.amount) }}</td>
-          </tr>
-        </tbody>
-      </v-table>
-    </v-expand-transition>
   </div>
 </template>
 
 <style scoped>
 .projection-chart__canvas {
   width: 100%;
-  height: 220px;
+  height: 248px;
 }
 
 .projection-chart__stats {
@@ -168,9 +137,5 @@ const tableRows = computed(() => {
 .projection-chart__stats dd {
   margin: 0;
   font-weight: 600;
-}
-
-.projection-chart__table {
-  background: transparent;
 }
 </style>

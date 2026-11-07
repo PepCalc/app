@@ -117,7 +117,8 @@ export function levelsOption(
     grid: {
       left: 8,
       right: 16 * scale,
-      top: legend ? 40 * scale : 16,
+      // Room for the legend to wrap onto a second row on a phone, clear of the "Now" label.
+      top: legend ? (settings.forImage ? 64 : 68) : 16,
       bottom: 8,
       containLabel: true,
     },
@@ -126,6 +127,8 @@ export function levelsOption(
           data: [LOGGED_SERIES, previewName],
           top: 0,
           left: 0,
+          padding: 0,
+          itemGap: 20 * scale,
           textStyle: { color: c.text, fontFamily: c.font, fontSize },
           itemWidth: 18 * scale,
           itemHeight: 8 * scale,

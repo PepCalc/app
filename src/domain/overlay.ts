@@ -6,10 +6,8 @@
  * never amounts, and says so.
  */
 import {
-  amountAt,
   chartWindow,
   lookbackHoursFor,
-  rateConstants,
   simulate,
   type DoseEvent,
   type PkParameters,
@@ -88,25 +86,6 @@ export function overlayModel(
     }
   })
   return { window, series }
-}
-
-/** Evenly spaced readings of every curve, as percent of its peak, for the table view. */
-export function overlayTable(
-  inputs: readonly OverlayInput[],
-  series: readonly OverlaySeries[],
-  window: SimulationWindow,
-  rows = 13,
-): { at: number; percents: number[] }[] {
-  const ks = inputs.map((i) => rateConstants(i.params))
-  return Array.from({ length: rows }, (_, r) => {
-    const at = window.start + ((window.end - window.start) * r) / (rows - 1)
-    return {
-      at,
-      percents: inputs.map((input, i) =>
-        percentOf(amountAt(at, input.doses, ks[i]!), series[i]?.peakAmount ?? 0),
-      ),
-    }
-  })
 }
 
 /**

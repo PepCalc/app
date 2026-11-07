@@ -35,9 +35,6 @@ export interface SyringeReading {
   fillsNeeded: number
 }
 
-/** Tick rounding beyond this share of the dose is flagged in the UI. */
-export const TICK_ERROR_WARNING = 0.05
-
 function scaleUnit(syringe: SyringeSpec): 'units' | 'mL' {
   return syringe.unitsPerMl === null ? 'mL' : 'units'
 }
@@ -68,9 +65,8 @@ export function readSyringe(volumeMl: number, syringe: SyringeSpec): SyringeRead
 }
 
 /**
- * The smallest syringe that holds the volume; smaller barrels have finer graduations, so they
- * measure small draws more accurately. Among equal capacities the standard (coarser) marking
- * wins, since special half-unit syringes are less common.
+ * The smallest syringe that holds the volume. Among equal capacities the standard (coarser)
+ * marking wins, since special half-unit syringes are less common.
  */
 export function suggestSyringe(
   volumeMl: number,

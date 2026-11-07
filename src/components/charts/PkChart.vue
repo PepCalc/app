@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { use } from 'echarts/core'
 import { LineChart, ScatterChart } from 'echarts/charts'
 import {
@@ -11,7 +11,7 @@ import {
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import VChart from 'vue-echarts'
-import { amountAt, rateConstants, type DoseEvent, type PkParameters } from '@/domain/pk'
+import type { DoseEvent, PkParameters } from '@/domain/pk'
 import { useChartColors } from '@/composables/useChartColors'
 import { formatShort } from '@/services/time'
 import { levelsModel } from '@/domain/levels'
@@ -42,7 +42,6 @@ const props = defineProps<{
 }>()
 
 const { colors } = useChartColors()
-const showTable = ref(false)
 
 const model = computed(() => levelsModel(props))
 const summary = computed(() => model.value.summary)
@@ -56,16 +55,6 @@ const ariaSummary = computed(() => {
   if (peak) parts.push(`Peak ${fmt(peak.amount)} around ${formatShort(peak.at)}.`)
   if (clearsAt) parts.push(`Below 10% of peak by ${formatShort(clearsAt)}.`)
   return parts.join(' ')
-})
-
-/** A dozen evenly spaced readings for the table view. */
-const tableRows = computed(() => {
-  const { start, end } = model.value.window
-  const k = rateConstants(props.params)
-  return Array.from({ length: 13 }, (_, i) => {
-    const at = start + ((end - start) * i) / 12
-    return { at, amount: amountAt(at, model.value.allDoses, k) }
-  })
 })
 </script>
 
@@ -95,25 +84,6 @@ const tableRows = computed(() => {
       role="img"
       :aria-label="ariaSummary"
     />
-    <v-btn variant="text" size="small" class="mt-1" @click="showTable = !showTable">
-      {{ showTable ? 'Hide table' : 'Show as table' }}
-    </v-btn>
-    <v-expand-transition>
-      <v-table v-if="showTable" density="compact" class="pk-chart__table">
-        <thead>
-          <tr>
-            <th scope="col">Time</th>
-            <th scope="col" class="text-end">Estimated amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in tableRows" :key="row.at">
-            <td>{{ formatShort(row.at) }}</td>
-            <td class="text-end pc-num">{{ fmt(row.amount) }}</td>
-          </tr>
-        </tbody>
-      </v-table>
-    </v-expand-transition>
   </div>
 </template>
 
@@ -144,9 +114,5 @@ const tableRows = computed(() => {
 .pk-chart__stats dd {
   margin: 0;
   font-weight: 600;
-}
-
-.pk-chart__table {
-  background: transparent;
 }
 </style>

@@ -180,6 +180,7 @@ function measureOption(
       ? {
           top: 0,
           left: 0,
+          itemGap: 20,
           itemWidth: 14,
           itemHeight: 10,
           textStyle: { color: c.axis, fontFamily: c.font, fontSize: 11 },
@@ -333,6 +334,7 @@ function withPanels(
     legends.push({
       bottom: bottom + 2,
       left: PANEL_LEFT - 8,
+      itemGap: 20,
       itemWidth: 28,
       itemHeight: 10,
       textStyle: { color: c.axis, fontFamily: c.font, fontSize: 11 },

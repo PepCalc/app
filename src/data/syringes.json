@@ -9,9 +9,9 @@
       "kind": "insulin",
       "unitsPerMl": 100,
       "capacityMl": 1,
-      "tickMl": 0.02,
-      "labelEveryTicks": 5,
-      "description": "Most common insulin syringe. Marks every 2 units, numbered every 10."
+      "tickMl": 0.01,
+      "labelEveryTicks": 10,
+      "description": "Most common insulin syringe. Marks every unit, numbered every 10."
     },
     {
       "id": "u100-0.5ml",

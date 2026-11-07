@@ -3,7 +3,6 @@ import {
   OVERLAY_MAX,
   assignSlots,
   overlayModel,
-  overlayTable,
   overlayWindow,
   type OverlayInput,
 } from '@/domain/overlay'
@@ -60,18 +59,6 @@ describe('overlayWindow', () => {
     expect(w.end).toBeGreaterThan(now + 7 * DAY)
     expect(w.end - now).toBeLessThanOrEqual(28 * DAY)
     expect(now - w.start).toBeLessThanOrEqual(28 * DAY)
-  })
-})
-
-describe('overlayTable', () => {
-  it('gives one percentage per curve per row', () => {
-    const inputs = [weekly, daily]
-    const { window, series } = overlayModel(inputs, now)
-    const rows = overlayTable(inputs, series, window)
-    expect(rows).toHaveLength(13)
-    expect(rows[0]!.at).toBe(window.start)
-    expect(rows[12]!.at).toBe(window.end)
-    expect(rows.every((r) => r.percents.length === 2)).toBe(true)
   })
 })
 

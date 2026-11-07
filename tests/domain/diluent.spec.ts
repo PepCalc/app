@@ -28,24 +28,26 @@ const GHK_CAP = { name: 'GHK-Cu', amountMg: 50, maxMgPerMl: 10 }
 
 describe('adviseDiluent', () => {
   it('prefers a dose that lands exactly on a mark over more water', () => {
-    // 3 mL gives 15 units, between the 2-unit marks of a 1 mL syringe; 2 mL gives 10 exactly.
-    const best = adviseDiluent(request({})).ranked[0]!
+    // 3 mL gives 10.5 units, between the marks of a 1 mL syringe; 2 mL gives 7 exactly.
+    const best = adviseDiluent(request({ lowDose: mcg(175), highDose: mcg(175) })).ranked[0]!
     expect(best.waterMl).toBe(2)
-    expect(best.low.scaleValue).toBeCloseTo(10, 9)
+    expect(best.low.scaleValue).toBeCloseTo(7, 9)
     expect(best.marks).toBe('on')
   })
 
   it('uses the most water that works when the syringe has finer marks', () => {
-    const best = adviseDiluent(request({ syringe: findSyringe('u100-0.3ml') })).ranked[0]!
+    const best = adviseDiluent(
+      request({ lowDose: mcg(175), highDose: mcg(175), syringe: findSyringe('u100-0.3ml-half') }),
+    ).ranked[0]!
     expect(best.waterMl).toBe(3)
-    expect(best.low.scaleValue).toBeCloseTo(15, 9)
+    expect(best.low.scaleValue).toBeCloseTo(10.5, 9)
   })
 
   it('keeps the largest dose of a titration range within one syringe', () => {
     const advice = adviseDiluent(request({ vial: mg(10), lowDose: mg(2.5), highDose: mg(7.5) }))
     expect(advice.ranked.map((o) => o.waterMl)).toEqual([1, 0.5])
     expect(advice.ranked[0]!.high.scaleValue).toBeCloseTo(75, 9)
-    expect(advice.ranked[0]!.marks).toBe('near')
+    expect(advice.ranked[0]!.marks).toBe('on')
   })
 
   it('dilutes a stinging peptide as far as the vial allows when the cap needs more', () => {
@@ -83,7 +85,7 @@ describe('adviseDiluent', () => {
 
   it.each([
     ['too-large', { vial: mg(10), lowDose: mg(7.5), highDose: mg(7.5), syringe: 'u100-0.3ml' }],
-    ['too-small', { vial: mg(10), lowDose: mcg(10), highDose: mcg(10), syringe: 'u100-1ml' }],
+    ['too-small', { vial: mg(10), lowDose: mcg(5), highDose: mcg(5), syringe: 'u100-1ml' }],
     ['range-too-wide', { vial: mg(10), lowDose: mcg(50), highDose: mg(10), syringe: 'u100-1ml' }],
     ['more-than-vial', { vial: mg(5), lowDose: mg(6), highDose: mg(6), syringe: 'u100-1ml' }],
   ] as const)('reports %s instead of an option', (problem, input) => {
@@ -123,7 +125,7 @@ describe('syringeTopUp', () => {
   it('fills to the volume the dose would have at the gentle strength, up to a mark', () => {
     // 1 mg of GHK-Cu from 50 mg in 3 mL is 0.06 mL; at 10 mg/mL it is 0.1 mL.
     expect(syringeTopUp(0.06, 3, 5, u100)?.scaleValue).toBeCloseTo(10, 9)
-    // 0.07 mL from 3 mL needs 0.1167 mL at 5 mL; the next 2-unit mark is 12 units.
+    // 0.07 mL from 3 mL needs 0.1167 mL at 5 mL; the next mark is 12 units.
     expect(syringeTopUp(0.07, 3, 5, u100)?.scaleValue).toBeCloseTo(12, 9)
   })
 

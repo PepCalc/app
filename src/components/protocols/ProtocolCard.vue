@@ -13,7 +13,7 @@ import {
   formatWeekday,
   toEpochMs,
 } from '@/services/time'
-import { mdiPencilOutline } from '@/plugins/icons'
+import { mdiCalculatorVariantOutline, mdiPencilOutline } from '@/plugins/icons'
 import LevelBackdrop from '@/components/charts/LevelBackdrop.vue'
 import { outlookShort } from '@/components/charts/projectionText'
 import DoseCountdown from './DoseCountdown.vue'
@@ -31,6 +31,7 @@ const shelf = useShelfStore()
 const name = computed(() => protocols.nameFor(props.protocol))
 const lastDraw = computed(() => protocols.lastDrawOf(props.protocol))
 const dueAt = computed(() => protocols.nextDueOf(props.protocol))
+const drawVial = computed(() => protocols.drawVialOf(props.protocol))
 
 const countdown = computed(() => {
   if (dueAt.value === null) return null
@@ -110,6 +111,15 @@ const levels = computed(() => {
       </p>
       <p v-if="protocol.notes" class="text-body-small pc-muted">{{ protocol.notes }}</p>
       <p v-if="levels" class="text-body-small pc-muted pc-num">{{ levels.text }}</p>
+      <div v-if="drawVial">
+        <v-btn
+          :to="{ name: 'calculator', query: { vial: drawVial.id } }"
+          :prepend-icon="mdiCalculatorVariantOutline"
+          variant="tonal"
+        >
+          Calculate draw
+        </v-btn>
+      </div>
       <div v-if="levels" class="protocol-card__band" />
     </v-card-text>
   </v-card>

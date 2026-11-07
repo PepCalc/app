@@ -4,7 +4,7 @@ import {
   InvalidInputError,
   type Concentration,
 } from './reconstitution'
-import { readSyringe, TICK_ERROR_WARNING, type SyringeReading, type SyringeSpec } from './syringe'
+import { readSyringe, type SyringeReading, type SyringeSpec } from './syringe'
 import { convert, type Quantity } from './units'
 
 /*
@@ -15,6 +15,8 @@ const WATER_STEP_ML = 0.5
 const MAX_WATER_ML = 10
 /** Readings within this share of a mark count as exactly on it (float noise, not user error). */
 const ON_MARK_TOLERANCE = 0.005
+/** Readings within this share of a mark count as near it; further off they fall between marks. */
+const NEAR_MARK_ERROR = 0.05
 
 /** An ingredient whose injections users report as tolerable only up to `maxMgPerMl`. */
 export interface ComfortCap {
@@ -44,7 +46,7 @@ export interface DiluentOption {
   gentle: boolean | null
   /**
    * How the planned doses read on the barrel: `on` a mark exactly, `near` one (within
-   * TICK_ERROR_WARNING, as the calculator warns), or `between` marks.
+   * NEAR_MARK_ERROR), or `between` marks.
    */
   marks: MarkFit
   /**
@@ -62,7 +64,7 @@ const MARK_RANK: Record<MarkFit, number> = { on: 0, near: 1, between: 2 }
 function markFit(readings: readonly SyringeReading[]): MarkFit {
   const worst = Math.max(...readings.map((r) => r.tickRoundingError))
   if (worst <= ON_MARK_TOLERANCE) return 'on'
-  return worst <= TICK_ERROR_WARNING ? 'near' : 'between'
+  return worst <= NEAR_MARK_ERROR ? 'near' : 'between'
 }
 
 /**

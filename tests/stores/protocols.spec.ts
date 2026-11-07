@@ -45,6 +45,28 @@ describe('protocol levels', () => {
     protocols = useProtocolsStore()
   })
 
+  it('draws from the most recently used vial still in use', () => {
+    const custom = { name: 'Custom' }
+    shelf.vials = [
+      vial('old', custom),
+      vial('recent', custom),
+      vial('archived', { ...custom, status: 'archived' }),
+      vial('other', { name: 'Other' }),
+    ]
+    shelf.draws = [
+      draw('old', 9, 1),
+      draw('recent', 2, 1),
+      draw('archived', 1, 1),
+      draw('other', 0, 1),
+    ]
+    expect(protocols.drawVialOf(protocol('name:custom'))?.id).toBe('recent')
+  })
+
+  it('has no vial to draw from once every vial is archived', () => {
+    shelf.vials = [vial('a', { status: 'archived' })]
+    expect(protocols.drawVialOf(protocol('name:custom'))).toBeUndefined()
+  })
+
   it('has nothing to draw from when no vial matches', () => {
     expect(protocols.levelsOf('name:custom')).toBeNull()
   })

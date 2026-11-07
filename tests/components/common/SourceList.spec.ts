@@ -33,6 +33,15 @@ describe('SourceList', () => {
     expect(panel.attributes('style')).toContain('display: none')
   })
 
+  it('shows the list with no toggle when flat', () => {
+    const wrapper = mountWithVuetify(SourceList, {
+      props: { sources, note: 'As printed in the label.', flat: true },
+    })
+    expect(wrapper.find('button').exists()).toBe(false)
+    expect(wrapper.get('.source-panel').attributes('style') ?? '').not.toContain('display: none')
+    expect(wrapper.text()).toContain('As printed in the label.')
+  })
+
   it('renders nothing without sources', () => {
     const wrapper = mountWithVuetify(SourceList, { props: { sources: [] } })
     expect(wrapper.find('button').exists()).toBe(false)

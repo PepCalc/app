@@ -21,8 +21,8 @@ account, server or tracking.
 ## Features
 
 - Draw calculator: dose in mg, mcg or IU, with the volume and syringe reading for U-100 (1,
-  0.5, 0.3 mL, half-unit), U-40 and mL syringes. Warns when a draw is over capacity, under one
-  mark or between marks.
+  0.5, 0.3 mL, half-unit), U-40 and mL syringes. Warns when a draw is over capacity or under one
+  mark.
 - Mixing advisor: enter the doses you plan to draw and your vial size, and PepCalc ranks water
   volumes so every dose fits one syringe and lands on a mark. For peptides users report as
   stinging (GHK-Cu and blends that contain it), it dilutes as far as the vial allows, or says how
