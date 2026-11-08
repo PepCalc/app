@@ -1,4 +1,4 @@
-import { isValidGlucose } from './glucose'
+import { isValidGlucose, summarizeGlucose, type GlucoseDay } from './glucose'
 import { isValidBloodPressure, isValidHeartRate } from './vitals'
 
 /**
@@ -232,6 +232,57 @@ export function readingsToExport(
 }
 
 const DAY_MS = 86_400_000
+
+/**
+ * A source that gives this many glucose readings in a day is a continuous monitor (one reads
+ * every 5 to 15 minutes, 96 to 288 a day); a meter gives a handful. A monitor's day is kept as
+ * its summary rather than every reading.
+ */
+export const MONITOR_READINGS_PER_DAY = 24
+
+/** A monitor can deliver a day's last readings late; its summary waits this long past midnight. */
+const MONITOR_SETTLE_MS = 3 * 3_600_000
+
+/** One local day of a monitor's readings, kept as a summary. */
+export interface MonitorDay extends GlucoseDay {
+  /** Epoch ms of the start of the local day. */
+  start: number
+}
+
+/**
+ * Splits glucose readings from the store into meter readings, imported one by one, and days
+ * from a continuous monitor, imported as one summary each: average, median, lowest, highest
+ * and count. A monitor day is summarised once it is over and settled, and only when the
+ * journal has no summary for that day yet; until then its readings are left in the store.
+ * `localDay(at, offset)` is the start of the local day `offset` days after `at`'s.
+ */
+export function monitorDays(
+  glucose: readonly StoreReading[],
+  localDay: (at: number, offset: number) => number,
+  now: number,
+  summarised: ReadonlySet<number>,
+): { singles: StoreReading[]; days: MonitorDay[] } {
+  const groups = new Map<string, StoreReading[]>()
+  for (const r of glucose) {
+    if (r.measure !== 'glucose' || !isPlausible(r)) continue
+    const key = `${r.sourceId ?? ''}|${localDay(r.at, 0)}`
+    groups.set(key, [...(groups.get(key) ?? []), r])
+  }
+  const singles: StoreReading[] = []
+  const days: MonitorDay[] = []
+  const taken = new Set(summarised)
+  for (const readings of groups.values()) {
+    if (readings.length < MONITOR_READINGS_PER_DAY) {
+      singles.push(...readings)
+      continue
+    }
+    const start = localDay(readings[0]!.at, 0)
+    if (localDay(start, 1) + MONITOR_SETTLE_MS > now || taken.has(start)) continue
+    taken.add(start)
+    days.push({ start, ...summarizeGlucose(readings.map((r) => r.value))! })
+  }
+  return { singles, days: days.sort((a, b) => a.start - b.start) }
+}
 
 /**
  * The earliest time to read from the store. The first sync reads everything the store will

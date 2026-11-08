@@ -1,5 +1,7 @@
 import {
   importStart,
+  monitorDays,
+  type MonitorDay,
   reads,
   readingsToExport,
   readingsToImport,
@@ -35,8 +37,12 @@ export interface SyncDeps {
   store: HealthStoreApi
   /** The journal's readings as they are now; called again after an import. */
   local: () => LocalReading[]
-  /** Adds readings to the journal, returning the new rows' ids. */
-  addToJournal: (readings: StoreReading[]) => Promise<string[]>
+  /** Starts of the local days the journal already holds a monitor summary for. */
+  summarisedDays: () => ReadonlySet<number>
+  /** Adds readings and monitor days to the journal, returning the new rows' ids. */
+  addToJournal: (readings: StoreReading[], days: MonitorDay[]) => Promise<string[]>
+  /** The start of the local day `offset` days after `at`'s. */
+  localDay: (at: number, offset: number) => number
   /** The app's id, as the store reports it for readings this app wrote. */
   ownSourceId: string
   ask: boolean
@@ -55,21 +61,29 @@ export async function runSync(
   const granted = await store.access(s.measures, s.direction, deps.ask)
   const result: SyncResult = { imported: 0, exported: 0, failed: 0 }
   const inHealth = new Set(s.inHealth)
-  const since = importStart(s.lastSyncAt ? toEpochMs(s.lastSyncAt) : null)
+  // Whole local days, so a monitor's day is never summarised from part of its readings.
+  const from = importStart(s.lastSyncAt ? toEpochMs(s.lastSyncAt) : null)
+  const since = from > 0 ? deps.localDay(from, 0) : 0
   let taken = s.taken.filter((t) => t.at >= since)
   const seen: StoreReading[] = []
 
   if (reads(s.direction)) {
     for (const measure of granted.read) seen.push(...(await store.readMeasure(measure, since, now)))
+    const { singles, days } = monitorDays(
+      seen.filter((r) => r.measure === 'glucose'),
+      deps.localDay,
+      now,
+      deps.summarisedDays(),
+    )
     const fresh = readingsToImport(
-      seen,
+      [...seen.filter((r) => r.measure !== 'glucose'), ...singles],
       deps.local(),
       granted.read,
       [deps.ownSourceId],
       new Set(taken.map((t) => t.id)),
     )
-    if (fresh.length) {
-      const ids = await deps.addToJournal(fresh)
+    if (fresh.length || days.length) {
+      const ids = await deps.addToJournal(fresh, days)
       ids.forEach((id) => inHealth.add(id))
       taken = [
         ...taken,

@@ -53,6 +53,7 @@ const hasChange = computed(() => journal.weights.length > 1 && change.value !== 
 
 const latestA1c = computed(() => journal.glucose.find((g) => g.kind === 'a1c'))
 const latestGlucose = computed(() => journal.glucose.find((g) => g.kind === 'glucose'))
+const latestDay = computed(() => journal.glucose.find((g) => g.kind === 'daily'))
 
 const latestBp = computed(() => journal.vitals.find((v) => v.kind === 'bp'))
 const latestHr = computed(() => journal.vitals.find((v) => v.kind === 'hr'))
@@ -145,6 +146,9 @@ const hasAnything = computed(
             <span v-else-if="latestGlucose" class="pc-num">{{
               formatGlucose(latestGlucose.value, settings.glucoseUnit)
             }}</span>
+            <span v-else-if="latestDay" class="pc-num"
+              >Average {{ formatGlucose(latestDay.value, settings.glucoseUnit) }}</span
+            >
             <span v-else>No readings yet</span>
           </v-card-title>
           <v-card-subtitle v-if="latestA1c">{{
@@ -162,6 +166,9 @@ const hasAnything = computed(
           <p v-else-if="latestGlucose" class="pc-muted">
             {{ GLUCOSE_CONTEXT_LABELS[latestGlucose.context] }} ·
             {{ formatDateTime(latestGlucose.measuredAt) }}
+          </p>
+          <p v-else-if="latestDay" class="pc-muted">
+            Glucose monitor, {{ formatDate(latestDay.measuredAt) }}
           </p>
           <p v-else-if="!latestA1c" class="pc-muted">
             Log an HbA1c result or a glucose reading to follow them over time.

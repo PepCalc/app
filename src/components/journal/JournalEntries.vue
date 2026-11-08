@@ -2,14 +2,19 @@
 import { computed, ref, watch } from 'vue'
 import type { GlucoseRow, SymptomRow, VitalRow } from '@/db/database'
 import { formatWeight } from '@/domain/bodyUnits'
-import { formatA1c, formatGlucose, GLUCOSE_CONTEXT_LABELS } from '@/domain/glucose'
+import {
+  formatA1c,
+  formatGlucose,
+  formatGlucoseRange,
+  GLUCOSE_CONTEXT_LABELS,
+} from '@/domain/glucose'
 import { SEVERITY_LABELS, symptomName } from '@/domain/symptoms'
 import { formatBloodPressure, formatHeartRate } from '@/domain/vitals'
 import { sortByTime, type SortDirection } from '@/domain/listing'
 import { useJournalStore, type WeightEntry } from '@/stores/journal'
 import { useSettingsStore } from '@/stores/settings'
 import { usePaging } from '@/composables/usePaging'
-import { formatDateTime, toEpochMs } from '@/services/time'
+import { formatDate, formatDateTime, toEpochMs } from '@/services/time'
 import { mdiHeartPulse, mdiScaleBathroom, mdiStethoscope, mdiWaterOutline } from '@/plugins/icons'
 import ListPager from '@/components/common/ListPager.vue'
 import SortToggle from '@/components/common/SortToggle.vue'
@@ -89,12 +94,14 @@ function vitalSubtitle(v: VitalRow): string {
 }
 
 function readingTitle(g: GlucoseRow): string {
-  return g.kind === 'a1c'
-    ? `HbA1c ${formatA1c(g.value, settings.a1cUnit)}`
-    : formatGlucose(g.value, settings.glucoseUnit)
+  if (g.kind === 'a1c') return `HbA1c ${formatA1c(g.value, settings.a1cUnit)}`
+  if (g.kind === 'daily') return `Average ${formatGlucose(g.value, settings.glucoseUnit)}`
+  return formatGlucose(g.value, settings.glucoseUnit)
 }
 
 function readingSubtitle(g: GlucoseRow): string {
+  if (g.kind === 'daily')
+    return `Glucose monitor · ${formatGlucoseRange(g.min, g.max, settings.glucoseUnit)} · ${formatDate(g.measuredAt)}`
   const when = formatDateTime(g.measuredAt)
   return g.kind === 'glucose' ? `${GLUCOSE_CONTEXT_LABELS[g.context]} · ${when}` : when
 }

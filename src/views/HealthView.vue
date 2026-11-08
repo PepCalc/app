@@ -214,6 +214,7 @@ const lastResult = computed(() => {
         </v-card-item>
         <v-card-text class="pc-stack">
           <p>Sync adds readings. It never edits or deletes them on either side.</p>
+          <p>A glucose monitor's readings come in as one summary per day.</p>
           <p>Draws, protocols, side effects, HbA1c and photos stay in PepCalc.</p>
           <p>Other apps you allow in {{ healthStoreName }} can read what PepCalc exports.</p>
           <p v-if="platform === 'ios'">To change access: {{ healthAccessSteps }}</p>

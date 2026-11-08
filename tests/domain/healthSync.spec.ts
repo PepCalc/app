@@ -3,6 +3,8 @@ import {
   DEFAULT_HEALTH_SYNC,
   importStart,
   isPlausible,
+  MONITOR_READINGS_PER_DAY,
+  monitorDays,
   readingsToExport,
   readingsToImport,
   sameReading,
@@ -137,5 +139,35 @@ describe('windows and settings', () => {
       inHealth: ['a'],
       taken: [{ id: 'p', at: T }],
     })
+  })
+})
+
+describe('monitorDays', () => {
+  const day = (at: number, offset: number) => Math.floor(at / DAY) * DAY + offset * DAY
+  const D = day(T, 0)
+  const cgm = (n: number, start: number) =>
+    Array.from({ length: n }, (_, i): StoreReading => ({
+      measure: 'glucose',
+      at: start + i * 10 * MIN,
+      value: 80 + i,
+      sourceId: 'cgm',
+    }))
+
+  it('summarises a monitor day and passes a meter through', () => {
+    const meter: StoreReading = { measure: 'glucose', at: D + MIN, value: 99, sourceId: 'meter' }
+    const { singles, days } = monitorDays([...cgm(100, D), meter], day, D + 2 * DAY, new Set())
+    expect(singles).toEqual([meter])
+    expect(days).toEqual([{ start: D, mean: 129.5, median: 129.5, min: 80, max: 179, count: 100 }])
+  })
+
+  it('treats fewer readings than a monitor gives as single readings', () => {
+    const few = cgm(MONITOR_READINGS_PER_DAY - 1, D)
+    expect(monitorDays(few, day, D + 2 * DAY, new Set()).singles).toHaveLength(few.length)
+  })
+
+  it('waits until the day is over and settled, and skips a day already summarised', () => {
+    const readings = cgm(100, D)
+    expect(monitorDays(readings, day, D + DAY + MIN, new Set()).days).toEqual([])
+    expect(monitorDays(readings, day, D + 2 * DAY, new Set([D])).days).toEqual([])
   })
 })

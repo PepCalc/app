@@ -18,8 +18,8 @@ const TYPES: Record<HealthMeasure, HealthDataType> = {
 
 const MEASURE_OF = new Map(Object.entries(TYPES).map(([m, t]) => [t, m as HealthMeasure]))
 
-/** More than years of daily readings; the store returns at most this many per measure. */
-const READ_LIMIT = 20_000
+/** Readings per request; a glucose monitor's months of history take several. */
+const PAGE = 5000
 
 export async function availability(): Promise<{ available: boolean; reason?: string }> {
   const result = await Health.isAvailable()
@@ -68,20 +68,39 @@ function toReading(measure: HealthMeasure, s: HealthSample): StoreReading {
   }
 }
 
-/** Every reading of `measure` from `since` to `until`, oldest first. */
+/**
+ * Every reading of `measure` from `since` to `until`, oldest first. Reads a page at a time,
+ * each starting at the last one's time, so a monitor's long history is never cut short; a
+ * reading on a page boundary comes twice and is dropped by its id.
+ */
 export async function readMeasure(
   measure: HealthMeasure,
   since: number,
   until: number,
 ): Promise<StoreReading[]> {
-  const { samples } = await Health.readSamples({
-    dataType: TYPES[measure],
-    startDate: toIso(since),
-    endDate: toIso(until),
-    limit: READ_LIMIT,
-    ascending: true,
-  })
-  return samples.map((s) => toReading(measure, s))
+  const out: StoreReading[] = []
+  const seen = new Set<string>()
+  let from = since
+  for (;;) {
+    const { samples } = await Health.readSamples({
+      dataType: TYPES[measure],
+      startDate: toIso(from),
+      endDate: toIso(until),
+      limit: PAGE,
+      ascending: true,
+    })
+    for (const s of samples) {
+      if (s.platformId && seen.has(s.platformId)) continue
+      if (s.platformId) seen.add(s.platformId)
+      out.push(toReading(measure, s))
+    }
+    const last = samples[samples.length - 1]
+    if (samples.length < PAGE || !last) return out
+    const lastAt = toEpochMs(last.startDate)
+    // A full page all at one instant cannot move forward; stop rather than loop.
+    if (lastAt <= from) return out
+    from = lastAt
+  }
 }
 
 export async function writeReading(r: HealthReading): Promise<void> {

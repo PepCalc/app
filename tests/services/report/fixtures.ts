@@ -153,6 +153,20 @@ export function sampleJournal() {
       createdAt: created,
     })),
   ]
+  glucose.push({
+    id: 'day1',
+    kind: 'daily',
+    measuredAt: iso(NOW - 6 * DAY),
+    value: 112.4,
+    enteredUnit: 'mg/dL',
+    context: null,
+    median: 108,
+    min: 71,
+    max: 183,
+    count: 288,
+    notes: '',
+    createdAt: created,
+  })
   const vitals: VitalRow[] = [
     {
       id: 'bp1',

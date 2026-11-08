@@ -85,8 +85,9 @@ export interface SymptomRow {
 }
 
 /**
- * An HbA1c result or a glucose reading. `value` is canonical and unrounded: HbA1c in NGSP
- * percent, glucose in mg/dL.
+ * An HbA1c result, a glucose reading, or one day of a glucose monitor kept as its summary.
+ * `value` is canonical and unrounded: HbA1c in NGSP percent, glucose in mg/dL, and for a
+ * monitor day the day's average. A monitor day's `measuredAt` is the start of that local day.
  */
 export type GlucoseRow = {
   id: string
@@ -97,6 +98,16 @@ export type GlucoseRow = {
 } & (
   | { kind: 'a1c'; enteredUnit: A1cUnit; context: null }
   | { kind: 'glucose'; enteredUnit: GlucoseUnit; context: GlucoseContext }
+  | {
+      kind: 'daily'
+      enteredUnit: 'mg/dL'
+      context: null
+      median: number
+      min: number
+      max: number
+      /** How many readings the monitor took that day. */
+      count: number
+    }
 )
 
 /**

@@ -117,8 +117,12 @@ export interface ReportWeight {
 export interface ReportSugar {
   a1cChart: ReportChart | null
   glucoseChart: ReportChart | null
+  /** Daily averages from a glucose monitor; null with fewer than two days. */
+  monitorChart: ReportChart | null
   a1c: ReportTable
   glucose: ReportTable
+  /** One row per monitor day; no rows prints nothing. */
+  monitor: ReportTable
 }
 
 export interface ReportVitals {

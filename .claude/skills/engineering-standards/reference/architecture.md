@@ -53,6 +53,9 @@ per-visit; anything that must survive a reload goes into the database.
   reading counts as present on the other side at the same minute and value. Imported rows are
   ordinary journal rows with a "From Apple Health" or "From Health Connect" note. A restored
   backup keeps the choices but turns sync off and starts the bookkeeping over.
+- A source with 24 or more glucose readings in a local day is a continuous monitor. Its day is
+  stored once, after the day ends, as a `daily` glucose row (average in `value`, plus median,
+  lowest, highest and count), never as its raw readings. Monitor days are never exported.
 - Ids are `crypto.randomUUID()`; timestamps are UTC ISO strings.
 - Deleting a vial deletes its draws in the same transaction. Archiving keeps both.
 - `navigator.storage.persist()` is requested on launch (Settings shows the result). Safari may

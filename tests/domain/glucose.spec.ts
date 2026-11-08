@@ -10,6 +10,8 @@ import {
   isValidGlucose,
   toA1cPercent,
   toMgDl,
+  summarizeGlucose,
+  formatGlucoseRange,
 } from '@/domain/glucose'
 
 describe('glucose units', () => {
@@ -42,5 +44,24 @@ describe('glucose units', () => {
     expect(isValidA1c(6.5)).toBe(true)
     expect(isValidGlucose(15)).toBe(false)
     expect(isValidGlucose(600)).toBe(true)
+  })
+})
+
+describe('summarizeGlucose', () => {
+  it('gives the average, median, lowest, highest and count', () => {
+    expect(summarizeGlucose([100, 80, 120, 90])).toEqual({
+      mean: 97.5,
+      median: 95,
+      min: 80,
+      max: 120,
+      count: 4,
+    })
+    expect(summarizeGlucose([110, 70, 90])!.median).toBe(90)
+    expect(summarizeGlucose([])).toBeNull()
+  })
+
+  it('shows a range in the chosen unit', () => {
+    expect(formatGlucoseRange(70, 180, 'mg/dL')).toBe('70 to 180 mg/dL')
+    expect(formatGlucoseRange(72, 180, 'mmol/L')).toBe('4 to 10 mmol/L')
   })
 })

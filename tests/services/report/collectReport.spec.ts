@@ -135,6 +135,14 @@ describe('collectReport sections', () => {
     expect(empty.size).toBe(0)
   })
 
+  it('lists glucose monitor days in their own table, never as single readings', () => {
+    const sugar = only(['sugar']).sugar!
+    expect(sugar.monitor.rows).toEqual([
+      [expect.any(String), '112 mg/dL', '108 mg/dL', '71 to 183 mg/dL', '288'],
+    ])
+    expect(sugar.glucose.rows.every((r) => r[1] !== '112 mg/dL')).toBe(true)
+  })
+
   it('charts systolic and diastolic, with the change in both', () => {
     const vitals = only(['vitals']).vitals!
     expect(vitals.stats).toContainEqual(['Latest blood pressure', '126/81 mmHg'])
@@ -204,14 +212,15 @@ describe('collectReport sections', () => {
     const combined = collectReport(sampleSource('90d')).combined!
     expect(combined.window).toEqual({ start: NOW - 90 * DAY, end: NOW })
     const titles = combined.panels.map((p) => p.title)
-    expect(titles.slice(0, 5)).toEqual([
+    expect(titles.slice(0, 6)).toEqual([
       'Weight (kg)',
       'HbA1c (%)',
       'Glucose (mg/dL)',
+      'Glucose monitor, daily (mg/dL)',
       'Blood pressure (mmHg)',
       'Resting heart rate (bpm)',
     ])
-    expect(titles.slice(5).sort()).toEqual([
+    expect(titles.slice(6).sort()).toEqual([
       expect.stringMatching(/^Lab peptide .*, estimated \(mg\)$/),
       'Semaglutide, estimated (mg)',
     ])

@@ -30,11 +30,12 @@ import { nowIso, systemClock, type Clock } from '@/services/time'
 const BACKUP_FORMAT = 'pepcalc-backup'
 /*
  * 2 linked blend components to the catalog; 3 added the journal (measurements, side effects,
- * blood sugar, photos); 4 added protocols; 5 added blood pressure and heart rate. An older file restores with what it predates empty;
+ * blood sugar, photos); 4 added protocols; 5 added blood pressure and heart rate;
+ * 6 added glucose monitor days. An older file restores with what it predates empty;
  * an app that only knows an older version refuses a newer file rather than dropping what it
  * cannot read.
  */
-const BACKUP_VERSION = 5
+const BACKUP_VERSION = 6
 
 /** The data's name inside a zip backup; photos sit beside it as `photos/<id>.jpg`. */
 const ARCHIVE_DATA = 'pepcalc-backup.json'
@@ -267,7 +268,15 @@ function checkGlucose(g: unknown, i: number): asserts g is GlucoseRow {
     ((g.kind === 'a1c' && A1C_UNITS.includes(g.enteredUnit as never) && g.context === null) ||
       (g.kind === 'glucose' &&
         GLUCOSE_UNITS.includes(g.enteredUnit as never) &&
-        GLUCOSE_CONTEXTS.includes(g.context as never)))
+        GLUCOSE_CONTEXTS.includes(g.context as never)) ||
+      (g.kind === 'daily' &&
+        g.enteredUnit === 'mg/dL' &&
+        g.context === null &&
+        isPositive(g.median) &&
+        isPositive(g.min) &&
+        isPositive(g.max) &&
+        Number.isInteger(g.count) &&
+        isPositive(g.count)))
   if (!ok)
     throw new BackupFormatError(
       `Blood sugar reading ${i + 1} is missing required fields or has invalid values.`,

@@ -10,8 +10,9 @@ import {
   type StoreReading,
 } from '@/domain/healthSync'
 import { runSync, type SyncResult } from '@/services/health/runSync'
+import type { MonitorDay } from '@/domain/healthSync'
 import { appSourceId, healthStoreName } from '@/services/platform'
-import { systemClock, toEpochMs, toIso } from '@/services/time'
+import { atLocalTime, systemClock, toEpochMs, toIso } from '@/services/time'
 import { useJournalStore } from './journal'
 
 const SETTING_KEY = 'healthSync'
@@ -93,7 +94,7 @@ export const useHealthSyncStore = defineStore('healthSync', () => {
   }
 
   /** Readings from the store as journal rows, noting where they came from. */
-  function toRows(readings: readonly StoreReading[]) {
+  function toRows(readings: readonly StoreReading[], days: readonly MonitorDay[]) {
     const notes = `From ${healthStoreName}`
     const measurements: NewMeasurement[] = []
     const glucose: NewGlucose[] = []
@@ -128,6 +129,19 @@ export const useHealthSyncStore = defineStore('healthSync', () => {
         })
       else vitals.push({ kind: 'hr', measuredAt, bpm: r.value, notes })
     }
+    for (const d of days)
+      glucose.push({
+        kind: 'daily',
+        measuredAt: toIso(d.start),
+        value: d.mean,
+        enteredUnit: 'mg/dL',
+        context: null,
+        median: d.median,
+        min: d.min,
+        max: d.max,
+        count: d.count,
+        notes,
+      })
     return { measurements, glucose, vitals }
   }
 
@@ -145,8 +159,13 @@ export const useHealthSyncStore = defineStore('healthSync', () => {
         settings: settings.value,
         store: await native(),
         local: localReadings,
-        addToJournal: async (readings) => {
-          const ids = await repository.importReadings(toRows(readings))
+        summarisedDays: () =>
+          new Set(
+            journal.glucose.flatMap((g) => (g.kind === 'daily' ? [toEpochMs(g.measuredAt)] : [])),
+          ),
+        localDay: (at, offset) => atLocalTime(at, offset, 0, 0),
+        addToJournal: async (readings, days) => {
+          const ids = await repository.importReadings(toRows(readings, days))
           await journal.load()
           return ids
         },

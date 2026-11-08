@@ -119,3 +119,13 @@ export function fileDate(epochMs: number): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
+
+/**
+ * Epoch ms of `hour`:`minute` on the local calendar day `dayOffset` days after the day of
+ * `epochMs`. Built from local date parts, so midnight stays midnight across a daylight-saving
+ * change.
+ */
+export function atLocalTime(epochMs: number, dayOffset: number, hour: number, minute: number) {
+  const d = new Date(epochMs)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + dayOffset, hour, minute).getTime()
+}

@@ -5,6 +5,7 @@ import {
   formatA1c,
   formatA1cChange,
   formatGlucose,
+  formatGlucoseChange,
   fromA1cPercent,
   fromMgDl,
 } from '@/domain/glucose'
@@ -45,7 +46,7 @@ import type { ShareCardContent } from './shareCard'
  * numbers choice: in the peptide's unit beside values, as percent of peak beside a change only.
  */
 const props = defineProps<{
-  measure: 'weight' | 'bmi' | 'a1c' | 'glucose' | 'bp' | 'hr'
+  measure: 'weight' | 'bmi' | 'a1c' | 'glucose' | 'cgm' | 'bp' | 'hr'
   now: number
   /** Photos that can be pinned to the weight line (see TrendCard). */
   photos?: { id: string; at: number }[]
@@ -277,6 +278,41 @@ function glucoseCard(): ShareCardContent | null {
   )
 }
 
+function cgmCard(): ShareCardContent | null {
+  const days = byTime(
+    journal.glucose.flatMap((g) =>
+      g.kind === 'daily' ? [{ at: toEpochMs(g.measuredAt), value: g.value, median: g.median }] : [],
+    ),
+  )
+  const first = days[0]
+  const last = days[days.length - 1]
+  if (!first || !last) return null
+  const unit = settings.glucoseUnit
+  const stats: [string, string][] = [['Since', formatDate(first.at)]]
+  if (showNumbers.value) stats.push(['Latest average', formatGlucose(last.value, unit)])
+  stats.push(['Days', String(days.length)])
+  return card(
+    'Glucose monitor',
+    days.length > 1
+      ? `${formatGlucoseChange(last.value - first.value, unit)} average`
+      : 'Glucose monitor',
+    stats,
+    {
+      points: days.map((d) => ({ at: d.at, value: fromMgDl(d.value, unit) })),
+      secondary: {
+        name: 'Median',
+        joined: true,
+        points: days.map((d) => ({ at: d.at, value: fromMgDl(d.median, unit) })),
+      },
+      unitLabel: unit,
+      measure: 'Daily average',
+      decimals: decimalsFor(unit),
+      guides: [],
+    },
+    'Daily glucose monitor averages synced to PepCalc: average solid, median dashed.',
+  )
+}
+
 function bpCard(): ShareCardContent | null {
   const readings = byTime(
     journal.vitals.flatMap((v) =>
@@ -360,6 +396,8 @@ const content = computed<ShareCardContent | null>(() => {
       return a1cCard()
     case 'glucose':
       return glucoseCard()
+    case 'cgm':
+      return cgmCard()
     case 'bp':
       return bpCard()
     case 'hr':
@@ -374,6 +412,7 @@ const NAMES = {
   bmi: 'bmi',
   a1c: 'hba1c',
   glucose: 'glucose',
+  cgm: 'glucose-monitor',
   bp: 'blood-pressure',
   hr: 'heart-rate',
 } as const

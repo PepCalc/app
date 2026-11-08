@@ -9,6 +9,7 @@ import {
   decimalsFor,
   formatA1c,
   formatGlucose,
+  formatGlucoseRange,
   fromA1cPercent,
   fromMgDl,
   isValidA1c,
@@ -23,12 +24,13 @@ import { useJournalStore } from '@/stores/journal'
 import { useSettingsStore } from '@/stores/settings'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
-import { fromLocalInputValue, nowIso, toLocalInputValue } from '@/services/time'
+import { formatDate, fromLocalInputValue, nowIso, toLocalInputValue } from '@/services/time'
 
 /**
  * Log or edit an HbA1c result or a glucose reading, in the units chosen in Settings. Values
  * are stored canonically (percent, mg/dL) and unrounded; an edit that leaves the number alone
- * keeps the stored value exactly.
+ * keeps the stored value exactly. A glucose monitor's day, imported from a health app, is a
+ * summary: it can be read and deleted here, not edited.
  */
 const props = defineProps<{
   reading: GlucoseRow | null
@@ -55,10 +57,13 @@ const form = reactive({
 })
 const initialValue = ref('')
 
+const daily = computed(() => (props.reading?.kind === 'daily' ? props.reading : null))
+
 const unit = computed(() => (form.kind === 'a1c' ? settings.a1cUnit : settings.glucoseUnit))
 
 /** A stored reading as the number to edit, one place finer than display so nothing is lost. */
 function shown(r: GlucoseRow): string {
+  if (r.kind === 'daily') return ''
   if (r.kind === 'a1c') {
     const u = settings.a1cUnit
     return String(roundTo(fromA1cPercent(r.value, u), decimalsFor(u) + 1))
@@ -71,7 +76,7 @@ function shown(r: GlucoseRow): string {
 watch(open, (isOpen) => {
   if (!isOpen) return
   const r = props.reading
-  form.kind = r?.kind ?? props.initialKind ?? 'a1c'
+  form.kind = r && r.kind !== 'daily' ? r.kind : (props.initialKind ?? 'a1c')
   form.value = r ? shown(r) : ''
   initialValue.value = form.value
   form.context = r?.kind === 'glucose' ? r.context : 'fasting'
@@ -151,7 +156,13 @@ async function remove() {
   if (!r) return
   const ok = await confirm.ask({
     title: 'Delete this reading?',
-    text: `${r.kind === 'a1c' ? `HbA1c ${formatA1c(r.value, settings.a1cUnit)}` : `Glucose ${formatGlucose(r.value, settings.glucoseUnit)}`}. This can't be undone.`,
+    text: `${
+      r.kind === 'a1c'
+        ? `HbA1c ${formatA1c(r.value, settings.a1cUnit)}`
+        : r.kind === 'daily'
+          ? `Glucose monitor, ${formatDate(r.measuredAt)}`
+          : `Glucose ${formatGlucose(r.value, settings.glucoseUnit)}`
+    }. This can't be undone.`,
     confirmText: 'Delete',
     destructive: true,
   })
@@ -166,10 +177,39 @@ async function remove() {
   <v-dialog v-model="open" max-width="480" scrollable :aria-labelledby="titleId">
     <v-card>
       <v-card-item>
-        <p class="pc-eyebrow">{{ reading ? 'Edit' : 'Log' }}</p>
-        <v-card-title :id="titleId">Blood sugar</v-card-title>
+        <p class="pc-eyebrow">{{ daily ? 'Glucose monitor' : reading ? 'Edit' : 'Log' }}</p>
+        <v-card-title :id="titleId">{{
+          daily ? formatDate(daily.measuredAt) : 'Blood sugar'
+        }}</v-card-title>
       </v-card-item>
-      <v-card-text class="pc-stack">
+      <v-card-text v-if="daily" class="pc-stack">
+        <dl class="day-stats">
+          <div>
+            <dt class="pc-faint">Average</dt>
+            <dd class="pc-num">{{ formatGlucose(daily.value, settings.glucoseUnit) }}</dd>
+          </div>
+          <div>
+            <dt class="pc-faint">Median</dt>
+            <dd class="pc-num">{{ formatGlucose(daily.median, settings.glucoseUnit) }}</dd>
+          </div>
+          <div>
+            <dt class="pc-faint">Range</dt>
+            <dd class="pc-num">
+              {{ formatGlucoseRange(daily.min, daily.max, settings.glucoseUnit) }}
+            </dd>
+          </div>
+          <div>
+            <dt class="pc-faint">Readings</dt>
+            <dd class="pc-num">{{ daily.count }}</dd>
+          </div>
+        </dl>
+        <p class="text-body-small pc-muted">A summary of the day from a health app.</p>
+        <v-divider />
+        <div>
+          <v-btn variant="text" color="error" @click="remove">Delete day</v-btn>
+        </div>
+      </v-card-text>
+      <v-card-text v-else class="pc-stack">
         <div>
           <p :id="kindLabelId" class="pc-label">Reading</p>
           <v-btn-toggle
@@ -229,8 +269,9 @@ async function remove() {
       </v-card-text>
       <v-card-actions>
         <v-spacer />
-        <v-btn variant="text" @click="open = false">Cancel</v-btn>
+        <v-btn variant="text" @click="open = false">{{ daily ? 'Close' : 'Cancel' }}</v-btn>
         <v-btn
+          v-if="!daily"
           color="primary"
           variant="flat"
           :disabled="canonical === null"
@@ -243,3 +284,22 @@ async function remove() {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.day-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+
+.day-stats dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.day-stats dd {
+  margin: 0;
+  font-weight: 600;
+}
+</style>

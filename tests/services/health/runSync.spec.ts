@@ -4,6 +4,7 @@ import {
   type HealthReading,
   type HealthSyncSettings,
   type LocalReading,
+  type MonitorDay,
   type StoreReading,
 } from '@/domain/healthSync'
 import { runSync, type HealthStoreApi } from '@/services/health/runSync'
@@ -32,20 +33,31 @@ function fakeStore(initial: StoreReading[], options: { refuse?: string[] } = {})
   return { api, readings, reads }
 }
 
-/** A journal in memory, adding rows as sync imports them. */
+/** A journal in memory, adding rows and monitor days as sync imports them. */
 function fakeJournal(initial: LocalReading[]) {
   const rows = [...initial]
+  const days: MonitorDay[] = []
   return {
     rows,
+    days,
     local: () => rows,
-    addToJournal: async (readings: StoreReading[]) =>
-      readings.map((r, i) => {
-        const id = `imported-${rows.length + i}`
-        rows.push({ id, measure: r.measure, at: r.at, value: r.value })
-        return id
-      }),
+    summarisedDays: () => new Set(days.map((d) => d.start)),
+    addToJournal: async (readings: StoreReading[], newDays: MonitorDay[]) => {
+      days.push(...newDays)
+      return [
+        ...readings.map((r, i) => {
+          const id = `imported-${rows.length + i}`
+          rows.push({ id, measure: r.measure, at: r.at, value: r.value })
+          return id
+        }),
+        ...newDays.map((d) => `day-${d.start}`),
+      ]
+    },
   }
 }
+
+/** UTC days stand in for local ones, so the test reads the same in every time zone. */
+const utcDay = (at: number, offset: number) => Math.floor(at / DAY) * DAY + offset * DAY
 
 const settings = (changes: Partial<HealthSyncSettings> = {}): HealthSyncSettings => ({
   ...DEFAULT_HEALTH_SYNC,
@@ -62,7 +74,9 @@ async function sync(
     settings: s,
     store: store.api,
     local: journal.local,
+    summarisedDays: journal.summarisedDays,
     addToJournal: journal.addToJournal,
+    localDay: utcDay,
     ownSourceId: OWN,
     ask: true,
     now,
@@ -83,8 +97,8 @@ describe('runSync', () => {
 
     const second = await sync(store, journal, first.settings, NOW + DAY)
     expect(second.result).toEqual({ imported: 0, exported: 0, failed: 0 })
-    // Later runs read only from two days before the last.
-    expect(store.reads.at(-1)!.since).toBe(NOW - 2 * DAY)
+    // Later runs read whole days, from the start of the day two days before the last.
+    expect(store.reads.at(-1)!.since).toBe(utcDay(NOW - 2 * DAY, 0))
   })
 
   it('never takes back a reading this app exported, even after it is deleted here', async () => {
@@ -135,5 +149,40 @@ describe('runSync', () => {
     const { result, settings: next } = await sync(store, journal, settings())
     expect(result).toEqual({ imported: 0, exported: 0, failed: 1 })
     expect(next.inHealth).toEqual([])
+  })
+
+  it('keeps a glucose monitor day as one summary, once the day is over, and only once', async () => {
+    const yesterday = utcDay(NOW, -1)
+    const monitor = Array.from({ length: 96 }, (_, i) => ({
+      measure: 'glucose' as const,
+      at: yesterday + i * 15 * 60_000,
+      value: 90 + (i % 20),
+      platformId: `cgm-${i}`,
+      sourceId: 'com.cgm',
+    }))
+    const today = Array.from({ length: 30 }, (_, i) => ({
+      ...monitor[i]!,
+      at: utcDay(NOW, 0) + i * 5 * 60_000,
+      platformId: `cgm-today-${i}`,
+    }))
+    const meter = {
+      measure: 'glucose' as const,
+      at: yesterday + 7 * 3_600_000,
+      value: 101,
+      platformId: 'meter-1',
+      sourceId: 'com.meter',
+    }
+    const store = fakeStore([...monitor, ...today, meter])
+    const journal = fakeJournal([])
+    const first = await sync(store, journal, settings({ direction: 'import' }))
+    // The meter's reading comes in on its own; yesterday's 96 become one day; today waits.
+    expect(journal.rows.map((r) => r.value)).toEqual([101])
+    expect(journal.days).toHaveLength(1)
+    expect(journal.days[0]).toMatchObject({ start: yesterday, count: 96, min: 90, max: 109 })
+    expect(first.result.imported).toBe(2)
+
+    const second = await sync(store, journal, first.settings, NOW + 60_000)
+    expect(second.result.imported).toBe(0)
+    expect(journal.days).toHaveLength(1)
   })
 })

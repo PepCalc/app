@@ -42,7 +42,7 @@ import ShareTrendDialog from '@/components/share/ShareTrendDialog.vue'
  * Progress photos can be pinned to the weight line, at the date each was taken. Doses show as
  * one row per peptide under the measure, and estimated levels in a strip below that.
  */
-type TrendMeasure = 'weight' | 'bmi' | 'a1c' | 'glucose' | 'bp' | 'hr'
+type TrendMeasure = 'weight' | 'bmi' | 'a1c' | 'glucose' | 'cgm' | 'bp' | 'hr'
 
 const props = defineProps<{ now: number }>()
 
@@ -54,6 +54,7 @@ const shareOpen = ref(false)
 
 const a1c = computed(() => journal.glucose.filter((g) => g.kind === 'a1c'))
 const glucose = computed(() => journal.glucose.filter((g) => g.kind === 'glucose'))
+const monitorDays = computed(() => journal.glucose.flatMap((g) => (g.kind === 'daily' ? [g] : [])))
 const pressure = computed(() => journal.vitals.flatMap((v) => (v.kind === 'bp' ? [v] : [])))
 const heartRate = computed(() => journal.vitals.flatMap((v) => (v.kind === 'hr' ? [v] : [])))
 
@@ -64,6 +65,7 @@ const MEASURES = computed(() =>
       { value: 'bmi', label: 'BMI', on: body.bmiSeries.value.length > 0 },
       { value: 'a1c', label: 'HbA1c', on: a1c.value.length > 0 },
       { value: 'glucose', label: 'Glucose', on: glucose.value.length > 0 },
+      { value: 'cgm', label: 'CGM', on: monitorDays.value.length > 0 },
       { value: 'bp', label: 'Blood pressure', on: pressure.value.length > 0 },
       { value: 'hr', label: 'Heart rate', on: heartRate.value.length > 0 },
     ] as const
@@ -85,6 +87,7 @@ const TITLES: Record<TrendMeasure, string> = {
   bmi: 'Body mass index',
   a1c: 'HbA1c',
   glucose: 'Glucose',
+  cgm: 'Glucose monitor',
   bp: 'Blood pressure',
   hr: 'Resting heart rate',
 }
@@ -142,6 +145,24 @@ const chart = computed(() => {
           : undefined,
         unitLabel: settings.glucoseUnit,
         measure: 'Fasting glucose',
+        decimals: decimalsFor(settings.glucoseUnit),
+        guides: [],
+      }
+    }
+    case 'cgm': {
+      const at = (g: (typeof monitorDays.value)[number]) => toEpochMs(g.measuredAt)
+      const shown = (mgDl: number) => fromMgDl(mgDl, settings.glucoseUnit)
+      return {
+        points: oldestFirst(monitorDays.value.map((g) => ({ at: at(g), value: shown(g.value) }))),
+        secondary: {
+          name: 'Median',
+          joined: true,
+          points: oldestFirst(
+            monitorDays.value.map((g) => ({ at: at(g), value: shown(g.median) })),
+          ),
+        },
+        unitLabel: settings.glucoseUnit,
+        measure: 'Daily average',
         decimals: decimalsFor(settings.glucoseUnit),
         guides: [],
       }
@@ -256,7 +277,7 @@ const extras = computed(() => {
 const convertedUnits = computed(
   () =>
     (mode.value === 'a1c' && settings.a1cUnit !== '%') ||
-    (mode.value === 'glucose' && settings.glucoseUnit !== 'mg/dL'),
+    ((mode.value === 'glucose' || mode.value === 'cgm') && settings.glucoseUnit !== 'mg/dL'),
 )
 
 const hasMore = computed(
@@ -264,6 +285,7 @@ const hasMore = computed(
     !!extras.value.lanes ||
     (showLevels.value && panels.peptides.value.length > 0) ||
     mode.value === 'bmi' ||
+    mode.value === 'cgm' ||
     convertedUnits.value,
 )
 </script>
@@ -373,6 +395,9 @@ const hasMore = computed(
         Add your height in Settings to track BMI.
       </p>
       <MoreInfo v-if="hasMore">
+        <p v-if="mode === 'cgm'" class="text-body-small pc-muted">
+          One point per day from your glucose monitor: the average, and the median dashed.
+        </p>
         <p v-if="extras.lanes" class="text-body-small pc-muted">
           Each tick is a dose. Labels show new strengths.
         </p>

@@ -187,12 +187,16 @@ function drawWeight(layout: Layout, data: ReportData) {
 
 function drawSugar(layout: Layout, data: ReportData) {
   const sugar = data.sugar!
-  if (sugar.a1cChart || sugar.glucoseChart) {
+  if (sugar.a1cChart || sugar.glucoseChart || sugar.monitorChart) {
     layout.heading('Blood sugar')
     if (sugar.a1cChart) chart(layout, data, sugar.a1cChart, 140)
     if (sugar.glucoseChart) {
       layout.gap(6)
       chart(layout, data, sugar.glucoseChart, 140)
+    }
+    if (sugar.monitorChart) {
+      layout.gap(6)
+      chart(layout, data, sugar.monitorChart, 140)
     }
     layout.rule()
   }
@@ -200,6 +204,10 @@ function drawSugar(layout: Layout, data: ReportData) {
   layout.rule()
   layout.table('Blood glucose', sugar.glucose)
   layout.rule()
+  if (sugar.monitor.rows.length) {
+    layout.table('Glucose monitor, daily', sugar.monitor)
+    layout.rule()
+  }
 }
 
 function drawVitals(layout: Layout, data: ReportData) {
