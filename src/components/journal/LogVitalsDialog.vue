@@ -174,7 +174,7 @@ async function remove() {
           type="number"
           inputmode="numeric"
           suffix="bpm"
-          hint="Sitting still, such as on waking"
+          hint="Sitting still"
           persistent-hint
           :error-messages="bpmError"
         />
