@@ -1,0 +1,1 @@
+Log blood pressure and resting heart rate. Chart them, share them and add them to your PDF report. New: sync weight, glucose, blood pressure and heart rate with Health Connect. A glucose monitor's readings come in as one summary per day. Now needs Android 8 or later.
