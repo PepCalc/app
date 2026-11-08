@@ -416,6 +416,60 @@ describe('journal', () => {
     expect(await createRepository(db).listVitals()).toEqual([])
   })
 
+  it('imports readings from a health store in one go, returning their ids', async () => {
+    const repo = createRepository(db, fixedClock)
+    const ids = await repo.importReadings({
+      measurements: [
+        {
+          metric: 'weight',
+          measuredAt: '2026-10-01T07:00:00.000Z',
+          value: 80,
+          enteredUnit: 'kg',
+          notes: '',
+        },
+      ],
+      glucose: [
+        {
+          kind: 'glucose',
+          measuredAt: '2026-10-01T07:05:00.000Z',
+          value: 96,
+          enteredUnit: 'mg/dL',
+          context: 'other',
+          notes: '',
+        },
+      ],
+      vitals: [{ kind: 'hr', measuredAt: '2026-10-01T07:10:00.000Z', bpm: 61, notes: '' }],
+    })
+    expect(ids).toHaveLength(3)
+    expect((await repo.listMeasurements())[0]!.id).toBe(ids[0])
+    expect((await repo.listGlucose())[0]!.id).toBe(ids[1])
+    expect((await repo.listVitals())[0]!.id).toBe(ids[2])
+  })
+
+  it('restores health sync choices but turns sync off and starts its bookkeeping over', async () => {
+    const repo = await seed()
+    await repo.setSetting('healthSync', {
+      measures: ['weight'],
+      direction: 'export',
+      schedule: 'ongoing',
+      enabled: true,
+      lastSyncAt: '2026-10-20T08:00:00.000Z',
+      inHealth: ['w1'],
+      taken: [{ id: 'p1', at: 1 }],
+    })
+    const backup = parseBackup(JSON.stringify(await exportBackup(db, fixedClock)))
+    await restoreBackup(db, backup)
+    expect(await repo.getSetting('healthSync')).toEqual({
+      measures: ['weight'],
+      direction: 'export',
+      schedule: 'ongoing',
+      enabled: false,
+      lastSyncAt: null,
+      inHealth: [],
+      taken: [],
+    })
+  })
+
   it('lists vitals newest first, and an edit that changes kind leaves no stale numbers', async () => {
     const repo = createRepository(db, fixedClock)
     const bp = await repo.addVital({

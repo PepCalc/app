@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'" />
+    <title>PepCalc and Health Connect</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fbf8f3;
+        --text: #22201c;
+        --muted: #5c564d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1c1a17;
+          --text: #f2ede4;
+          --muted: #bdb5a8;
+        }
+      }
+      body {
+        margin: 0;
+        padding: 24px 16px 40px;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.5 system-ui, sans-serif;
+      }
+      h1 {
+        font-size: 1.5rem;
+        line-height: 1.2;
+        margin: 0 0 16px;
+      }
+      h2 {
+        font-size: 1.05rem;
+        margin: 24px 0 8px;
+      }
+      p,
+      li {
+        max-width: 40rem;
+      }
+      .muted {
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>PepCalc and Health Connect</h1>
+    <p>Sync is off until you turn it on in PepCalc, under Settings, Health apps.</p>
+
+    <h2>What PepCalc reads and writes</h2>
+    <ul>
+      <li>Weight</li>
+      <li>Blood glucose</li>
+      <li>Blood pressure</li>
+      <li>Resting heart rate</li>
+    </ul>
+    <p>You choose which of these sync, and whether they come in, go out, or both.</p>
+
+    <h2>Where it goes</h2>
+    <p>
+      Readings move only between PepCalc and Health Connect on this phone. PepCalc has no
+      account, no server and no network access, so it cannot send your data anywhere else.
+    </p>
+    <p>Other apps you allow in Health Connect can read what PepCalc writes there.</p>
+
+    <h2>Turning it off</h2>
+    <p>
+      Turn sync off in PepCalc, or remove PepCalc's access in Health Connect. Readings already
+      synced stay where they are.
+    </p>
+
+    <p class="muted">Full privacy policy: pepcalc.github.io/privacy.html</p>
+  </body>
+</html>

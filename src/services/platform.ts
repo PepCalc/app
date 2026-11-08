@@ -11,3 +11,15 @@ export const cameraSettingsSteps =
   __PLATFORM__ === 'ios'
     ? 'Open Settings, then Apps, PepCalc, and turn on Camera.'
     : 'Open Android Settings, then Apps, PepCalc, Permissions, Camera.'
+
+/** The phone's health store, as copy names it. */
+export const healthStoreName = __PLATFORM__ === 'ios' ? 'Apple Health' : 'Health Connect'
+
+/** Where to change PepCalc's access to Apple Health; Health Connect opens its own screen. */
+export const healthAccessSteps = 'Open Settings, then Privacy & Security, Health, PepCalc.'
+
+/**
+ * The app's id on both stores (`appId` in capacitor.config.ts). The health store reports it as
+ * the source of what PepCalc wrote, so sync never takes back its own readings.
+ */
+export const appSourceId = 'io.github.pepcalc.app'

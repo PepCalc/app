@@ -205,6 +205,28 @@ export function createRepository(db: PepcalcDb, clock: Clock = systemClock) {
       await db.vitals.delete(id)
     },
 
+    /**
+     * Adds readings taken from the phone's health store, all or none. Returns the new ids in
+     * input order: measurements, then blood sugar, then vitals.
+     */
+    async importReadings(input: {
+      measurements: NewMeasurement[]
+      glucose: NewGlucose[]
+      vitals: NewVital[]
+    }): Promise<string[]> {
+      const createdAt = nowIso(clock)
+      const stamp = <T>(row: T) => ({ ...row, id: crypto.randomUUID(), createdAt })
+      const measurements = input.measurements.map(stamp) as MeasurementRow[]
+      const glucose = input.glucose.map(stamp) as GlucoseRow[]
+      const vitals = input.vitals.map(stamp) as VitalRow[]
+      await db.transaction('rw', db.measurements, db.glucose, db.vitals, async () => {
+        await db.measurements.bulkAdd(measurements)
+        await db.glucose.bulkAdd(glucose)
+        await db.vitals.bulkAdd(vitals)
+      })
+      return [...measurements, ...glucose, ...vitals].map((r) => r.id)
+    },
+
     async listPhotos(): Promise<PhotoRow[]> {
       return db.photos.orderBy('takenAt').reverse().toArray()
     },

@@ -9,6 +9,7 @@ export {
   mdiCalculatorVariantOutline,
   mdiCheckCircleOutline,
   mdiChevronDown,
+  mdiChevronLeft,
   mdiChevronRight,
   mdiChevronUp,
   mdiCloudOffOutline,

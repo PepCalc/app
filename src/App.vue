@@ -9,6 +9,8 @@ import { usePhotosStore } from '@/stores/photos'
 import { useProtocolsStore } from '@/stores/protocols'
 import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { useHideOnScroll } from '@/composables/useHideOnScroll'
+import { useHealthAutoSync } from '@/composables/useHealthAutoSync'
+import { useHealthSyncStore } from '@/stores/healthSync'
 import AppLogo from '@/components/common/AppLogo.vue'
 import AppSnackbar from '@/components/common/AppSnackbar.vue'
 import AppConfirm from '@/components/common/AppConfirm.vue'
@@ -27,6 +29,8 @@ const settings = useSettingsStore()
 const shelf = useShelfStore()
 const journal = useJournalStore()
 const photos = usePhotosStore()
+const healthSync = useHealthSyncStore()
+useHealthAutoSync()
 const protocols = useProtocolsStore()
 const theme = useTheme()
 const display = useDisplay()
@@ -45,7 +49,12 @@ const NAV = [
 // Phones get bottom navigation within thumb reach; tablets and desktops a side rail.
 const wide = computed(() => display.mdAndUp.value)
 
-const activeNav = computed(() => (route.name === 'vial' ? 'shelf' : String(route.name ?? '')))
+// A page under a tab keeps that tab lit: a vial under Shelf, Health apps under Settings.
+const UNDER: Record<string, string> = { vial: 'shelf', health: 'settings' }
+const activeNav = computed(() => {
+  const name = String(route.name ?? '')
+  return UNDER[name] ?? name
+})
 
 const bar = useHideOnScroll()
 
@@ -114,6 +123,7 @@ onMounted(async () => {
     protocols.load(),
     journal.load(),
     photos.load(),
+    healthSync.load(),
   ])
   theme.change(settings.theme)
 })

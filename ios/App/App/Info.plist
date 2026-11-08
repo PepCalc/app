@@ -53,6 +53,10 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Take a progress photo. Photos stay on this device unless you share them.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>PepCalc imports the weight, glucose, blood pressure and heart rate readings you choose in Settings, Health apps.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>PepCalc exports the weight, glucose, blood pressure and heart rate readings you choose in Settings, Health apps.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choose a progress photo. Photos stay on this device unless you share them.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

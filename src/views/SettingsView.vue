@@ -32,6 +32,8 @@ import { useShelfStore } from '@/stores/shelf'
 import { useProtocolsStore } from '@/stores/protocols'
 import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
+import { useHealthSyncStore } from '@/stores/healthSync'
+import { healthStoreName } from '@/services/platform'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
 import { useStoragePersistence } from '@/composables/useStoragePersistence'
@@ -47,6 +49,7 @@ import {
   mdiCheckCircleOutline,
   mdiCloudOffOutline,
   mdiDownload,
+  mdiHeartPulse,
   mdiShieldLockOutline,
   mdiTrayArrowUp,
 } from '@/plugins/icons'
@@ -56,6 +59,9 @@ const shelf = useShelfStore()
 const protocols = useProtocolsStore()
 const journal = useJournalStore()
 const photos = usePhotosStore()
+const healthSync = useHealthSyncStore()
+/** Health sync needs the phone's health store, so only the apps offer it. */
+const healthSupported = __NATIVE__
 const notify = useNotifyStore()
 const confirm = useConfirmStore()
 const theme = useTheme()
@@ -271,6 +277,7 @@ async function importData(event: Event) {
       journal.load(),
       photos.load(),
       settings.load(),
+      healthSync.load(),
     ])
     theme.change(settings.theme)
     notify.show('Backup restored', 'success')
@@ -515,6 +522,26 @@ const formatMb = (bytes: number | null) =>
               </v-btn>
             </div>
           </template>
+        </v-card-text>
+      </v-card>
+
+      <v-card v-if="healthSupported">
+        <v-card-item>
+          <p class="pc-eyebrow">Health apps</p>
+          <v-card-title>{{ healthStoreName }}</v-card-title>
+          <v-card-subtitle>{{
+            healthSync.settings.enabled && healthSync.settings.schedule === 'ongoing'
+              ? 'Sync is on'
+              : 'Sync is off'
+          }}</v-card-subtitle>
+        </v-card-item>
+        <v-card-text class="pc-stack">
+          <p>Import and export weight, glucose, blood pressure and heart rate.</p>
+          <div class="pc-actions">
+            <v-btn variant="tonal" :prepend-icon="mdiHeartPulse" :to="{ name: 'health' }">
+              Set up sync
+            </v-btn>
+          </div>
         </v-card-text>
       </v-card>
 

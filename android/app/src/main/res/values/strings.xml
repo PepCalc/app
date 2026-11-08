@@ -4,4 +4,9 @@
     <string name="title_activity_main">PepCalc</string>
     <string name="package_name">io.github.pepcalc.app</string>
     <string name="custom_url_scheme">io.github.pepcalc.app</string>
+    <!--
+        Health Connect shows this when the user asks why PepCalc wants access. It is bundled,
+        not fetched: the app has no network access.
+    -->
+    <string name="health_connect_privacy_policy_url">file:///android_asset/health-privacy.html</string>
 </resources>

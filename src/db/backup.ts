@@ -17,6 +17,7 @@ import { A1C_UNITS, GLUCOSE_CONTEXTS, GLUCOSE_UNITS } from '@/domain/glucose'
 import { PHOTO_POSES } from '@/domain/photos'
 import { SEVERITIES, SYMPTOMS } from '@/domain/symptoms'
 import { isValidBloodPressure, isValidHeartRate } from '@/domain/vitals'
+import { restoredHealthSync } from '@/domain/healthSync'
 import { AMOUNT_UNITS, areCompatible, type AmountUnit } from '@/domain/units'
 import { nowIso, systemClock, type Clock } from '@/services/time'
 
@@ -460,7 +461,12 @@ export async function restoreBackup(
     await db.photos.bulkAdd(backup.photos)
     await db.photoImages.bulkAdd(photoFiles.map((f) => ({ id: f.id, bytes: f.image })))
     await db.photoThumbs.bulkAdd(photoFiles.map((f) => ({ id: f.id, bytes: f.thumb })))
-    await db.settings.bulkPut(backup.settings)
+    // Health sync starts over, off, on whatever phone the backup lands on.
+    await db.settings.bulkPut(
+      backup.settings.map((s) =>
+        s.key === 'healthSync' ? { key: s.key, value: restoredHealthSync(s.value) } : s,
+      ),
+    )
   })
 }
 

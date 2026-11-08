@@ -10,6 +10,7 @@ PepCalc is a private, offline calculator for reconstituting peptide vials and re
 <li>Level charts: an estimate of the amount remaining in the body from a simple model of published human data, or from a half-life you enter yourself, clearly marked as yours.</li>
 <li>Journal: weight and body measurements, side effects, blood sugar, blood pressure, resting heart rate and progress photos that only you can see.</li>
 <li>Share a level chart as an image, or export a PDF report, both made on the device.</li>
+<li>Turn on Health Connect sync for weight, glucose, blood pressure and heart rate.</li>
 </ul>
 
 <b>Private by design</b>

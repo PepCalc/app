@@ -8,16 +8,22 @@ Part of the `engineering-standards` skill.
 src/
   domain/        pure logic: units, reconstitution, diluent advice, syringe, pk, levels (pooling and
                  the curve model), inventory, blend, listing (paging, ordering, vial numbers),
-                 vial age, report (periods, windows, totals, axis ticks), catalog types
+                 vial age, report (periods, windows, totals, axis ticks), vitals (blood pressure
+                 and heart rate), healthSync (what to import and export, matching), catalog
+                 types
   data/          peptides.json, syringes.json, their JSON Schemas, typed loader (index.ts)
   db/            Dexie database (schema history), repository, backup export/restore
-  stores/        Pinia: shelf (vials + draws), settings, notify, confirm
+  stores/        Pinia: shelf (vials + draws), settings, healthSync (Health apps choices),
+                 notify, confirm
   composables/   useCalculator, useDiluentAdvisor, useChartColors, useInstallPrompt, useStoragePersistence, useNow,
-                 usePaging, useVialAge, useHideOnScroll, useReportExport
+                 usePaging, useVialAge, useHideOnScroll, useReportExport, useHealthAutoSync
   services/      time.ts (the only clock and date formatter), fileTransfer.ts (share/download),
-                 pdf/ (dependency-free PDF writer), report/ (the PDF report: data, layout, charts)
+                 pdf/ (dependency-free PDF writer), report/ (the PDF report: data, layout, charts),
+                 health/ (Apple Health and Health Connect through @capgo/capacitor-health,
+                 loaded only in the apps; runSync, the sync loop)
   components/    calculator/, charts/, history/, shelf/, common/
-  views/         one per route: Calculator, Shelf, Vial, Journal, Protocols, Settings
+  views/         one per route: Calculator, Shelf, Vial, Journal, Protocols, Settings, Health
+                 (apps only)
   plugins/       vuetify.ts (themes, defaults), icons.ts (inline SVG icons), fonts.ts
   styles/        tokens.css (design tokens), theme.css (global and Vuetify overrides)
 public/          icons, favicon, layers.css (cascade layer order, linked before bundles)
@@ -41,6 +47,12 @@ per-visit; anything that must survive a reload goes into the database.
   the journal's `measurements`, `symptoms`, `glucose`, `photos`, `photoImages` and
   `photoThumbs` (version 2); `protocols` (version 3); `vitals` (version 4: blood pressure and
   resting heart rate, stored as typed in mmHg and bpm, with no unit setting).
+- Health apps sync is off until the user turns it on, and only adds: neither health store lets
+  an app edit or delete another app's records. The `healthSync` setting keeps the user's
+  choices and the ids of rows already in the store, so nothing is sent or taken twice; a
+  reading counts as present on the other side at the same minute and value. Imported rows are
+  ordinary journal rows with a "From Apple Health" or "From Health Connect" note. A restored
+  backup keeps the choices but turns sync off and starts the bookkeeping over.
 - Ids are `crypto.randomUUID()`; timestamps are UTC ISO strings.
 - Deleting a vial deletes its draws in the same transaction. Archiving keeps both.
 - `navigator.storage.persist()` is requested on launch (Settings shows the result). Safari may

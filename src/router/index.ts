@@ -40,6 +40,14 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/SettingsView.vue'),
     meta: { title: 'Settings' },
   },
+  {
+    path: '/settings/health',
+    name: 'health',
+    component: () => import('@/views/HealthView.vue'),
+    meta: { title: 'Health apps' },
+    // Only the apps can reach the phone's health store.
+    beforeEnter: () => (__NATIVE__ ? true : { name: 'settings' }),
+  },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
