@@ -17,7 +17,6 @@ const { entries } = useEntries()
       >
         Progress
       </v-btn>
-      <p class="pc-eyebrow">Everything you’ve logged</p>
       <h1 class="pc-display text-headline-large">All entries</h1>
     </header>
 

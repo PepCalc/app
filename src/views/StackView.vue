@@ -88,7 +88,6 @@ const chartedCount = computed(
   <div class="pc-page stack">
     <header class="d-flex align-center flex-wrap ga-3 mb-4">
       <div class="flex-grow-1">
-        <p class="pc-eyebrow">Your stack</p>
         <h1 class="pc-display text-headline-large">Stack</h1>
       </div>
       <v-btn :to="{ name: 'calculator' }" color="primary" variant="flat" :prepend-icon="mdiPlus">

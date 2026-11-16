@@ -86,16 +86,8 @@ const shareSource = computed(() => {
           :now="now"
           :lookback-hours="lookbackHours"
         />
-        <MoreInfo>
-          <p class="text-body-small pc-muted">
-            Estimated amount in your body, from the half-life and time to peak.
-          </p>
-          <SourceList
-            v-if="!userSupplied && source?.pk"
-            flat
-            :sources="source.pk.sources"
-            :note="source.pk.notes"
-          />
+        <MoreInfo v-if="!userSupplied && source?.pk">
+          <SourceList flat :sources="source.pk.sources" :note="source.pk.notes" />
         </MoreInfo>
         <ShareLevelsDialog
           v-model="sharing"

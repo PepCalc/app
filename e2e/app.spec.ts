@@ -185,9 +185,9 @@ test('projects levels while setting a protocol, then draws them on its page', as
   await page.getByRole('option', { name: 'days', exact: true }).click()
   await expect(panel.getByText('At 0.25 mg weekly.')).toBeVisible()
   await expect(panel.getByRole('img', { name: /Projected levels\. Steady by/ })).toBeVisible()
-  await expect(panel.getByText('Estimate from the half-life')).toBeHidden()
+  await expect(panel.getByText('Prescribing label')).toBeHidden()
   await panel.getByRole('button', { name: 'More information' }).click()
-  await expect(panel.getByText('Estimate from the half-life')).toBeVisible()
+  await expect(panel.getByText('Prescribing label')).toBeVisible()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
 

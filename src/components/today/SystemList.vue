@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
 import type { TracePoint } from '@/domain/projection'
-import SourceBadge from '@/components/common/SourceBadge.vue'
 import { mdiChevronRight } from '@/plugins/icons'
 
 export interface SystemRow {
@@ -30,13 +29,7 @@ const areaPath = (points: readonly TracePoint[]) => {
 
 <template>
   <section v-if="rows.length" class="pc-stack pc-stack--tight" aria-labelledby="system-heading">
-    <div class="system-header">
-      <h2 id="system-heading" class="pc-display text-title-large">In your system</h2>
-      <div class="system-header__meta">
-        <SourceBadge kind="model" />
-        <span class="text-body-small pc-muted">Estimate</span>
-      </div>
-    </div>
+    <h2 id="system-heading" class="pc-display text-title-large">In your system</h2>
 
     <v-card>
       <v-list density="comfortable" class="bg-transparent pa-0">
@@ -62,26 +55,10 @@ const areaPath = (points: readonly TracePoint[]) => {
         </v-list-item>
       </v-list>
     </v-card>
-
-    <p class="text-body-small pc-muted">Sources on each medicine's page.</p>
   </section>
 </template>
 
 <style scoped>
-.system-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.system-header__meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .system-row {
   min-height: 56px;
 }

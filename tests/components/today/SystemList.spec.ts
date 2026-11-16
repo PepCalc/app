@@ -41,7 +41,7 @@ const rows: SystemRow[] = [
 ]
 
 describe('SystemList', () => {
-  it('renders one linked row per entry with Estimate and the model badge', async () => {
+  it('renders one linked row per entry', async () => {
     const router = makeRouter()
     await router.push('/')
     await router.isReady()
@@ -52,9 +52,9 @@ describe('SystemList', () => {
     })
 
     expect(wrapper.text()).toContain('In your system')
-    expect(wrapper.text()).toContain('Estimate')
-    expect(wrapper.text()).toContain('Modelling choice')
-    expect(wrapper.text()).toContain("Sources on each medicine's page.")
+    expect(wrapper.text()).not.toContain('Estimate')
+    expect(wrapper.text()).not.toContain('Modelling choice')
+    expect(wrapper.text()).not.toContain("Sources on each medicine's page.")
 
     const links = wrapper.findAll('a')
     expect(links).toHaveLength(2)

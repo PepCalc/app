@@ -19,7 +19,7 @@ export const SOURCE_KIND_LABELS: Record<SourceKind, string> = {
   standard: 'Published standard',
   preclinical: 'Animal data',
   community: 'Community-reported',
-  model: 'Modelling choice',
+  model: 'Derived',
 }
 
 export interface SourceRef {
