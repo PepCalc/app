@@ -222,7 +222,10 @@ export function daysSince(from: string, epochMs: number): number {
 /** First day of the week for the device's locale (1 Monday to 7 Sunday), defaulting to Monday. */
 export function firstDayOfWeek(localeTag?: string): Weekday {
   try {
-    const tag = localeTag ?? Intl.DateTimeFormat().resolvedOptions().locale
+    const tag =
+      localeTag ??
+      ((typeof navigator !== 'undefined' && navigator.language) ||
+        Intl.DateTimeFormat().resolvedOptions().locale)
     const loc = new Intl.Locale(tag) as Intl.Locale & {
       getWeekInfo?: () => { firstDay?: number }
       weekInfo?: { firstDay?: number }
@@ -235,6 +238,47 @@ export function firstDayOfWeek(localeTag?: string): Weekday {
     // Fall back to Monday when Intl.Locale week info is unavailable.
   }
   return 1
+}
+
+/** 0 for Sunday to 6 for Saturday (Vuetify calendar convention); Monday when unknown. */
+export function calendarFirstDayOfWeek(localeTag?: string): number {
+  return firstDayOfWeek(localeTag) % 7
+}
+
+/** Start of the local day of a calendar component's Date, epoch ms. */
+export function dayOfDate(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+}
+
+/** A Date for a calendar component, at the start of the local day of `epochMs`. */
+export function dateOfDay(epochMs: number): Date {
+  const d = new Date(epochMs)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+/** Start of the local day for a `YYYY-MM-DD` string from a calendar picker, or NaN if invalid. */
+export function dayOfIsoDate(isoDate: string): number {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate)
+  if (!match) return Number.NaN
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime()
+}
+
+/** Local 0-indexed month (`0..11`) and year for `epochMs`. */
+export function monthYearOf(epochMs: number): { month: number; year: number } {
+  const d = new Date(epochMs)
+  return { month: d.getMonth(), year: d.getFullYear() }
+}
+
+/** Epoch ms of the first local day of `year` and 0-indexed `month`. */
+export function monthStartOf(year: number, month: number): number {
+  return new Date(year, month, 1).getTime()
+}
+
+const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' })
+
+/** "November 2026" in the device's language. */
+export function formatMonth(epochMs: number): string {
+  return monthFormat.format(new Date(epochMs))
 }
 
 export const localCalendar: LocalCalendar = {

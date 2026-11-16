@@ -1,16 +1,23 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   atLocalTime,
+  calendarFirstDayOfWeek,
+  dateOfDay,
+  dayOfDate,
+  dayOfIsoDate,
   daysBetween,
   daysSince,
   firstDayOfWeek,
   formatDate,
   formatDay,
   formatHours,
+  formatMonth,
   formatTime,
   formatTimeOfDay,
   fromLocalInputValue,
   localCalendar,
+  monthStartOf,
+  monthYearOf,
   nowIso,
   toLocalInputValue,
   weekdayName,
@@ -90,5 +97,33 @@ describe('calendar helpers', () => {
     expect(formatTimeOfDay({ hour: 8, minute: 5 })).toMatch(/8:05/)
     expect(weekdayName(1, 'long').length).toBeGreaterThan(2)
     expect(weekdayName(7, 'short').length).toBeGreaterThan(1)
+  })
+
+  it('round-trips local day, formats month title, and maps Sunday to 0 for calendarFirstDayOfWeek', () => {
+    const midDay = new Date(2026, 10, 16, 15, 42).getTime()
+    const expectedStart = new Date(2026, 10, 16, 0, 0, 0, 0).getTime()
+    expect(dayOfDate(dateOfDay(midDay))).toBe(expectedStart)
+    expect(dayOfIsoDate('2026-11-16')).toBe(expectedStart)
+    expect(dayOfIsoDate('bad')).toBeNaN()
+    expect(monthYearOf(midDay)).toEqual({ month: 10, year: 2026 })
+    expect(monthStartOf(2026, 10)).toBe(new Date(2026, 10, 1).getTime())
+    expect(formatMonth(midDay)).toContain('2026')
+    expect(calendarFirstDayOfWeek('en-US')).toBe(0)
+    expect(calendarFirstDayOfWeek('de-DE')).toBe(1)
+
+    const OriginalLocale = Intl.Locale
+    vi.stubGlobal(
+      'Intl',
+      Object.assign({}, Intl, {
+        Locale: function MockLocale() {
+          return {}
+        },
+      }),
+    )
+    try {
+      expect(calendarFirstDayOfWeek('en-US')).toBe(1)
+    } finally {
+      vi.stubGlobal('Intl', Object.assign({}, Intl, { Locale: OriginalLocale }))
+    }
   })
 })

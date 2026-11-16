@@ -425,6 +425,44 @@
     border-radius: var(--pc-radius-md);
   }
 
+  /* Month calendar grid: fill the card and keep 48px touch targets down to 320px phones. */
+  .v-date-picker {
+    background: transparent;
+    width: 100%;
+  }
+
+  .v-date-picker-controls {
+    height: auto;
+    min-height: var(--pc-touch);
+    padding: 4px 8px;
+  }
+
+  .v-date-picker-controls .v-btn {
+    min-height: var(--pc-touch);
+  }
+
+  .v-date-picker-controls .v-btn.v-btn--icon {
+    min-width: var(--pc-touch);
+  }
+
+  .v-date-picker-month {
+    padding: 0 4px 8px;
+  }
+
+  .v-date-picker-month__day {
+    min-height: var(--pc-touch);
+    height: auto;
+    padding: 2px;
+  }
+
+  .v-date-picker-month__day .v-btn.v-date-picker-month__day-btn {
+    width: 100%;
+    max-width: var(--pc-touch);
+    min-height: var(--pc-touch);
+    height: var(--pc-touch);
+    border-radius: var(--pc-radius-pill);
+  }
+
   /*
    * Action rows line up with the content above them. A text button's label already sits 16px
    * in (8px row padding plus 8px button padding), so text-only rows keep Vuetify's padding; a

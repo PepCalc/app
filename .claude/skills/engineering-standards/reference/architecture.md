@@ -17,7 +17,7 @@ src/
                  (headline weight change and weekly rate), range (chart window ranges), report
                  (periods, windows, axis ticks), drawTotals (totals by unit), vitals (blood
                  pressure and heart rate), healthSync (what to import and export, matching),
-                 entries, entryText, due (due-card sorting), reminderDays (reminder plans
+                 entries, entryDays (calendar day marks), entryText, due (due-card sorting), reminderDays (reminder plans
                  from schedules), reminders (when to remind, grouping, capping, notification
                  wording), calendar (calendar invites), catalog types
   brand.ts       per-app strings read by shared components (wordmark, health sync summary)
@@ -30,7 +30,7 @@ src/
                  confirm
   composables/   useCalculator, useDiluentAdvisor, useBodyMetrics, useCameraAccess,
                  useChartColors, useDoseBands, useDueItems, useInstallPrompt, useStoragePersistence, useNow,
-                 useEntries, usePaging, usePhotoPins, useReminderSync, useVialAge, useHideOnScroll, useReportExport,
+                 useEntries, usePaging, usePhotoPins, useReminderSync, useScheduledDays, useVialAge, useHideOnScroll, useReportExport,
                  useSystemRows, useHealthAutoSync, useWeightSummary
   services/      time.ts (the only clock and date formatter), locale.ts (device region and
                  measurement system), fileTransfer.ts (share/download),

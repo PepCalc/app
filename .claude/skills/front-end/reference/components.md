@@ -32,6 +32,8 @@ Part of the `front-end` skill.
 | `journal/LogHost.vue`                                                                          | Mounted once in `App.vue`: the Log button, the sheet, and every log dialog                                                                                                                                            |
 | `journal/LogButton.vue`, `journal/LogSheet.vue`                                                | Floating Log button and bottom sheet listing every loggable kind                                                                                                                                                      |
 | `journal/EntriesTimeline.vue`                                                                  | Every logged thing by day, with kind filters; a row opens its dialog through the log store                                                                                                                            |
+| `journal/EntryRow.vue`, `journal/EntryKindFilter.vue`                                          | Shared entry row (opens its dialog through the log store) and kind filter chip group used by both timeline and calendar                                                                                               |
+| `journal/EntriesCalendar.vue`, `journal/DayPanel.vue`                                          | A month of days, marked where anything was logged or is scheduled; built on `v-date-picker`, paired with a day panel showing that day's entries, photos and scheduled items                                           |
 | `journal/SymptomSummaryCard.vue`                                                               | Side effects by period, strength and days after a draw (no longer opens PDF export; Export PDF lives in Progress's header)                                                                                            |
 | `charts/TrendCard.vue`, `charts/BodyChart.vue`, `charts/DoseLegend.vue`, `charts/bodyChart.ts` | A body measure over time with range chips (`domain/range.ts`). On weight and BMI the line takes the colour of the dose in use and a pill marks each change (`domain/doseBands.ts`); `DoseLegend` lists the strengths. |
 | `share/ShareTrendDialog.vue`                                                                   | Trend image; numbers, photos and doses each opt-in                                                                                                                                                                    |
@@ -75,6 +77,8 @@ Part of the `front-end` skill.
   names and amounts; the report covers a chosen period.
 - A unit default comes from `unitDefaultsFor`; never hard-code `kg` or `cm` as a fallback in a
   component.
+- A date from a Vuetify date component is converted in `src/services/time.ts` (`dayOfDate`,
+  `dateOfDay`, `dayOfIsoDate`); components never construct or read a `Date`.
 
 ## Spacing and alignment
 

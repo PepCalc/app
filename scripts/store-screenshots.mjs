@@ -125,6 +125,18 @@ const SHOTS = [
       await page.getByText('Total change').waitFor()
     },
   },
+  {
+    scheme: 'light',
+    show: async (page) => {
+      await openTab(page, 'Progress')
+      await page.getByRole('link', { name: /^All entries/ }).click()
+      await page
+        .getByRole('group', { name: 'View' })
+        .getByRole('button', { name: 'Calendar' })
+        .click()
+      await page.locator('.entries-calendar').waitFor()
+    },
+  },
 ]
 
 const work = mkdtempSync(join(tmpdir(), 'pepcalc-store-shots-'))

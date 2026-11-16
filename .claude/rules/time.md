@@ -12,3 +12,5 @@ paths: ['src/**']
 - A time of day or a calendar date that is not an instant (a schedule's 08:00, a course's start)
   is stored as numbers or `YYYY-MM-DD`, and becomes an instant only through
   `src/services/time.ts`.
+- A `Date` handed over by a UI component is converted at once by `src/services/time.ts`; it is
+  never stored, compared or formatted elsewhere.
