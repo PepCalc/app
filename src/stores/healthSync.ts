@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 import { repository } from '@/db'
-import type { NewGlucose, NewMeasurement, NewVital } from '@/db/repository'
+import type { NewGlucose, NewVital, NewWeight } from '@/db/repository'
 import {
   DEFAULT_HEALTH_SYNC,
   sanitizeHealthSync,
@@ -105,19 +105,13 @@ export const useHealthSyncStore = defineStore('healthSync', () => {
   /** Readings from the store as journal rows, noting where they came from. */
   function toRows(readings: readonly StoreReading[], days: readonly MonitorDay[]) {
     const notes = `From ${healthStoreName}`
-    const measurements: NewMeasurement[] = []
+    const weights: NewWeight[] = []
     const glucose: NewGlucose[] = []
     const vitals: NewVital[] = []
     for (const r of readings) {
       const measuredAt = toIso(r.at)
       if (r.measure === 'weight')
-        measurements.push({
-          metric: 'weight',
-          measuredAt,
-          value: r.value,
-          enteredUnit: 'kg',
-          notes,
-        })
+        weights.push({ measuredAt, kg: r.value, enteredUnit: 'kg', notes })
       else if (r.measure === 'glucose')
         glucose.push({
           kind: 'glucose',
@@ -151,7 +145,7 @@ export const useHealthSyncStore = defineStore('healthSync', () => {
         count: d.count,
         notes,
       })
-    return { measurements, glucose, vitals }
+    return { weights, glucose, vitals }
   }
 
   /**

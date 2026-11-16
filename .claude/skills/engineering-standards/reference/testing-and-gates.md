@@ -4,10 +4,10 @@ Part of the `engineering-standards` skill.
 
 ## Gates
 
-| Command          | What it runs                                                                                    |
-| ---------------- | ----------------------------------------------------------------------------------------------- |
-| `make check`     | lint, format check, typecheck, token check, contrast check, markdown check, knip, Vitest, build |
-| `make check-all` | `make check`, Playwright e2e (phone and tablet), `npm audit --audit-level=low`                  |
+| Command          | What it runs                                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| `make check`     | lint, format check, typecheck, token check, contrast check, markdown check, knip, Vitest, build          |
+| `make check-all` | `make check`, `parity` (sibling check), Playwright e2e (phone and tablet), `npm audit --audit-level=low` |
 
 CI (`.github/workflows/ci.yml`) runs the full gate on pull requests. Deployment
 (`.github/workflows/deploy.yml`) runs `npm run check` and publishes `dist/` to GitHub Pages on

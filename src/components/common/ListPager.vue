@@ -3,7 +3,7 @@ import type { Page } from '@/domain/listing'
 
 defineProps<{
   current: Page<unknown>
-  /** Plural noun for the range caption: "vials", "draws". */
+  /** Plural noun for the range caption: "items", "entries". */
   noun: string
 }>()
 const page = defineModel<number>({ required: true })

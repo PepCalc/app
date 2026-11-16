@@ -2,7 +2,7 @@
  * When the next dose of a protocol falls, from the last logged draw and the user's own interval.
  * This restates the user's schedule; it never suggests a dose, an interval or a change.
  */
-import { sameProductKey } from './listing'
+import { sameProductKey } from './vials'
 
 const MINUTE_MS = 60_000
 const HOUR_MS = 60 * MINUTE_MS

@@ -10,11 +10,13 @@ src/
                  reconstitution, diluent advice, syringe, pk, levels (pooling and the curve
                  model), overlay (several peptides on one chart), projection (levels ahead),
                  schedule (when a protocol is next due), inventory, blend, listing (paging,
-                 ordering, vial numbers), vial age, body (measurements, BMI, WHO bands),
-                 glucose, symptoms, photos, collage and crop (photo collage), doseLanes and
-                 levelStrip (doses and levels under a trend), report (periods, windows,
-                 totals, axis ticks), vitals (blood pressure and heart rate), healthSync
-                 (what to import and export, matching), catalog types
+                 ordering), vials (numbering, keys), vial age, body (measurements, length
+                 units, BMI, WHO bands), glucose, symptoms, photos, collage and crop (photo
+                 collage), doseLanes and levelStrip (doses and levels under a trend), report
+                 (periods, windows, axis ticks), drawTotals (totals by unit), vitals (blood
+                 pressure and heart rate), healthSync (what to import and export, matching),
+                 catalog types
+  brand.ts       per-app strings read by shared components (wordmark, health sync summary)
   data/          peptides.json, syringes.json, their JSON Schemas, typed loader (index.ts)
   db/            Dexie database (schema history), repository, backup export/restore
   stores/        Pinia: shelf (vials + draws), protocols (a schedule per peptide), journal
@@ -40,7 +42,7 @@ src/
 public/          icons, favicon, layers.css (cascade layer order, linked before bundles)
 tests/           Vitest, mirrors src/
 e2e/             Playwright against `vite preview` of the production build
-scripts/         gate scripts (contrast, tokens, markdown)
+scripts/       gate scripts (contrast, tokens, markdown, parity)
 vendor/          patched copies of build-time dependencies (see testing-and-gates.md)
 build/           Vite plugins that patch a dependency at build time (see testing-and-gates.md)
 ```
@@ -143,3 +145,9 @@ uploaded only by `.github/workflows/ios.yml`.
   every URL resolves to `index.html` on GitHub Pages and offline.
 - A production-only meta CSP (`default-src 'self'`) is injected by `vite.config.ts`, because
   GitHub Pages cannot set headers. Styles need `'unsafe-inline'` for Vuetify's theme tag.
+
+## Sibling app
+
+`parity.json` at the repository root and `scripts/parity.mjs` enforce parity with Gliplog.
+Every path under `roots` that exists in both apps is shared (identical after neutralising the
+brand) unless `diverged` lists it with a one-sentence reason.

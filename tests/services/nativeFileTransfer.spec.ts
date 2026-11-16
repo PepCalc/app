@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const writeFile = vi.fn()
+const appendFile = vi.fn()
 const share = vi.fn()
 
 vi.mock('@capacitor/filesystem', () => ({
   Directory: { Cache: 'CACHE' },
   Encoding: { UTF8: 'utf8' },
-  Filesystem: { writeFile },
+  Filesystem: { writeFile, appendFile },
 }))
 vi.mock('@capacitor/share', () => ({ Share: { share } }))
 
@@ -15,6 +16,7 @@ const { shareNative } = await import('@/services/nativeFileTransfer')
 describe('shareNative', () => {
   beforeEach(() => {
     writeFile.mockReset().mockResolvedValue({ uri: 'file:///cache/backup.json' })
+    appendFile.mockReset().mockResolvedValue(undefined)
     share.mockReset().mockResolvedValue({})
   })
 
@@ -40,6 +42,16 @@ describe('shareNative', () => {
       data: 'iVBORw==',
       directory: 'CACHE',
     })
+  })
+
+  it('writes a large Blob in appended slices', async () => {
+    const big = new Blob([new Uint8Array(7 * 1024 * 1024)])
+    await expect(shareNative('backup.zip', big)).resolves.toBe('shared')
+    expect(writeFile).toHaveBeenCalledTimes(1)
+    expect(appendFile).toHaveBeenCalledTimes(2)
+    const written = [writeFile.mock.calls[0]![0], ...appendFile.mock.calls.map((c) => c[0])]
+    const bytes = written.reduce((sum, call: { data: string }) => sum + atob(call.data).length, 0)
+    expect(bytes).toBe(big.size)
   })
 
   it('reports a dismissed share sheet as cancelled', async () => {

@@ -21,7 +21,10 @@ const inner = svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
 const glyph = inner.replace(tile, '')
 const foreground = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
   <svg x="18" y="18" width="72" height="72" viewBox="0 0 512 512">${glyph}</svg></svg>`
-const round = svg.replace(tile, '<circle cx="256" cy="256" r="256" fill="#3f6b52"/>')
+const tokens = readFileSync('src/styles/tokens.css', 'utf8')
+const brandColour = tokens.match(/--(?:gl|pc)-brand:\s*(#[0-9a-f]{6})/i)?.[1]
+if (!brandColour) throw new Error('tokens.css is missing the light-theme brand colour')
+const round = svg.replace(tile, `<circle cx="256" cy="256" r="256" fill="${brandColour}"/>`)
 const square = svg.replace(tile, (rect) => rect.replace(/\s*rx="[^"]*"/, ''))
 if (square === svg) throw new Error('favicon.svg tile has no rx to square off')
 

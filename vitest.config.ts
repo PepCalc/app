@@ -10,7 +10,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify('test'),
     __NATIVE__: 'false',
     __PLATFORM__: JSON.stringify('web'),
-    __SITE_URL__: JSON.stringify('https://pepcalc.github.io/'),
+    __SITE_URL__: JSON.stringify('https://example.invalid/'),
   },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

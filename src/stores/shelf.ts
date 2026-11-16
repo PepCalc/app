@@ -5,7 +5,8 @@ import type { DrawRow, VialRow } from '@/db/database'
 import type { NewDraw, NewVial } from '@/db/repository'
 import { vialBalance, type VialBalance } from '@/domain/inventory'
 import { findPeptide, syringeCatalog } from '@/data'
-import { sortByTime, vialNumbers } from '@/domain/listing'
+import { sortByTime } from '@/domain/listing'
+import { vialNumbers } from '@/domain/vials'
 import {
   dosesFromVials,
   groupLevelsByPeptide,

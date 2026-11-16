@@ -434,11 +434,10 @@ describe('journal', () => {
   it('imports readings from a health store in one go, returning their ids', async () => {
     const repo = createRepository(db, fixedClock)
     const ids = await repo.importReadings({
-      measurements: [
+      weights: [
         {
-          metric: 'weight',
           measuredAt: '2026-10-01T07:00:00.000Z',
-          value: 80,
+          kg: 80,
           enteredUnit: 'kg',
           notes: '',
         },
@@ -676,11 +675,10 @@ describe('stores reactive input', () => {
   it('imports readings from reactive arrays', async () => {
     const repo = createRepository(db, fixedClock)
     const input = reactive({
-      measurements: [
+      weights: [
         {
-          metric: 'weight' as const,
           measuredAt: '2026-10-01T07:00:00.000Z',
-          value: 80,
+          kg: 80,
           enteredUnit: 'kg' as const,
           notes: '',
         },

@@ -5,7 +5,6 @@ import {
   type PkParameters,
   type SimulationWindow,
 } from './pk'
-import { areCompatible, convert, type Quantity } from './units'
 
 /** How far back a report reaches. */
 export type ReportPeriod = '30d' | '90d' | 'all'
@@ -19,14 +18,14 @@ export function periodStart(period: ReportPeriod, now: number): number {
 }
 
 export interface ReportWindow extends SimulationWindow {
-  /** True when a short-acting peptide's chart shows only the days up to its latest dose. */
+  /** True when a short-acting product's chart shows only the days up to its latest dose. */
   trimmed: boolean
 }
 
 /**
  * The span a report's level chart shows: from shortly before the first dose in the period to
  * the same forward horizon as the in-app chart (five half-lives, or longer for slow absorption).
- * Short-acting peptides follow the in-app lookback (`lookbackHoursFor`), counted back from their
+ * Short-acting products follow the in-app lookback (`lookbackHoursFor`), counted back from their
  * latest dose so a report made days later still shows the pattern. Doses before the window
  * still count towards the curve; the window just starts later.
  */
@@ -45,20 +44,6 @@ export function reportWindow(
   if (lookback === undefined || !Number.isFinite(latest)) return { start, end, trimmed: false }
   const recent = latest - lookback * 3_600_000
   return recent > start ? { start: recent, end, trimmed: true } : { start, end, trimmed: false }
-}
-
-/**
- * Total drawn per unit family. Mass doses are summed in the first mass unit seen (mcg and mg
- * convert); IU is summed on its own and never added to mass.
- */
-export function totalsByUnit(doses: readonly Quantity[]): Quantity[] {
-  const totals: Quantity[] = []
-  for (const dose of doses) {
-    const bucket = totals.find((t) => areCompatible(t.unit, dose.unit))
-    if (bucket) bucket.value += convert(dose, bucket.unit).value
-    else totals.push({ value: dose.value, unit: dose.unit })
-  }
-  return totals
 }
 
 /**

@@ -42,7 +42,7 @@ android:
 ios:
 	$(NODE) npm run build:ios
 
-## Retake the draw, Protocols and shelf screenshots for the website (writes to ../pepcalc.github.io).
+## Retake screenshots for the project site (writes to ../pepcalc.github.io).
 screenshots:
 	$(NODE) npm run screenshots:site
 

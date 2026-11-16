@@ -2,18 +2,14 @@ import { roundTo } from './units'
 
 /**
  * Units for body measures, kept apart from dose units (`units.ts`), which never convert to
- * these. Weight is stored in kilograms and lengths (height, a waist) in centimetres, unrounded,
- * so switching the display unit never loses precision; conversion happens only for display and
- * entry.
+ * these. Weight is stored in kilograms and height in centimetres, unrounded, so switching the
+ * display unit never loses precision; conversion happens only for display and entry.
  */
 export type WeightUnit = 'kg' | 'lb'
 export type HeightUnit = 'cm' | 'ftin'
-/** A circumference such as a waist: centimetres, or inches alone (nobody measures one in feet). */
-export type LengthUnit = 'cm' | 'in'
 
 export const WEIGHT_UNITS: readonly WeightUnit[] = ['kg', 'lb']
 export const HEIGHT_UNITS: readonly HeightUnit[] = ['cm', 'ftin']
-export const LENGTH_UNITS: readonly LengthUnit[] = ['cm', 'in']
 
 /** Exact by definition (International Yard and Pound Agreement, 1959). */
 const KG_PER_LB = 0.45359237
@@ -26,19 +22,6 @@ export function toKg(value: number, unit: WeightUnit): number {
 
 export function fromKg(kg: number, unit: WeightUnit): number {
   return unit === 'kg' ? kg : kg / KG_PER_LB
-}
-
-export function toCm(value: number, unit: LengthUnit): number {
-  return unit === 'cm' ? value : value * CM_PER_INCH
-}
-
-export function fromCm(cm: number, unit: LengthUnit): number {
-  return unit === 'cm' ? cm : cm / CM_PER_INCH
-}
-
-/** The circumference unit that matches the height setting: feet and inches read lengths in inches. */
-export function lengthUnitFor(height: HeightUnit): LengthUnit {
-  return height === 'cm' ? 'cm' : 'in'
 }
 
 export interface FeetInches {

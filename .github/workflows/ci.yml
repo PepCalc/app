@@ -32,3 +32,22 @@ jobs:
       # signatures and provenance attestations (needs network access to sigstore, so CI only).
       - run: npm audit --audit-level=low
       - run: npm audit signatures
+
+  parity:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: pepcalc/app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: pepcalc/app
+      - uses: actions/checkout@v7
+        with:
+          repository: Gliplog/app
+          path: glpcalc/app
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: pepcalc/app/.nvmrc
+      - run: npm run parity -- --require-sibling

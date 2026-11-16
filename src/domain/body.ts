@@ -1,4 +1,23 @@
-import { LENGTH_UNITS, WEIGHT_UNITS, type LengthUnit, type WeightUnit } from './bodyUnits'
+import { WEIGHT_UNITS, type HeightUnit, type WeightUnit } from './bodyUnits'
+
+/** A circumference such as a waist: centimetres, or inches alone (nobody measures one in feet). */
+export type LengthUnit = 'cm' | 'in'
+const LENGTH_UNITS: readonly LengthUnit[] = ['cm', 'in']
+
+const CM_PER_INCH = 2.54
+
+export function toCm(value: number, unit: LengthUnit): number {
+  return unit === 'cm' ? value : value * CM_PER_INCH
+}
+
+export function fromCm(cm: number, unit: LengthUnit): number {
+  return unit === 'cm' ? cm : cm / CM_PER_INCH
+}
+
+/** The circumference unit that matches the height setting: feet and inches read lengths in inches. */
+export function lengthUnitFor(height: HeightUnit): LengthUnit {
+  return height === 'cm' ? 'cm' : 'in'
+}
 
 /**
  * Body measurements and what is derived from them. A measurement is one metric at one time,

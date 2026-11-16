@@ -11,6 +11,29 @@ async function toBase64(blob: Blob): Promise<string> {
   return btoa(binary)
 }
 
+/*
+ * A backup with photos can run to tens of megabytes. Crossing the native bridge as one base64
+ * string would hold several copies of it in memory at once, so binary files are written in
+ * slices and appended. A multiple of 3 keeps each slice's base64 free of padding.
+ */
+const SLICE_BYTES = 3 * 1024 * 1024
+
+async function writeBlob(path: string, blob: Blob): Promise<string> {
+  const { uri } = await Filesystem.writeFile({
+    path,
+    data: await toBase64(blob.slice(0, SLICE_BYTES)),
+    directory: Directory.Cache,
+  })
+  for (let start = SLICE_BYTES; start < blob.size; start += SLICE_BYTES) {
+    await Filesystem.appendFile({
+      path,
+      data: await toBase64(blob.slice(start, start + SLICE_BYTES)),
+      directory: Directory.Cache,
+    })
+  }
+  return uri
+}
+
 /**
  * Write the file to the app's cache and open the system share sheet on it (save to Files,
  * Drive, a messaging app). Text is written as UTF-8, a Blob as its raw bytes. Resolves
@@ -21,11 +44,17 @@ export async function shareNative(
   name: string,
   data: string | Blob,
 ): Promise<'shared' | 'cancelled'> {
-  const { uri } = await Filesystem.writeFile(
+  const uri =
     typeof data === 'string'
-      ? { path: name, data, directory: Directory.Cache, encoding: Encoding.UTF8 }
-      : { path: name, data: await toBase64(data), directory: Directory.Cache },
-  )
+      ? (
+          await Filesystem.writeFile({
+            path: name,
+            data,
+            directory: Directory.Cache,
+            encoding: Encoding.UTF8,
+          })
+        ).uri
+      : await writeBlob(name, data)
   try {
     await Share.share({ title: name, files: [uri] })
     return 'shared'

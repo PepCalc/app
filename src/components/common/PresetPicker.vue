@@ -24,7 +24,7 @@ const isPreset = (v: number | null) => v !== null && props.presets.includes(v)
 /*
  * Custom mode is explicit (the user tapped "Custom") or implied (the value is not a preset).
  * Selection is derived from the value and the preset list together, because a parent can
- * change both in the same tick (switching peptide swaps presets and the default dose).
+ * change both in the same tick (switching product swaps presets and the default dose).
  */
 const customMode = ref(false)
 const customText = ref('')

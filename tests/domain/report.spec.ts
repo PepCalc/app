@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { niceRange, niceTicks, periodStart, reportWindow, totalsByUnit } from '@/domain/report'
+import { niceRange, niceTicks, periodStart, reportWindow } from '@/domain/report'
 
 const DAY = 86_400_000
 const H = 3_600_000
@@ -29,31 +29,6 @@ describe('reportWindow', () => {
   })
 })
 
-describe('totalsByUnit', () => {
-  it('sums mass across mg and mcg in the first unit seen and keeps IU apart', () => {
-    expect(
-      totalsByUnit([
-        { value: 250, unit: 'mcg' },
-        { value: 0.5, unit: 'mg' },
-        { value: 2, unit: 'iu' },
-        { value: 3, unit: 'iu' },
-      ]),
-    ).toEqual([
-      { value: 750, unit: 'mcg' },
-      { value: 5, unit: 'iu' },
-    ])
-  })
-
-  it('does not change the doses it is given', () => {
-    const doses = [
-      { value: 1, unit: 'mg' as const },
-      { value: 1, unit: 'mg' as const },
-    ]
-    totalsByUnit(doses)
-    expect(doses[0]!.value).toBe(1)
-  })
-})
-
 describe('niceTicks', () => {
   it('uses round steps that cover the maximum', () => {
     expect(niceTicks(0.845)).toEqual([0, 0.25, 0.5, 0.75, 1])
@@ -67,7 +42,7 @@ describe('niceTicks', () => {
   })
 })
 
-describe('reportWindow for short-acting peptides', () => {
+describe('reportWindow for short-acting products', () => {
   const tesamorelin = { halfLifeHours: 0.5, tmaxHours: 0.15 }
   const daily = Array.from({ length: 90 }, (_, i) => ({ at: i * DAY, amount: 2 }))
 
@@ -83,7 +58,7 @@ describe('reportWindow for short-acting peptides', () => {
     expect(w.start).toBeLessThan(88 * DAY)
   })
 
-  it('never trims a long-acting peptide', () => {
+  it('never trims a long-acting product', () => {
     const w = reportWindow(daily, { halfLifeHours: 168, tmaxHours: 56 }, 95 * DAY, 0)
     expect(w.trimmed).toBe(false)
   })

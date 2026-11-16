@@ -10,7 +10,8 @@ import type {
   VialRow,
   VitalRow,
 } from './database'
-import { sameProductKey } from '@/domain/listing'
+import type { WeightUnit } from '@/domain/bodyUnits'
+import { sameProductKey } from '@/domain/vials'
 import { protocolFollowingRename } from '@/domain/schedule'
 import { nowIso, systemClock, type Clock } from '@/services/time'
 
@@ -18,6 +19,12 @@ export type NewVial = Omit<VialRow, 'id' | 'createdAt' | 'updatedAt'>
 export type NewDraw = Omit<DrawRow, 'id' | 'createdAt'>
 export type NewProtocol = Omit<ProtocolRow, 'id' | 'createdAt' | 'updatedAt'>
 export type NewMeasurement = Omit<MeasurementRow, 'id' | 'createdAt'>
+export interface NewWeight {
+  measuredAt: string
+  kg: number
+  enteredUnit: WeightUnit
+  notes: string
+}
 export type NewSymptom = Omit<SymptomRow, 'id' | 'createdAt'>
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never
 export type NewGlucose = DistributiveOmit<GlucoseRow, 'id' | 'createdAt'>
@@ -210,13 +217,21 @@ export function createRepository(db: PepcalcDb, clock: Clock = systemClock) {
      * input order: measurements, then blood sugar, then vitals.
      */
     async importReadings(input: {
-      measurements: NewMeasurement[]
+      weights: NewWeight[]
       glucose: NewGlucose[]
       vitals: NewVital[]
     }): Promise<string[]> {
       const createdAt = nowIso(clock)
       const stamp = <T>(row: T) => ({ ...row, id: crypto.randomUUID(), createdAt })
-      const measurements = input.measurements.map(stamp) as MeasurementRow[]
+      const measurements = input.weights.map((w) =>
+        stamp({
+          metric: 'weight' as const,
+          measuredAt: w.measuredAt,
+          value: w.kg,
+          enteredUnit: w.enteredUnit,
+          notes: w.notes,
+        }),
+      ) as MeasurementRow[]
       const glucose = input.glucose.map(stamp) as GlucoseRow[]
       const vitals = input.vitals.map(stamp) as VitalRow[]
       await db.transaction('rw', db.measurements, db.glucose, db.vitals, async () => {

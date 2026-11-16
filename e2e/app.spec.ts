@@ -1,17 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { acceptDisclaimer, choose } from './helpers'
-
-/**
- * The first service worker activates without claiming the page that registered it, so wait for
- * activation and reload once: from then on every request goes through the precache.
- */
-async function waitForServiceWorker(page: Page) {
-  await page.evaluate(() => navigator.serviceWorker.ready)
-  await page.reload()
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true)
-}
+import { acceptDisclaimer, choose, waitForServiceWorker } from './helpers'
 
 test('calculates the standard check: 5 mg in 2 mL, 250 mcg is 10 units', async ({ page }) => {
   await page.goto('./')

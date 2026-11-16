@@ -22,6 +22,9 @@ One-line rules; detail lives in `reference/`. Front-end styling and components a
    inline disable. Knip findings are deleted, not ignored.
 3. Tests live under `tests/` mirroring `src/` (unit and component, Vitest) and `e2e/`
    (Playwright against the production build); never inside `src/`.
+4. `npm run parity` (part of `make check-all`) compares this app with its sibling. A file both
+   apps have is shared unless `parity.json` lists it as diverged with a reason. Change a shared
+   file in both apps in the same piece of work.
 
 ## Layering
 

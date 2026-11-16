@@ -79,8 +79,8 @@ export function coverCrop(srcW: number, srcH: number, dstW: number, dstH: number
 const WEEK_MS = 7 * 86_400_000
 
 /**
- * "Week 6" counted from `startAt` (the collage's first photo), or "Before week 1" for a photo
- * taken before it. Null without a start, so the caller falls back to dates.
+ * "Week 6" counted from `startAt`, or "Before week 1" for a photo taken before it. Null without
+ * a start, so the caller falls back to dates.
  */
 export function weekLabel(at: number, startAt: number | null): string | null {
   if (startAt === null) return null

@@ -35,7 +35,7 @@ describe('PresetPicker', () => {
   })
 
   it('stays on presets when presets and value change in the same tick', async () => {
-    // Switching peptide swaps both the preset list and the default dose at once.
+    // Switching product swaps both the preset list and the default dose at once.
     const wrapper = mountPicker(0.25, [0.25, 0.5])
     await wrapper.setProps({ presets: [250, 500], modelValue: 250 })
     await nextTick()

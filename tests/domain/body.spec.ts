@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   bmi,
   bmiBand,
+  fromCm,
   isValidMeasurement,
+  lengthUnitFor,
   METRIC_IDS,
   METRICS,
+  toCm,
   unitsFor,
   weightChange,
 } from '@/domain/body'
@@ -53,5 +56,15 @@ describe('weightChange', () => {
     expect(change).toMatchObject({ first: { at: 1 }, latest: { at: 3 }, changeKg: -2 })
     expect(change!.changePercent).toBeCloseTo(-2.5, 9)
     expect(weightChange([])).toBeNull()
+  })
+})
+
+describe('length units', () => {
+  it('converts circumferences in exact inches and follows the height setting', () => {
+    expect(toCm(32, 'in')).toBeCloseTo(81.28, 9)
+    expect(fromCm(toCm(33.5, 'in'), 'in')).toBeCloseTo(33.5, 9)
+    expect(toCm(80, 'cm')).toBe(80)
+    expect(lengthUnitFor('ftin')).toBe('in')
+    expect(lengthUnitFor('cm')).toBe('cm')
   })
 })

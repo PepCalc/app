@@ -23,7 +23,8 @@ import {
 } from '@/domain/glucose'
 import { levelKey, type PeptideLevels } from '@/domain/levels'
 import { amountAt, rateConstants, simulate, summarizeLevels } from '@/domain/pk'
-import { periodStart, reportWindow, totalsByUnit, type ReportPeriod } from '@/domain/report'
+import { totalsByUnit } from '@/domain/drawTotals'
+import { periodStart, reportWindow, type ReportPeriod } from '@/domain/report'
 import { SEVERITIES, SEVERITY_LABELS, SYMPTOM_SOURCES, summarizeSymptoms } from '@/domain/symptoms'
 import { formatAmount, roundTo, unitLabel, type Quantity } from '@/domain/units'
 import {

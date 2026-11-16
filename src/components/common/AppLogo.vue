@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import markUrl from '@/assets/brand/pepcalc-mark.svg'
+import { brand } from '@/brand'
 
 /**
- * The PepCalc mark (a P drawn as a syringe barrel with a vial for its bowl) beside the
- * two-tone wordmark. The mark is a fixed brand asset, identical in both themes; the wordmark is
- * live text so it follows the theme and stays crisp at any size.
+ * The app mark beside the two-tone wordmark. The mark is a fixed brand asset, identical in both
+ * themes; the wordmark is live text so it follows the theme and stays crisp at any size.
  */
 withDefaults(defineProps<{ size?: number }>(), { size: 32 })
 </script>
@@ -12,7 +12,10 @@ withDefaults(defineProps<{ size?: number }>(), { size: 32 })
 <template>
   <span class="app-logo" :style="{ '--logo-size': `${size}px` }">
     <img :src="markUrl" alt="" class="app-logo__mark" />
-    <span class="app-logo__word"><span>Pep</span><span class="app-logo__calc">Calc</span></span>
+    <span class="app-logo__word">
+      <span>{{ brand.wordmark[0] }}</span
+      ><span class="app-logo__calc">{{ brand.wordmark[1] }}</span>
+    </span>
   </span>
 </template>
 

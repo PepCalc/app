@@ -1,3 +1,5 @@
+import { brand } from '@/brand'
+
 /**
  * Drawing shared by the share images (a trend card, a photo collage): the app's colours read
  * from its tokens, its paper and backdrop, the brand row and the footer. Everything is drawn on
@@ -102,9 +104,9 @@ export function drawBrandRow(
   ctx.restore()
   ctx.font = `700 40px ${font}`
   ctx.fillStyle = t['text-1']
-  ctx.fillText('Pep', pad + 84, pad + 46)
+  ctx.fillText(brand.wordmark[0], pad + 84, pad + 46)
   ctx.fillStyle = t.brand
-  ctx.fillText('Calc', pad + 84 + ctx.measureText('Pep').width, pad + 46)
+  ctx.fillText(brand.wordmark[1], pad + 84 + ctx.measureText(brand.wordmark[0]).width, pad + 46)
   ctx.font = `400 26px ${font}`
   ctx.fillStyle = t['text-3']
   ctx.textAlign = 'right'

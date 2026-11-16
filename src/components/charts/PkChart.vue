@@ -37,7 +37,7 @@ const props = defineProps<{
   preview: DoseEvent | null
   unitLabel: string
   now: number
-  /** Limits history for frequently dosed peptides. */
+  /** Limits history for frequently dosed products. */
   lookbackHours?: number
 }>()
 

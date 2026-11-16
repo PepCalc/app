@@ -6,10 +6,7 @@ import {
   formatPercentChange,
   formatWeight,
   formatWeightChange,
-  fromCm,
   fromKg,
-  lengthUnitFor,
-  toCm,
   toKg,
 } from '@/domain/bodyUnits'
 
@@ -39,15 +36,5 @@ describe('height units', () => {
     expect(cmToFeetInches(182.85)).toEqual({ feet: 6, inches: 0 })
     expect(formatHeight(182.85, 'ftin')).toBe('6 ft 0 in')
     expect(formatHeight(170.04, 'cm')).toBe('170 cm')
-  })
-})
-
-describe('length units', () => {
-  it('converts circumferences in exact inches and follows the height setting', () => {
-    expect(toCm(32, 'in')).toBeCloseTo(81.28, 9)
-    expect(fromCm(toCm(33.5, 'in'), 'in')).toBeCloseTo(33.5, 9)
-    expect(toCm(80, 'cm')).toBe(80)
-    expect(lengthUnitFor('ftin')).toBe('in')
-    expect(lengthUnitFor('cm')).toBe('cm')
   })
 })
