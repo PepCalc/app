@@ -15,14 +15,18 @@ import {
 import { useJournalStore } from '@/stores/journal'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
-import { fromLocalInputValue, nowIso, toLocalInputValue } from '@/services/time'
+import { fromLocalInputValue, nowIso, toIso, toLocalInputValue } from '@/services/time'
 import SourceList from '@/components/common/SourceList.vue'
 
 /**
  * Log how you felt: one or more side effects at one time and strength, saved as one entry each
  * so each can be counted and edited on its own. Editing an entry changes that one alone.
  */
-const props = defineProps<{ symptom: SymptomRow | null }>()
+const props = defineProps<{
+  symptom: SymptomRow | null
+  /** Epoch ms for a new entry's initial time; defaults to now. */
+  startAt?: number
+}>()
 const open = defineModel<boolean>({ required: true })
 
 const journal = useJournalStore()
@@ -47,7 +51,9 @@ watch(open, (isOpen) => {
   form.symptoms = s ? [s.symptom] : []
   form.otherText = s?.otherText ?? ''
   form.severity = s?.severity ?? 'mild'
-  form.occurredAt = toLocalInputValue(s?.occurredAt ?? nowIso())
+  form.occurredAt = toLocalInputValue(
+    s?.occurredAt ?? (props.startAt !== undefined ? toIso(props.startAt) : nowIso()),
+  )
   form.notes = s?.notes ?? ''
 })
 

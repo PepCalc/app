@@ -6,10 +6,14 @@ import { useJournalStore, type WeightEntry } from '@/stores/journal'
 import { useSettingsStore } from '@/stores/settings'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
-import { fromLocalInputValue, nowIso, toLocalInputValue } from '@/services/time'
+import { fromLocalInputValue, nowIso, toIso, toLocalInputValue } from '@/services/time'
 
 /** Log a weigh-in, or edit or delete one. Entry is in the weight unit chosen in Settings. */
-const props = defineProps<{ weight: WeightEntry | null }>()
+const props = defineProps<{
+  weight: WeightEntry | null
+  /** Epoch ms for a new entry's initial time; defaults to now. */
+  startAt?: number
+}>()
 const open = defineModel<boolean>({ required: true })
 
 const journal = useJournalStore()
@@ -30,7 +34,9 @@ watch(open, (isOpen) => {
   const w = props.weight
   form.value = w ? String(roundTo(fromKg(w.kg, unit.value), 2)) : ''
   initialValue.value = form.value
-  form.measuredAt = toLocalInputValue(w?.measuredAt ?? nowIso())
+  form.measuredAt = toLocalInputValue(
+    w?.measuredAt ?? (props.startAt !== undefined ? toIso(props.startAt) : nowIso()),
+  )
   form.notes = w?.notes ?? ''
 })
 

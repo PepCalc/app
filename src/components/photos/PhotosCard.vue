@@ -4,21 +4,15 @@ import type { PhotoRow } from '@/db/database'
 import { POSE_LABELS } from '@/domain/photos'
 import { usePaging } from '@/composables/usePaging'
 import { useCameraAccess } from '@/composables/useCameraAccess'
-import { useStoragePersistence } from '@/composables/useStoragePersistence'
-import {
-  clearNativeCaptures,
-  PhotoReadError,
-  preparePhoto,
-  type PreparedPhoto,
-} from '@/services/photos/preparePhoto'
+import { clearNativeCaptures, PhotoReadError, preparePhoto } from '@/services/photos/preparePhoto'
 import { formatDate, nowIso, toIso } from '@/services/time'
 import { usePhotosStore } from '@/stores/photos'
 import { useNotifyStore } from '@/stores/notify'
+import { useLogStore } from '@/stores/log'
 import { cameraSettingsSteps } from '@/services/platform'
 import { mdiCameraOutline, mdiCompare, mdiImageOutline, mdiViewGridOutline } from '@/plugins/icons'
 import ListPager from '@/components/common/ListPager.vue'
 import CameraAccessDialog from './CameraAccessDialog.vue'
-import PhotoDialog from './PhotoDialog.vue'
 import PhotoCompareDialog from './PhotoCompareDialog.vue'
 import ShareCollageDialog from '@/components/share/ShareCollageDialog.vue'
 
@@ -28,17 +22,13 @@ import ShareCollageDialog from '@/components/share/ShareCollageDialog.vue'
  */
 const photosStore = usePhotosStore()
 const notify = useNotifyStore()
-const storage = useStoragePersistence()
+const log = useLogStore()
 
 const cameraInput = ref<HTMLInputElement | null>(null)
 const libraryInput = ref<HTMLInputElement | null>(null)
 const camera = useCameraAccess(() => cameraInput.value?.click())
 const reading = ref(false)
 
-const dialog = ref(false)
-const viewing = ref<PhotoRow | null>(null)
-const prepared = ref<PreparedPhoto | null>(null)
-const takenAt = ref('')
 const compareOpen = ref(false)
 const collageOpen = ref(false)
 
@@ -54,11 +44,10 @@ async function onFile(event: Event, fromCamera: boolean) {
   if (!file) return
   reading.value = true
   try {
-    prepared.value = await preparePhoto(file)
+    const prepared = await preparePhoto(file)
     // A photo from the library keeps the time it was taken, when the file still carries it.
-    takenAt.value = !fromCamera && file.lastModified ? toIso(file.lastModified) : nowIso()
-    viewing.value = null
-    dialog.value = true
+    const takenAt = !fromCamera && file.lastModified ? toIso(file.lastModified) : nowIso()
+    log.start('photo', { prepared, takenAt })
   } catch (e) {
     notify.show(e instanceof PhotoReadError ? e.message : "Couldn't read that photo.", 'error')
   } finally {
@@ -87,15 +76,7 @@ function chooseInstead() {
 onMounted(() => void clearNativeCaptures())
 
 function view(photo: PhotoRow) {
-  prepared.value = null
-  viewing.value = photo
-  dialog.value = true
-}
-
-/** Photos raise the stakes of the browser clearing site data, so ask again to keep it. */
-function onSaved() {
-  prepared.value = null
-  void storage.actions.refresh()
+  log.edit({ kind: 'photo', id: photo.id })
 }
 </script>
 
@@ -185,13 +166,6 @@ function onSaved() {
       @allow="camera.actions.allow"
       @settings="openCameraSettings"
       @library="chooseInstead"
-    />
-    <PhotoDialog
-      v-model="dialog"
-      :photo="viewing"
-      :prepared="prepared"
-      :taken-at="takenAt"
-      @saved="onSaved"
     />
     <PhotoCompareDialog v-model="compareOpen" />
     <ShareCollageDialog v-model="collageOpen" />

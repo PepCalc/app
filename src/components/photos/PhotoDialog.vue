@@ -12,7 +12,14 @@ import { usePhotosStore } from '@/stores/photos'
 import { useSettingsStore } from '@/stores/settings'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
-import { formatDate, fromLocalInputValue, toEpochMs, toLocalInputValue } from '@/services/time'
+import { useStoragePersistence } from '@/composables/useStoragePersistence'
+import {
+  formatDate,
+  fromLocalInputValue,
+  nowIso,
+  toEpochMs,
+  toLocalInputValue,
+} from '@/services/time'
 
 /**
  * Save a new progress photo (`prepared`, taken or chosen a moment ago), or view, edit and
@@ -26,13 +33,13 @@ const props = defineProps<{
   takenAt: string
 }>()
 const open = defineModel<boolean>({ required: true })
-const emit = defineEmits<{ saved: [] }>()
 
 const journal = useJournalStore()
 const photosStore = usePhotosStore()
 const settings = useSettingsStore()
 const notify = useNotifyStore()
 const confirm = useConfirmStore()
+const storage = useStoragePersistence()
 const titleId = useId()
 const poseLabelId = useId()
 const shapeLabelId = useId()
@@ -64,7 +71,7 @@ watch(open, async (isOpen) => {
   working.value = null
   if (!isOpen) return
   const p = props.photo
-  form.takenAt = toLocalInputValue(p?.takenAt ?? props.takenAt)
+  form.takenAt = toLocalInputValue(p?.takenAt ?? (props.takenAt || nowIso()))
   form.pose = p?.pose ?? photosStore.photos[0]?.pose ?? 'front'
   form.notes = p?.notes ?? ''
   if (props.prepared) {
@@ -168,9 +175,11 @@ async function save() {
   }
   try {
     if (props.photo) await photosStore.updatePhoto(props.photo.id, details)
-    else if (working.value) await photosStore.addPhoto(details, working.value)
+    else if (working.value) {
+      await photosStore.addPhoto(details, working.value)
+      void storage.actions.refresh()
+    }
     notify.show(props.photo ? 'Photo updated' : 'Photo saved', 'success')
-    emit('saved')
     open.value = false
   } catch {
     notify.show("Couldn't save. Your device may be out of space.", 'error')

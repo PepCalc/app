@@ -16,6 +16,7 @@ import AppSnackbar from '@/components/common/AppSnackbar.vue'
 import AppConfirm from '@/components/common/AppConfirm.vue'
 import UpdatePrompt from '@/components/common/UpdatePrompt.vue'
 import DisclaimerDialog from '@/components/common/DisclaimerDialog.vue'
+import LogHost from '@/components/journal/LogHost.vue'
 import {
   mdiBookshelf,
   mdiCalendarClockOutline,
@@ -202,6 +203,7 @@ onMounted(async () => {
 
     <AppSnackbar />
     <AppConfirm />
+    <LogHost />
     <UpdatePrompt />
     <DisclaimerDialog />
   </v-app>

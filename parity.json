@@ -61,6 +61,7 @@
     "src/domain/schedule.ts": "Intervals in days against intervals in hours.",
     "src/domain/symptoms.ts": "Different symptom lists and sources per app; Gliplog carries label terms for prescribers.",
     "src/domain/units.ts": "Doses in mg against quantities with units.",
+    "src/logKinds.ts": "Log kinds, titles and dialog props differ per app.",
     "src/main.ts": "Converges in M11: Gliplog wires reminder tap routing on launch.",
     "src/plugins/icons.ts": "Per-app icon subset.",
     "src/plugins/vuetify.ts": "Per-app Vuetify theme colours.",

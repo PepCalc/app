@@ -15,7 +15,7 @@ import {
 import { useJournalStore } from '@/stores/journal'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
-import { fromLocalInputValue, nowIso, toLocalInputValue } from '@/services/time'
+import { fromLocalInputValue, nowIso, toIso, toLocalInputValue } from '@/services/time'
 
 /**
  * Log or edit a blood pressure or resting heart rate reading. Numbers are kept as typed; an
@@ -25,6 +25,8 @@ const props = defineProps<{
   reading: VitalRow | null
   /** Which kind a new entry starts on. */
   initialKind?: VitalKind
+  /** Epoch ms for a new entry's initial time; defaults to now. */
+  startAt?: number
 }>()
 const open = defineModel<boolean>({ required: true })
 
@@ -52,7 +54,9 @@ watch(open, (isOpen) => {
   form.systolic = r?.kind === 'bp' ? String(r.systolic) : ''
   form.diastolic = r?.kind === 'bp' ? String(r.diastolic) : ''
   form.bpm = r?.kind === 'hr' ? String(r.bpm) : ''
-  form.measuredAt = toLocalInputValue(r?.measuredAt ?? nowIso())
+  form.measuredAt = toLocalInputValue(
+    r?.measuredAt ?? (props.startAt !== undefined ? toIso(props.startAt) : nowIso()),
+  )
   form.notes = r?.notes ?? ''
 })
 

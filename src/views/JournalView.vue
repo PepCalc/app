@@ -12,6 +12,7 @@ import { summarizeSymptoms } from '@/domain/symptoms'
 import { formatBloodPressure, formatHeartRate } from '@/domain/vitals'
 import { roundTo } from '@/domain/units'
 import { useJournalStore } from '@/stores/journal'
+import { useLogStore } from '@/stores/log'
 import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
 import { useNow } from '@/composables/useNow'
@@ -29,10 +30,6 @@ import TrendCard from '@/components/charts/TrendCard.vue'
 import PhotosCard from '@/components/photos/PhotosCard.vue'
 import SymptomSummaryCard from '@/components/journal/SymptomSummaryCard.vue'
 import JournalEntries from '@/components/journal/JournalEntries.vue'
-import LogWeightDialog from '@/components/journal/LogWeightDialog.vue'
-import LogSymptomDialog from '@/components/journal/LogSymptomDialog.vue'
-import LogGlucoseDialog from '@/components/journal/LogGlucoseDialog.vue'
-import LogVitalsDialog from '@/components/journal/LogVitalsDialog.vue'
 import ExportReportDialog from '@/components/report/ExportReportDialog.vue'
 
 /**
@@ -40,16 +37,13 @@ import ExportReportDialog from '@/components/report/ExportReportDialog.vue'
  * shelf's draws. Logging sits at the top; trends, photos and the full list of entries below.
  */
 const journal = useJournalStore()
+const log = useLogStore()
 const settings = useSettingsStore()
 const shelf = useShelfStore()
 const now = useNow()
 const body = useBodyMetrics()
 
-const weightDialog = ref(false)
 const exporting = ref(false)
-const symptomDialog = ref(false)
-const glucoseDialog = ref(false)
-const vitalsDialog = ref(false)
 
 const latest = computed(() => journal.latestWeight)
 const change = computed(() => journal.change)
@@ -138,7 +132,7 @@ const hasAnything = computed(
             <v-btn variant="text" :to="{ name: 'settings', hash: '#units' }">Change</v-btn>
           </p>
           <div class="pc-actions">
-            <v-btn variant="tonal" :prepend-icon="mdiScaleBathroom" @click="weightDialog = true">
+            <v-btn variant="tonal" :prepend-icon="mdiScaleBathroom" @click="log.start('weight')">
               Log weight
             </v-btn>
           </div>
@@ -183,7 +177,7 @@ const hasAnything = computed(
             Log an HbA1c result or a glucose reading to follow them over time.
           </p>
           <div class="pc-actions">
-            <v-btn variant="tonal" :prepend-icon="mdiWaterOutline" @click="glucoseDialog = true">
+            <v-btn variant="tonal" :prepend-icon="mdiWaterOutline" @click="log.start('glucose')">
               Log blood sugar
             </v-btn>
           </div>
@@ -217,7 +211,7 @@ const hasAnything = computed(
             Log blood pressure and resting heart rate.
           </p>
           <div class="pc-actions">
-            <v-btn variant="tonal" :prepend-icon="mdiHeartPulse" @click="vitalsDialog = true">
+            <v-btn variant="tonal" :prepend-icon="mdiHeartPulse" @click="log.start('vital')">
               Log vitals
             </v-btn>
           </div>
@@ -237,7 +231,7 @@ const hasAnything = computed(
           </ul>
           <p v-else class="pc-muted">Nothing logged this week.</p>
           <div class="pc-actions">
-            <v-btn variant="tonal" :prepend-icon="mdiStethoscope" @click="symptomDialog = true">
+            <v-btn variant="tonal" :prepend-icon="mdiStethoscope" @click="log.start('symptom')">
               Log side effect
             </v-btn>
           </div>
@@ -270,11 +264,6 @@ const hasAnything = computed(
       <h2 id="entries-heading" class="pc-display text-title-large mb-4">Entries</h2>
       <JournalEntries />
     </section>
-
-    <LogWeightDialog v-model="weightDialog" :weight="null" />
-    <LogSymptomDialog v-model="symptomDialog" :symptom="null" />
-    <LogGlucoseDialog v-model="glucoseDialog" :reading="null" />
-    <LogVitalsDialog v-model="vitalsDialog" :reading="null" />
   </div>
 </template>
 

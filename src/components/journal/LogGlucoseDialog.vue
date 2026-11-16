@@ -24,7 +24,7 @@ import { useJournalStore } from '@/stores/journal'
 import { useSettingsStore } from '@/stores/settings'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
-import { formatDate, fromLocalInputValue, nowIso, toLocalInputValue } from '@/services/time'
+import { formatDate, fromLocalInputValue, nowIso, toIso, toLocalInputValue } from '@/services/time'
 
 /**
  * Log or edit an HbA1c result or a glucose reading, in the units chosen in Settings. Values
@@ -36,6 +36,8 @@ const props = defineProps<{
   reading: GlucoseRow | null
   /** Which kind a new entry starts on. */
   initialKind?: 'a1c' | 'glucose'
+  /** Epoch ms for a new entry's initial time; defaults to now. */
+  startAt?: number
 }>()
 const open = defineModel<boolean>({ required: true })
 
@@ -80,7 +82,9 @@ watch(open, (isOpen) => {
   form.value = r ? shown(r) : ''
   initialValue.value = form.value
   form.context = r?.kind === 'glucose' ? r.context : 'fasting'
-  form.measuredAt = toLocalInputValue(r?.measuredAt ?? nowIso())
+  form.measuredAt = toLocalInputValue(
+    r?.measuredAt ?? (props.startAt !== undefined ? toIso(props.startAt) : nowIso()),
+  )
   form.notes = r?.notes ?? ''
 })
 

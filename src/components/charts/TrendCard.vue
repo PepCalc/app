@@ -17,8 +17,7 @@ import { useChartColors } from '@/composables/useChartColors'
 import { useDoseBands } from '@/composables/useDoseBands'
 import { usePhotoPins } from '@/composables/usePhotoPins'
 import { useWeightSummary } from '@/composables/useWeightSummary'
-import PhotoDialog from '@/components/photos/PhotoDialog.vue'
-import type { PhotoRow } from '@/db/database'
+import { useLogStore } from '@/stores/log'
 import { useSettingsStore } from '@/stores/settings'
 import { useBodyMetrics } from '@/composables/useBodyMetrics'
 import { toEpochMs } from '@/services/time'
@@ -206,10 +205,9 @@ const chart = computed(() => {
 })
 
 const photosStore = usePhotosStore()
+const log = useLogStore()
 const { colors } = useChartColors()
 const showPhotos = ref(true)
-const viewing = ref<PhotoRow | null>(null)
-const photoOpen = ref(false)
 
 /** A phone-width chart fits about this many pins before they hide each other. */
 const MAX_PINS = 7
@@ -242,10 +240,7 @@ const chartPhotos = computed(() =>
 )
 
 function openPhoto(id: string) {
-  const photo = photosStore.photos.find((p) => p.id === id)
-  if (!photo) return
-  viewing.value = photo
-  photoOpen.value = true
+  log.edit({ kind: 'photo', id })
 }
 
 const { candidates, marked, pick, doses: doseInputs } = useDoseBands()
@@ -375,7 +370,6 @@ const hasMore = computed(
       </MoreInfo>
     </v-card-text>
     <ShareTrendDialog v-model="shareOpen" :measure="mode" :photos="pinned" :doses="doseInputs" />
-    <PhotoDialog v-model="photoOpen" :photo="viewing" :prepared="null" taken-at="" />
   </v-card>
 </template>
 
