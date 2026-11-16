@@ -6,22 +6,33 @@ Part of the `engineering-standards` skill.
 
 ```
 src/
-  domain/        pure logic: units, reconstitution, diluent advice, syringe, pk, levels (pooling and
-                 the curve model), inventory, blend, listing (paging, ordering, vial numbers),
-                 vial age, report (periods, windows, totals, axis ticks), vitals (blood pressure
-                 and heart rate), healthSync (what to import and export, matching), catalog
-                 types
+  domain/        pure logic: units (dose quantities), bodyUnits (weight and height),
+                 reconstitution, diluent advice, syringe, pk, levels (pooling and the curve
+                 model), overlay (several peptides on one chart), projection (levels ahead),
+                 schedule (when a protocol is next due), inventory, blend, listing (paging,
+                 ordering, vial numbers), vial age, body (measurements, BMI, WHO bands),
+                 glucose, symptoms, photos, collage and crop (photo collage), doseLanes and
+                 levelStrip (doses and levels under a trend), report (periods, windows,
+                 totals, axis ticks), vitals (blood pressure and heart rate), healthSync
+                 (what to import and export, matching), catalog types
   data/          peptides.json, syringes.json, their JSON Schemas, typed loader (index.ts)
   db/            Dexie database (schema history), repository, backup export/restore
-  stores/        Pinia: shelf (vials + draws), settings, healthSync (Health apps choices),
-                 notify, confirm
-  composables/   useCalculator, useDiluentAdvisor, useChartColors, useInstallPrompt, useStoragePersistence, useNow,
-                 usePaging, useVialAge, useHideOnScroll, useReportExport, useHealthAutoSync
+  stores/        Pinia: shelf (vials + draws), protocols (a schedule per peptide), journal
+                 (measurements, side effects, blood sugar, vitals), photos, levelPick (which
+                 peptides a chart shows), settings, healthSync (Health apps choices), notify,
+                 confirm
+  composables/   useCalculator, useDiluentAdvisor, useBodyMetrics, useCameraAccess,
+                 useChartColors, useInstallPrompt, useStoragePersistence, useNow, usePaging,
+                 usePeptidePanels, usePhotoPins, useVialAge, useHideOnScroll, useReportExport,
+                 useHealthAutoSync
   services/      time.ts (the only clock and date formatter), fileTransfer.ts (share/download),
+                 nativeFileTransfer.ts (the same through the apps' share sheet), platform.ts
+                 (words that depend on the build), photos/ (canvas re-encode),
                  pdf/ (dependency-free PDF writer), report/ (the PDF report: data, layout, charts),
                  health/ (Apple Health and Health Connect through @capgo/capacitor-health,
                  loaded only in the apps; runSync, the sync loop)
-  components/    calculator/, charts/, history/, shelf/, common/
+  components/    calculator/, charts/, common/, journal/, photos/, protocols/, report/,
+                 share/, shelf/
   views/         one per route: Calculator, Shelf, Vial, Journal, Protocols, Settings, Health
                  (apps only)
   plugins/       vuetify.ts (themes, defaults), icons.ts (inline SVG icons), fonts.ts

@@ -1,6 +1,6 @@
 ---
 name: front-end
-description: 'Use when changing pepcalc Vue components, views, layout, Vuetify usage, styling, theming, the syringe drawing, or charts.'
+description: 'Use when changing pepcalc Vue components, views, layout, Vuetify usage, styling, theming, the syringe drawing, charts, or user-facing copy.'
 ---
 
 # Front-end
@@ -40,3 +40,16 @@ One-line rules; detail lives in `reference/`. Read a reference when its trigger 
     below it; series identity never relies on colour alone (the preview curve is dashed).
 11. Charts use ECharts through `echarts/core` with only the parts registered; colours come from
     `useChartColors()`, never literals.
+
+## Voice
+
+12. Short and direct: say the thing and stop. No filler, no trailing ", so X" clauses, no
+    em-dashes. Legal and safety wording is the exception and keeps its full text.
+13. Never tell the user what dose to take. A preset is "from the label" or carries its
+    `SourceBadge`; community-reported values never look like clinical ones; a schedule's
+    interval is always the user's own.
+14. The first-run notice (`common/DisclaimerDialog.vue`) says some peptides are
+    investigational or not approved for human use. Nothing elsewhere softens or contradicts
+    it.
+15. Body measures are stated plainly: no shame or judgement about weight, gains and losses
+    as signed numbers and never as colours, every profile field optional.

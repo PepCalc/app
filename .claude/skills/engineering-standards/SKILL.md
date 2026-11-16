@@ -27,7 +27,9 @@ One-line rules; detail lives in `reference/`. Front-end styling and components a
 
 4. `src/domain/` is pure TypeScript: no Vue, no Dexie, no DOM, no clock. All arithmetic (units,
    reconstitution, syringes, PK, inventory, blends) lives here with unit tests.
-5. `src/db/` owns persistence. Views and stores call `repository`, never Dexie tables.
+5. `src/db/` owns persistence. Views and stores call `repository`, never Dexie tables. Pass it
+   plain data: IndexedDB cannot clone a Vue reactive object (`DataCloneError`), and a spread
+   copies nested arrays and objects as proxies. Build the value to store from plain parts.
 6. Shared state lives in Pinia stores (`src/stores/`); a module-level `ref` shared across
    components is a store. Notifications go through `useNotifyStore`, confirmations through
    `useConfirmStore().ask()`.
