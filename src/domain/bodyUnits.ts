@@ -69,3 +69,8 @@ export function formatHeight(cm: number, unit: HeightUnit): string {
   const { feet, inches } = cmToFeetInches(cm)
   return `${feet} ft ${inches} in`
 }
+
+/** Short display label for the active weight and height units, e.g. "kg, cm" or "lb, ft in". */
+export function unitsSummary(weightUnit: WeightUnit, heightUnit: HeightUnit): string {
+  return `${weightUnit}, ${heightUnit === 'ftin' ? 'ft in' : 'cm'}`
+}

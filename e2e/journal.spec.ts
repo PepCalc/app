@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { acceptDisclaimer, choose } from './helpers'
+import { acceptDisclaimer, choose, chooseUnits } from './helpers'
 
 async function openTab(page: Page, name: string) {
   await page.getByRole('link', { name, exact: true }).first().click()
@@ -62,6 +62,7 @@ test.beforeEach(async ({ page }) => {
 
 test('logs weight, derives BMI from the profile height, and converts units', async ({ page }) => {
   await openTab(page, 'Journal')
+  await chooseUnits(page, { weight: 'kg', height: 'cm' })
   await logWeight(page, '81.3', '2026-10-01T08:00')
   await expect(page.getByText('Add your height in Settings to see your BMI.')).toBeVisible()
 
@@ -221,7 +222,7 @@ test('saves photos, pins them to the weight line, shares a collage, and backs th
   await expect(page.getByText('Backup restored')).toBeVisible()
   await openTab(page, 'Journal')
   await expect(page.getByRole('button', { name: /^Front photo from / })).toHaveCount(3)
-  await expect(page.getByTestId('journal-weight')).toHaveText('100 kg')
+  await expect(page.getByTestId('journal-weight')).toHaveText('100 lb')
 })
 
 test('exports the journal as a PDF with only the chosen parts', async ({ page }) => {
@@ -245,7 +246,7 @@ test('exports the journal as a PDF with only the chosen parts', async ({ page })
   const file = await download
   const text = Buffer.concat(await (await file.createReadStream()).toArray()).toString('latin1')
   expect(text.startsWith('%PDF-1.4')).toBe(true)
-  for (const shown of ['(Journal)', '(Combined chart)', '(Weight)', '(Weight \\(kg\\))'])
+  for (const shown of ['(Journal)', '(Combined chart)', '(Weight)', '(Weight \\(lb\\))'])
     expect(text).toContain(shown)
   // Left out everywhere, the combined chart's rows of events included.
   expect(text).not.toContain('(Side effects)')

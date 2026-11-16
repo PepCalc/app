@@ -2,9 +2,18 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { repository } from '@/db'
 import { syringeCatalog } from '@/data'
-import { HEIGHT_UNITS, WEIGHT_UNITS, type HeightUnit, type WeightUnit } from '@/domain/bodyUnits'
-import { A1C_UNITS, GLUCOSE_UNITS, type A1cUnit, type GlucoseUnit } from '@/domain/glucose'
+import { type HeightUnit, type WeightUnit } from '@/domain/bodyUnits'
+import { type A1cUnit, type GlucoseUnit } from '@/domain/glucose'
+import {
+  hasMissingUnit,
+  LEGACY_UNITS,
+  resolveUnits,
+  unitDefaultsFor,
+  type RegionalPreferences,
+  type UnitDefaults,
+} from '@/domain/unitDefaults'
 import { areValidLimits, type AgeLimits } from '@/domain/vialAge'
+import { regionalPreferences } from '@/services/locale'
 
 export type ThemePreference = 'system' | 'light' | 'dark'
 
@@ -59,10 +68,10 @@ export const useSettingsStore = defineStore('settings', () => {
   const installHintDismissed = ref(false)
   const vialAgeMode = ref<VialAgeMode>('sourced')
   const customAgeLimits = ref<AgeLimits>({ ...DEFAULT_CUSTOM_AGE_LIMITS })
-  const weightUnit = ref<WeightUnit>('kg')
-  const heightUnit = ref<HeightUnit>('cm')
-  const glucoseUnit = ref<GlucoseUnit>('mg/dL')
-  const a1cUnit = ref<A1cUnit>('%')
+  const weightUnit = ref<WeightUnit>(LEGACY_UNITS.weightUnit)
+  const heightUnit = ref<HeightUnit>(LEGACY_UNITS.heightUnit)
+  const glucoseUnit = ref<GlucoseUnit>(LEGACY_UNITS.glucoseUnit)
+  const a1cUnit = ref<A1cUnit>(LEGACY_UNITS.a1cUnit)
   const profile = ref<Profile>({ ...EMPTY_PROFILE })
 
   async function load() {
@@ -103,11 +112,37 @@ export const useSettingsStore = defineStore('settings', () => {
     if (ageMode === 'custom') vialAgeMode.value = ageMode
     // A restored backup is untrusted input; fall back rather than chart nonsense tiers.
     if (ageLimits && areValidLimits(ageLimits)) customAgeLimits.value = ageLimits
-    weightUnit.value = wUnit && WEIGHT_UNITS.includes(wUnit) ? wUnit : 'kg'
-    heightUnit.value = hUnit && HEIGHT_UNITS.includes(hUnit) ? hUnit : 'cm'
-    glucoseUnit.value = gUnit && GLUCOSE_UNITS.includes(gUnit) ? gUnit : 'mg/dL'
-    a1cUnit.value = aUnit && A1C_UNITS.includes(aUnit) ? aUnit : '%'
+    const storedUnits = {
+      weightUnit: wUnit,
+      heightUnit: hUnit,
+      glucoseUnit: gUnit,
+      a1cUnit: aUnit,
+    }
+    const existingInstall = disclaimer !== undefined && disclaimer !== null
+    let prefs: RegionalPreferences | null = null
+    if (!existingInstall && hasMissingUnit(storedUnits)) {
+      try {
+        prefs = await regionalPreferences()
+      } catch {
+        prefs = { region: null, measurementSystem: null }
+      }
+    }
+    const { units, toStore } = resolveUnits(storedUnits, existingInstall, () =>
+      unitDefaultsFor(prefs ?? { region: null, measurementSystem: null }),
+    )
+    weightUnit.value = units.weightUnit
+    heightUnit.value = units.heightUnit
+    glucoseUnit.value = units.glucoseUnit
+    a1cUnit.value = units.a1cUnit
     profile.value = sanitizeProfile(storedProfile)
+    await Promise.all(
+      (Object.keys(toStore) as (keyof UnitDefaults)[]).map((key) => {
+        const value = toStore[key]
+        return value !== undefined
+          ? repository.setSetting(SETTING_KEYS[key], value).catch(() => {})
+          : Promise.resolve()
+      }),
+    )
     loaded.value = true
   }
 

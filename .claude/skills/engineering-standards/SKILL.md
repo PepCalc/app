@@ -38,7 +38,8 @@ One-line rules; detail lives in `reference/`. Front-end styling and components a
    `useConfirmStore().ask()`.
 7. Composables return `state` (reactive), optional read-only computed values, and `actions`.
 8. Units never mix silently: IU never converts to mass; `convert()` throws. Validate in the
-   domain, not only in the UI.
+   domain, not only in the UI. New installs take display units from the device region
+   (`src/domain/unitDefaults.ts`); existing installs keep theirs.
 
 ## Privacy and offline
 

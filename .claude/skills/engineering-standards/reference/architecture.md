@@ -7,7 +7,7 @@ Part of the `engineering-standards` skill.
 ```
 src/
   domain/        pure logic: units (dose quantities), bodyUnits (weight and height),
-                 reconstitution, diluent advice, syringe, pk, levels (pooling and the curve
+                 unitDefaults (regional default display units from CLDR), reconstitution, diluent advice, syringe, pk, levels (pooling and the curve
                  model), overlay (several peptides on one chart), projection (levels ahead),
                  schedule (when a protocol is next due), inventory, blend, listing (paging,
                  ordering), vials (numbering, keys), vial age, body (measurements, length
@@ -27,7 +27,8 @@ src/
                  useChartColors, useInstallPrompt, useStoragePersistence, useNow, usePaging,
                  usePeptidePanels, usePhotoPins, useVialAge, useHideOnScroll, useReportExport,
                  useHealthAutoSync
-  services/      time.ts (the only clock and date formatter), fileTransfer.ts (share/download),
+  services/      time.ts (the only clock and date formatter), locale.ts (device region and
+                 measurement system), fileTransfer.ts (share/download),
                  nativeFileTransfer.ts (the same through the apps' share sheet), platform.ts
                  (words that depend on the build), photos/ (canvas re-encode),
                  pdf/ (dependency-free PDF writer), report/ (the PDF report: data, layout, charts),
@@ -125,8 +126,9 @@ Rules the writer keeps:
 
 `vite build --mode android` and `--mode ios` set `__NATIVE__` and `__PLATFORM__` and write to
 `dist-android/` or `dist-ios/`; `PEPCALC_PLATFORM=ios` makes `cap sync` copy the iOS one.
-Android-only calls (clearing the camera's capture file) check `__PLATFORM__`. iOS is built and
-uploaded only by `.github/workflows/ios.yml`.
+Android-only calls (clearing the camera's capture file) check `__PLATFORM__`. Each has an
+app-local `RegionalPreferences` plugin (Java and Swift) that reads the device's region and
+measurement system. iOS is built and uploaded only by `.github/workflows/ios.yml`.
 
 ## PWA and hosting
 

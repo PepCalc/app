@@ -61,6 +61,8 @@ Part of the `front-end` skill.
 - Anything shared out of the app (the levels image, the PDF report) is made on the device and
   carries the source of every figure and the model caveat. The image lets the user leave out
   names and amounts; the report covers a chosen period.
+- A unit default comes from `unitDefaultsFor`; never hard-code `kg` or `cm` as a fallback in a
+  component.
 
 ## Spacing and alignment
 

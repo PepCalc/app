@@ -11,3 +11,12 @@ The e2e suite covers only the web build. Run these checks on a phone before a re
 5. Set direction to Export, sync, force stop, reopen, sync. The health app still holds one copy of each reading.
 6. Deny every permission. Expect `0 in, 0 out`, not an error.
 7. Revoke access in Health Connect while sync is on. Expect a notice that names the cause, never a crash.
+
+## Region and units
+
+1. Android, region United States, new install: lb and ft in.
+2. Android, region Germany, new install: kg and cm.
+3. iPhone, region United States, Measurement System set to Metric, new install: kg and cm.
+4. iPhone, region United Kingdom, new install: kg, ft in, mmol/L.
+5. Update over an existing install in any region: units unchanged.
+6. Airplane mode, new install: units still follow the region.

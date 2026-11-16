@@ -68,11 +68,11 @@ describe('collectReport', () => {
 
 describe('pageSizeFor', () => {
   it('uses Letter where it is the paper standard and A4 elsewhere', () => {
-    expect(pageSizeFor('en-US')).toBe(LETTER)
-    expect(pageSizeFor('es-MX')).toBe(LETTER)
-    expect(pageSizeFor('en-GB')).toBe(A4)
-    expect(pageSizeFor('de')).toBe(A4)
-    expect(pageSizeFor('not a locale')).toBe(A4)
+    expect(pageSizeFor('US')).toBe(LETTER)
+    expect(pageSizeFor('MX')).toBe(LETTER)
+    expect(pageSizeFor('GB')).toBe(A4)
+    expect(pageSizeFor('DE')).toBe(A4)
+    expect(pageSizeFor(null)).toBe(A4)
   })
 })
 

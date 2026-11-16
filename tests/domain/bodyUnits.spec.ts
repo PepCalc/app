@@ -8,6 +8,7 @@ import {
   formatWeightChange,
   fromKg,
   toKg,
+  unitsSummary,
 } from '@/domain/bodyUnits'
 
 describe('weight units', () => {
@@ -36,5 +37,11 @@ describe('height units', () => {
     expect(cmToFeetInches(182.85)).toEqual({ feet: 6, inches: 0 })
     expect(formatHeight(182.85, 'ftin')).toBe('6 ft 0 in')
     expect(formatHeight(170.04, 'cm')).toBe('170 cm')
+  })
+
+  it('formats the active weight and height unit pair', () => {
+    expect(unitsSummary('kg', 'cm')).toBe('kg, cm')
+    expect(unitsSummary('lb', 'ftin')).toBe('lb, ft in')
+    expect(unitsSummary('kg', 'ftin')).toBe('kg, ft in')
   })
 })

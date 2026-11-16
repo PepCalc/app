@@ -31,3 +31,21 @@ export async function choose(page: Page | Locator, group: string, value: string)
     .getByRole('button', { name: value, exact: true })
     .click()
 }
+
+export interface UnitChoices {
+  weight?: 'kg' | 'lb'
+  height?: 'cm' | 'ftin'
+}
+
+const WEIGHT_LABELS = { kg: 'Kilograms', lb: 'Pounds' } as const
+const HEIGHT_LABELS = { cm: 'Centimetres', ftin: 'Feet and inches' } as const
+
+/** Opens Settings, chooses the requested body units, and returns to the previous screen. */
+export async function chooseUnits(page: Page, choices: UnitChoices) {
+  await page.getByRole('link', { name: 'Settings', exact: true }).first().click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible()
+  if (choices.weight) await choose(page, 'Weight unit', WEIGHT_LABELS[choices.weight])
+  if (choices.height) await choose(page, 'Height unit', HEIGHT_LABELS[choices.height])
+  await page.goBack()
+  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeHidden()
+}

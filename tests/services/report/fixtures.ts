@@ -198,7 +198,10 @@ export function sampleJournal() {
   return { weights, symptoms, glucose, vitals }
 }
 
-export function sampleSource(period: ReportPeriod = '90d', locale = 'en-GB'): ReportSource {
+export function sampleSource(
+  period: ReportPeriod = '90d',
+  region: string | null = 'GB',
+): ReportSource {
   const { vials, draws } = sampleShelf()
   const levelVials: LevelVial[] = vials.map((v) => ({
     id: v.id,
@@ -225,6 +228,6 @@ export function sampleSource(period: ReportPeriod = '90d', locale = 'en-GB'): Re
     sections: REPORT_SECTIONS,
     period,
     now: NOW,
-    locale,
+    region,
   }
 }

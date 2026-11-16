@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { BMI_SOURCE } from '@/domain/body'
-import { formatPercentChange, formatWeight, formatWeightChange } from '@/domain/bodyUnits'
+import {
+  formatPercentChange,
+  formatWeight,
+  formatWeightChange,
+  unitsSummary,
+} from '@/domain/bodyUnits'
 import { formatA1c, formatGlucose, GLUCOSE_CONTEXT_LABELS } from '@/domain/glucose'
 import { summarizeSymptoms } from '@/domain/symptoms'
 import { formatBloodPressure, formatHeartRate } from '@/domain/vitals'
@@ -127,6 +132,10 @@ const hasAnything = computed(
           <SourceList v-if="body.currentBmi.value !== null" :sources="[BMI_SOURCE]" />
           <p v-if="latest && !body.heightCm.value" class="text-body-small pc-muted">
             Add your height in Settings to see your BMI.
+          </p>
+          <p v-if="!latest" class="text-body-small pc-muted d-flex align-center flex-wrap ga-1">
+            <span>Units: {{ unitsSummary(settings.weightUnit, settings.heightUnit) }}.</span>
+            <v-btn variant="text" :to="{ name: 'settings', hash: '#units' }">Change</v-btn>
           </p>
           <div class="pc-actions">
             <v-btn variant="tonal" :prepend-icon="mdiScaleBathroom" @click="weightDialog = true">

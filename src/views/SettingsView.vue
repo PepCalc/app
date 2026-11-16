@@ -365,7 +365,7 @@ const formatMb = (bytes: number | null) =>
         </v-card-text>
       </v-card>
 
-      <v-card>
+      <v-card id="units">
         <v-card-item>
           <p class="pc-eyebrow">Journal</p>
           <v-card-title>Units</v-card-title>

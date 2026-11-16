@@ -6,5 +6,6 @@ import UIKit
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(CameraAccessPlugin())
+        bridge?.registerPluginInstance(RegionalPreferencesPlugin())
     }
 }
