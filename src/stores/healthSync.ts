@@ -17,6 +17,14 @@ import { useJournalStore } from './journal'
 
 const SETTING_KEY = 'healthSync'
 
+/** How one sync ended. `save` means the readings moved but the bookkeeping did not store. */
+export type SyncOutcome =
+  | { status: 'synced'; result: SyncResult }
+  | { status: 'busy' }
+  | { status: 'unavailable' }
+  | { status: 'failed'; stage: 'store' }
+  | { status: 'failed'; stage: 'save'; result: SyncResult }
+
 /**
  * Sync with the phone's health store, which the user turns on in Settings, Health apps. Off by
  * default and native only: the web build never loads the plugin. `run` imports and exports by
@@ -38,8 +46,9 @@ export const useHealthSyncStore = defineStore('healthSync', () => {
   }
 
   async function save(changes: Partial<HealthSyncSettings>) {
-    settings.value = { ...settings.value, ...changes }
-    await repository.setSetting(SETTING_KEY, settings.value)
+    const next = { ...settings.value, ...changes }
+    await repository.setSetting(SETTING_KEY, next)
+    settings.value = next
   }
 
   // Folded away in the web build, so it carries no plugin code.
@@ -146,46 +155,54 @@ export const useHealthSyncStore = defineStore('healthSync', () => {
   }
 
   /**
-   * One sync by the saved choices (see `runSync`). Null when it cannot run: on the web, while
-   * one is already running, or when the store cannot be reached.
+   * One sync by the saved choices (see `runSync`). Separates an unreachable store from a failed
+   * bookkeeping save so the caller can report the true outcome.
    */
-  async function run(ask: boolean): Promise<SyncResult | null> {
-    if (!__NATIVE__ || state.running) return null
+  async function run(ask: boolean): Promise<SyncOutcome> {
+    if (!__NATIVE__) return { status: 'unavailable' }
+    if (state.running) return { status: 'busy' }
     state.running = true
     state.error = ''
     const journal = useJournalStore()
     try {
-      const { result, settings: next } = await runSync({
-        settings: settings.value,
-        store: await native(),
-        local: localReadings,
-        summarisedDays: () =>
-          new Set(
-            journal.glucose.flatMap((g) => (g.kind === 'daily' ? [toEpochMs(g.measuredAt)] : [])),
-          ),
-        localDay: (at, offset) => atLocalTime(at, offset, 0, 0),
-        addToJournal: async (readings, days) => {
-          const ids = await repository.importReadings(toRows(readings, days))
-          await journal.load()
-          return ids
-        },
-        ownSourceId: appSourceId,
-        ask,
-        now: systemClock().getTime(),
-      })
-      await save(next)
-      state.lastResult = result
-      return result
-    } catch {
-      state.error = `Couldn't reach ${healthStoreName}.`
-      return null
+      let synced: { result: SyncResult; settings: HealthSyncSettings }
+      try {
+        synced = await runSync({
+          settings: settings.value,
+          store: await native(),
+          local: localReadings,
+          summarisedDays: () =>
+            new Set(
+              journal.glucose.flatMap((g) => (g.kind === 'daily' ? [toEpochMs(g.measuredAt)] : [])),
+            ),
+          localDay: (at, offset) => atLocalTime(at, offset, 0, 0),
+          addToJournal: async (readings, days) => {
+            const ids = await repository.importReadings(toRows(readings, days))
+            await journal.load()
+            return ids
+          },
+          ownSourceId: appSourceId,
+          ask,
+          now: systemClock().getTime(),
+        })
+      } catch {
+        state.error = `Couldn't reach ${healthStoreName}.`
+        return { status: 'failed', stage: 'store' }
+      }
+      state.lastResult = synced.result
+      try {
+        await save(synced.settings)
+      } catch {
+        return { status: 'failed', stage: 'save', result: synced.result }
+      }
+      return { status: 'synced', result: synced.result }
     } finally {
       state.running = false
     }
   }
 
   /** Ask for access and keep syncing while the app is in use. */
-  async function turnOn(): Promise<SyncResult | null> {
+  async function turnOn(): Promise<SyncOutcome> {
     await save({ enabled: true })
     return run(true)
   }

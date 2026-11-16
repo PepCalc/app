@@ -58,6 +58,9 @@ per-visit; anything that must survive a reload goes into the database.
   the journal's `measurements`, `symptoms`, `glucose`, `photos`, `photoImages` and
   `photoThumbs` (version 2); `protocols` (version 3); `vitals` (version 4: blood pressure and
   resting heart rate, stored as typed in mmHg and bpm, with no unit setting).
+- Writes pass through `toPlain` (`src/db/plain.ts`) in a Dexie middleware. IndexedDB cannot
+  clone a Vue proxy; without the copy a store that saves its own reactive state fails with
+  `DataCloneError`.
 - Health apps sync is off until the user turns it on, and only adds: neither health store lets
   an app edit or delete another app's records. The `healthSync` setting keeps the user's
   choices and the ids of rows already in the store, so nothing is sent or taken twice; a

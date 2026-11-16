@@ -1,0 +1,1 @@
+Health sync now saves its progress and reports the right result.

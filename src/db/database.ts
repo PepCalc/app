@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+import { toPlain } from './plain'
 import type { BlendComponent } from '@/domain/blend'
 import type { BodyMetric, MeasureUnit } from '@/domain/body'
 import type { A1cUnit, GlucoseContext, GlucoseUnit } from '@/domain/glucose'
@@ -193,6 +194,30 @@ export function createDatabase(name = DB_NAME): PepcalcDb {
   // Blood pressure and heart rate: a new table only, so existing rows need no upgrade.
   db.version(4).stores({
     vitals: 'id, kind, measuredAt',
+  })
+  /*
+   * Rows reach IndexedDB as plain data. Stores hold reactive state, and a reactive proxy passed
+   * to a write would fail the whole write with DataCloneError; copying here covers every table
+   * and every repository method, present and future.
+   */
+  db.use({
+    stack: 'dbcore',
+    name: 'plainWrites',
+    create: (core) => ({
+      ...core,
+      table(name) {
+        const table = core.table(name)
+        return {
+          ...table,
+          mutate: (request) =>
+            table.mutate(
+              request.type === 'add' || request.type === 'put'
+                ? { ...request, values: request.values.map(toPlain) }
+                : request,
+            ),
+        }
+      },
+    }),
   })
   return db
 }

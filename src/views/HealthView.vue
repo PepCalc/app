@@ -7,8 +7,7 @@ import {
   type SyncDirection,
   type SyncSchedule,
 } from '@/domain/healthSync'
-import { useHealthSyncStore } from '@/stores/healthSync'
-import type { SyncResult } from '@/services/health/runSync'
+import { type SyncOutcome, useHealthSyncStore } from '@/stores/healthSync'
 import { useNotifyStore } from '@/stores/notify'
 import { healthAccessSteps, healthStoreName } from '@/services/platform'
 import { formatDateTime } from '@/services/time'
@@ -50,10 +49,20 @@ const scheduleText = computed(() =>
   ongoing.value ? 'Syncs when you open PepCalc and after each new reading.' : 'Syncs once, now.',
 )
 
+async function safely(fn: () => Promise<void>) {
+  try {
+    await fn()
+  } catch {
+    notify.show("Couldn't save. Try again.", 'error')
+  }
+}
+
 /** While sync is on, a change asks for any new access straight away and syncs. */
 async function change(changes: Partial<typeof s.value>) {
-  await health.save(changes)
-  if (on.value && s.value.measures.length) report(await health.run(true))
+  await safely(async () => {
+    await health.save(changes)
+    if (on.value && s.value.measures.length) report(await health.run(true))
+  })
 }
 
 function toggleMeasure(measure: HealthMeasure, checked: boolean | null) {
@@ -65,20 +74,31 @@ function toggleMeasure(measure: HealthMeasure, checked: boolean | null) {
 
 const setDirection = (direction: SyncDirection) => void change({ direction })
 const setSchedule = (schedule: SyncSchedule) =>
-  void health.save({ schedule, enabled: schedule === 'ongoing' && s.value.enabled })
+  void safely(() => health.save({ schedule, enabled: schedule === 'ongoing' && s.value.enabled }))
 
 const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
 
-function report(result: SyncResult | null) {
-  if (!result) {
-    notify.show(health.state.error || "Couldn't sync. Try again.", 'error')
-    return
+function report(outcome: SyncOutcome) {
+  switch (outcome.status) {
+    case 'busy':
+    case 'unavailable':
+      return
+    case 'failed':
+      if (outcome.stage === 'store') {
+        notify.show(health.state.error || `Couldn't reach ${healthStoreName}.`, 'error')
+      } else {
+        notify.show("Synced. Couldn't save the result.", 'warning')
+      }
+      return
+    case 'synced': {
+      const { result } = outcome
+      const parts = [`${plural(result.imported, 'reading')} in`, `${result.exported} out`]
+      notify.show(
+        `Synced: ${parts.join(', ')}.${result.failed ? ` ${result.failed} not accepted.` : ''}`,
+        result.failed ? 'warning' : 'success',
+      )
+    }
   }
-  const parts = [`${plural(result.imported, 'reading')} in`, `${result.exported} out`]
-  notify.show(
-    `Synced: ${parts.join(', ')}.${result.failed ? ` ${result.failed} not accepted.` : ''}`,
-    result.failed ? 'warning' : 'success',
-  )
 }
 
 async function syncNow() {
@@ -86,8 +106,10 @@ async function syncNow() {
 }
 
 async function turnOn() {
-  report(await health.turnOn())
+  await safely(async () => report(await health.turnOn()))
 }
+
+const turnOff = () => void safely(() => health.turnOff())
 
 const lastResult = computed(() => {
   const r = health.state.lastResult
@@ -181,7 +203,7 @@ const lastResult = computed(() => {
           <p v-if="lastResult" class="text-body-small pc-muted">Last sync: {{ lastResult }}</p>
 
           <div class="pc-actions">
-            <v-btn v-if="on" variant="text" @click="health.turnOff()">Turn off</v-btn>
+            <v-btn v-if="on" variant="text" @click="turnOff">Turn off</v-btn>
             <v-btn
               v-if="on || !ongoing"
               color="primary"

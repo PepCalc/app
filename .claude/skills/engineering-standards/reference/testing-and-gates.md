@@ -30,6 +30,9 @@ so native-only paths (`src/services/nativeFileTransfer.ts`) need a check on a de
 - Stores: a store action that writes has a test that saves, builds a new Pinia, loads, and
   reads the value back (`tests/stores/`). `fake-indexeddb` rejects what a browser rejects,
   a reactive object included, so the round trip is the proof the write works.
+- Native paths: code behind `__NATIVE__` is tested in the `native` Vitest project
+  (`tests/native/`), with the plugin's wrapper module mocked. Anything only a phone can
+  prove is listed in `docs/device-checks.md` and run before a release.
 - Components: mount with a real Vuetify (`tests/helpers.ts`); assert what a user or screen
   reader perceives (pressed state, aria-label), not internals. The suite must be warning-free.
 - E2E: runs against the production build under the Pages base path, because the service worker
