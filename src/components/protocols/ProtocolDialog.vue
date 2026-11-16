@@ -1,15 +1,37 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { findPeptide } from '@/data'
 import type { ProtocolRow } from '@/db/database'
+import { toPlain } from '@/db/plain'
 import type { NewProtocol } from '@/db/repository'
-import { intervalText } from '@/domain/schedule'
-import { unitLabel } from '@/domain/units'
+import {
+  isValidCalendarDate,
+  isValidCourse,
+  lastDrawFor,
+  projectedDoseTimes,
+  scheduleText,
+  type Course,
+  type Schedule,
+} from '@/domain/schedule'
+import {
+  areCompatible,
+  convert,
+  doseUnitsFor,
+  unitLabel,
+  type AmountUnit,
+  type Quantity,
+} from '@/domain/units'
+import { useNow } from '@/composables/useNow'
+import { fileDate, formatTimeOfDay, localCalendar, toEpochMs, weekdayName } from '@/services/time'
 import { useProtocolsStore, type ProtocolProduct } from '@/stores/protocols'
+import { useShelfStore } from '@/stores/shelf'
 import ProjectionPanel from '@/components/charts/ProjectionPanel.vue'
+import ScheduleEditor from './ScheduleEditor.vue'
 
 /**
- * Add or edit a protocol: which peptide, and how often the user takes it. Nothing is pre-filled
- * from the catalog, so an interval is always the user's own and never reads as a suggestion.
+ * Add or edit a protocol: which peptide, the user's own schedule, optional planned dose and
+ * optional course length. Nothing is pre-filled from the catalog, so every figure stays the
+ * user's own and never reads as a suggestion.
  */
 const props = defineProps<{
   /** The protocol being edited, or null to add one. */
@@ -22,23 +44,40 @@ const props = defineProps<{
 const open = defineModel<boolean>({ required: true })
 const emit = defineEmits<{ save: [input: NewProtocol]; delete: [protocol: ProtocolRow] }>()
 
-const PRESETS = [
-  { title: 'Twice daily', value: 12 },
-  { title: 'Daily', value: 24 },
-  { title: 'Every other day', value: 48 },
-  { title: 'Weekly', value: 168 },
-  { title: 'Other', value: 0 },
-] as const
+const shelf = useShelfStore()
+const protocols = useProtocolsStore()
+const now = useNow()
 
 interface Form {
   key: string | null
-  preset: number
-  every: string
-  unit: 'hours' | 'days'
+  schedule: Schedule
+  plannedDose: string
+  plannedDoseUnit: AmountUnit
+  courseWeeks: string
+  courseStartOn: string
   notes: string
 }
 
-const form = reactive<Form>({ key: null, preset: 24, every: '', unit: 'days', notes: '' })
+const form = reactive<Form>({
+  key: null,
+  schedule: { kind: 'interval', everyHours: 24 },
+  plannedDose: '',
+  plannedDoseUnit: 'mg',
+  courseWeeks: '',
+  courseStartOn: '',
+  notes: '',
+})
+
+const scheduleValid = ref(true)
+
+const levels = computed(() => (form.key ? protocols.levelsOf(form.key) : null))
+const doseUnits = computed<AmountUnit[]>(() => {
+  const key = form.key
+  if (!key) return ['mg', 'mcg']
+  const vial = shelf.vialsOf(key)[0]
+  const unit = vial?.unit ?? findPeptide(key)?.vialUnit ?? 'mg'
+  return doseUnitsFor(unit)
+})
 
 // Reset from the protocol each time the dialog opens, discarding abandoned edits.
 watch(
@@ -46,37 +85,89 @@ watch(
   (isOpen) => {
     if (!isOpen) return
     const p = props.protocol
-    const hours = p?.intervalHours ?? 24
-    const preset = PRESETS.some((x) => x.value === hours) ? hours : 0
-    const inDays = hours % 24 === 0
+    const key = p?.key ?? (props.products.length === 1 ? props.products[0]!.key : null)
+    const defaultUnit =
+      p?.plannedDose?.unit ??
+      (key ? protocols.levelsOf(key)?.unit : undefined) ??
+      (key
+        ? doseUnitsFor(shelf.vialsOf(key)[0]?.unit ?? findPeptide(key)?.vialUnit ?? 'mg')[0]!
+        : 'mg')
     Object.assign(form, {
-      key: p?.key ?? (props.products.length === 1 ? props.products[0]!.key : null),
-      preset,
-      every: preset ? '' : String(inDays ? hours / 24 : hours),
-      unit: inDays ? 'days' : 'hours',
+      key,
+      schedule: p ? toPlain(p.schedule) : { kind: 'interval', everyHours: 24 },
+      plannedDose: p?.plannedDose ? String(p.plannedDose.value) : '',
+      plannedDoseUnit: defaultUnit,
+      courseWeeks: p?.course ? String(p.course.weeks) : '',
+      courseStartOn: p?.course?.startOn ?? fileDate(now.value),
       notes: p?.notes ?? '',
     } satisfies Form)
   },
   { immediate: true },
 )
 
-const intervalHours = computed(() => {
-  if (form.preset) return form.preset
-  const n = Number.parseFloat(form.every)
-  if (!Number.isFinite(n) || n <= 0) return null
-  return form.unit === 'days' ? n * 24 : n
+watch(doseUnits, (units) => {
+  if (!units.includes(form.plannedDoseUnit)) form.plannedDoseUnit = units[0]!
 })
 
-const everyError = computed(() =>
-  !form.preset && form.every && intervalHours.value === null
-    ? 'Enter a number greater than 0'
-    : undefined,
+const parsedPlannedDose = computed<{ dose: Quantity | null; error?: string }>(() => {
+  const raw = form.plannedDose.trim()
+  if (!raw) return { dose: null }
+  const value = Number.parseFloat(raw)
+  if (!Number.isFinite(value) || value <= 0) {
+    return { dose: null, error: 'Enter a number greater than 0' }
+  }
+  return { dose: { value, unit: form.plannedDoseUnit } }
+})
+
+const parsedCourse = computed<{ course: Course | null; weeksError?: string; dateError?: string }>(
+  () => {
+    const raw = form.courseWeeks.trim()
+    if (!raw) return { course: null }
+    const weeks = Number(raw)
+    if (!Number.isInteger(weeks) || weeks < 1 || weeks > 104) {
+      return { course: null, weeksError: 'Enter 1 to 104 weeks' }
+    }
+    if (!isValidCalendarDate(form.courseStartOn)) {
+      return { course: null, dateError: 'Enter a valid date' }
+    }
+    const candidate: Course = { startOn: form.courseStartOn, weeks }
+    return isValidCourse(candidate)
+      ? { course: candidate }
+      : { course: null, weeksError: 'Enter a valid course' }
+  },
 )
 
-const valid = computed(() => form.key !== null && intervalHours.value !== null)
+const valid = computed(
+  () =>
+    form.key !== null &&
+    scheduleValid.value &&
+    !parsedPlannedDose.value.error &&
+    !parsedCourse.value.weeksError &&
+    !parsedCourse.value.dateError,
+)
 
-const protocols = useProtocolsStore()
-const levels = computed(() => (form.key ? protocols.levelsOf(form.key) : null))
+const lastDrawAt = computed(() => {
+  if (!form.key) return null
+  const last = lastDrawFor(form.key, shelf.vials, shelf.draws)
+  return last ? toEpochMs(last.takenAt) : null
+})
+
+const createdAt = computed(() => (props.protocol ? toEpochMs(props.protocol.createdAt) : now.value))
+
+const projectionDoseTimes = computed(() =>
+  projectedDoseTimes(form.schedule, lastDrawAt.value, createdAt.value, now.value, localCalendar),
+)
+
+const projectionAmount = computed(() => {
+  if (!levels.value) return null
+  const planned = parsedPlannedDose.value.dose
+  if (planned && areCompatible(planned.unit, levels.value.unit)) {
+    return convert(planned, levels.value.unit).value
+  }
+  return levels.value.amount
+})
+
+const scheduleLabel = computed(() => scheduleText(form.schedule, formatTimeOfDay, weekdayName))
 
 function save() {
   if (!valid.value) return
@@ -84,7 +175,9 @@ function save() {
   emit('save', {
     key,
     name: props.products.find((p) => p.key === key)?.name ?? props.name ?? key,
-    intervalHours: intervalHours.value!,
+    schedule: form.schedule,
+    plannedDose: parsedPlannedDose.value.dose,
+    course: parsedCourse.value.course,
     notes: form.notes.trim(),
   })
 }
@@ -106,31 +199,60 @@ function save() {
             item-title="name"
             item-value="key"
           />
-          <v-select v-model="form.preset" label="How often" :items="PRESETS" />
-          <div v-if="!form.preset" class="d-flex ga-3 align-start">
+
+          <ScheduleEditor v-model="form.schedule" @valid="scheduleValid = $event" />
+
+          <div class="pc-stack pc-stack--tight">
+            <div class="d-flex ga-3 align-start">
+              <v-text-field
+                v-model="form.plannedDose"
+                label="Planned dose (optional)"
+                type="number"
+                inputmode="decimal"
+                :suffix="doseUnits.length === 1 ? unitLabel(form.plannedDoseUnit) : undefined"
+                hint="Your own plan. PepCalc doesn't suggest doses."
+                persistent-hint
+                :error-messages="parsedPlannedDose.error"
+              />
+              <v-btn-toggle
+                v-if="doseUnits.length > 1"
+                v-model="form.plannedDoseUnit"
+                mandatory
+                density="comfortable"
+                role="group"
+                aria-label="Planned dose unit"
+                class="protocol-dialog__units"
+              >
+                <v-btn v-for="u in doseUnits" :key="u" :value="u">{{ unitLabel(u) }}</v-btn>
+              </v-btn-toggle>
+            </div>
+          </div>
+
+          <div class="d-flex ga-3 align-start">
             <v-text-field
-              v-model="form.every"
-              label="Every"
+              v-model="form.courseWeeks"
+              label="Course length in weeks (optional)"
               type="number"
-              inputmode="decimal"
-              :error-messages="everyError"
+              inputmode="numeric"
+              :error-messages="parsedCourse.weeksError"
             />
-            <v-select
-              v-model="form.unit"
-              label="Unit"
-              :items="['hours', 'days']"
-              class="protocol-dialog__unit"
+            <v-text-field
+              v-if="form.courseWeeks.trim()"
+              v-model="form.courseStartOn"
+              label="Course starts"
+              type="date"
+              :error-messages="parsedCourse.dateError"
             />
           </div>
-          <p class="text-body-small pc-muted">Used to show when your next dose is due.</p>
+
           <v-expand-transition>
             <ProjectionPanel
-              v-if="levels && intervalHours !== null"
+              v-if="levels"
               :source="levels.peptide"
               :override="levels.pk?.userSupplied ? levels.pk.params : null"
-              :interval-hours="intervalHours"
-              :interval-label="intervalText(intervalHours)"
-              :amount="levels.amount"
+              :dose-times="projectionDoseTimes"
+              :schedule-label="scheduleLabel"
+              :amount="projectionAmount"
               :history="levels.history"
               :unit-label="unitLabel(levels.unit)"
             />
@@ -151,7 +273,7 @@ function save() {
 </template>
 
 <style scoped>
-.protocol-dialog__unit {
-  flex: 0 0 132px;
+.protocol-dialog__units {
+  margin-top: var(--pc-field-label-band);
 }
 </style>

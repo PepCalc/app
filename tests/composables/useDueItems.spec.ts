@@ -42,14 +42,18 @@ describe('useDueItems', () => {
     await repository.addProtocol({
       key: 'bpc-157',
       name: 'BPC-157',
-      intervalHours: 24,
+      schedule: { kind: 'interval', everyHours: 24 },
+      plannedDose: { value: 250, unit: 'mcg' },
+      course: null,
       notes: '',
     })
     // Protocol whose vial was deleted: should not appear.
     await repository.addProtocol({
       key: 'semaglutide',
       name: 'Semaglutide',
-      intervalHours: 168,
+      schedule: { kind: 'interval', everyHours: 168 },
+      plannedDose: null,
+      course: null,
       notes: '',
     })
 
@@ -61,9 +65,64 @@ describe('useDueItems', () => {
     expect(items.value).toHaveLength(1)
     expect(items.value[0]!.title).toBe('BPC-157')
     expect(items.value[0]!.dueAt).toBe(nowMs + 14 * HOUR_MS)
+    expect(items.value[0]!.detail).toContain('Planned: 250 mcg')
     expect(items.value[0]!.vialId).toBe(vial.id)
 
     items.value[0]!.log()
     expect(startSpy).toHaveBeenCalledWith('dose', { vialId: vial.id })
+  })
+
+  it('orders asNeeded protocols after dated items with no due time', async () => {
+    const nowMs = new Date(2026, 10, 16, 12, 0).getTime()
+    await repository.addVial({
+      peptideId: 'pt-141',
+      name: 'PT-141',
+      kind: 'single',
+      unit: 'mg',
+      amount: 10,
+      diluentMl: 2,
+      components: null,
+      typicalDose: null,
+      pkOverride: null,
+      reconstitutedAt: null,
+      status: 'active',
+      notes: '',
+    })
+    await repository.addVial({
+      peptideId: 'bpc-157',
+      name: 'BPC-157',
+      kind: 'single',
+      unit: 'mcg',
+      amount: 5000,
+      diluentMl: 2,
+      components: null,
+      typicalDose: null,
+      pkOverride: null,
+      reconstitutedAt: null,
+      status: 'active',
+      notes: '',
+    })
+    await repository.addProtocol({
+      key: 'pt-141',
+      name: 'PT-141',
+      schedule: { kind: 'asNeeded' },
+      plannedDose: null,
+      course: null,
+      notes: '',
+    })
+    await repository.addProtocol({
+      key: 'bpc-157',
+      name: 'BPC-157',
+      schedule: { kind: 'daily', times: [{ hour: 20, minute: 0 }] },
+      plannedDose: null,
+      course: null,
+      notes: '',
+    })
+
+    await Promise.all([useShelfStore().load(), useProtocolsStore().load()])
+    const { items } = useDueItems(ref(nowMs))
+    expect(items.value.map((i) => i.title)).toEqual(['BPC-157', 'PT-141'])
+    expect(items.value[1]!.dueAt).toBeNull()
+    expect(items.value[1]!.asNeeded).toBe(true)
   })
 })

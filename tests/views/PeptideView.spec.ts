@@ -100,7 +100,9 @@ describe('PeptideView', () => {
     await protocols.addProtocol({
       key: 'semaglutide',
       name: 'Semaglutide',
-      intervalHours: 168,
+      schedule: { kind: 'interval', everyHours: 168 },
+      plannedDose: null,
+      course: null,
       notes: '',
     })
 

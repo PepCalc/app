@@ -8,9 +8,9 @@ import type { CatalogPeptide } from '@/domain/catalog'
 import { sameProductKey } from '@/domain/vials'
 import type { DoseEvent, PkParameters } from '@/domain/pk'
 import { projectLevels, type LevelProjection } from '@/domain/projection'
-import { lastDrawFor, nextDueAt } from '@/domain/schedule'
+import { gapHours, lastDrawFor, nextDue, projectedDoseTimes } from '@/domain/schedule'
 import { areCompatible, convert, type AmountUnit } from '@/domain/units'
-import { toEpochMs } from '@/services/time'
+import { localCalendar, toEpochMs } from '@/services/time'
 import { useShelfStore } from './shelf'
 
 /** A peptide on the shelf a protocol can follow: the key vials share, and its name. */
@@ -27,7 +27,7 @@ export interface ProductLevels {
   unit: AmountUnit
   /** Doses in `unit`, oldest first. */
   history: DoseEvent[]
-  /** The dose a schedule repeats: the newest draw, else the vial's usual dose, else null. */
+  /** The dose a schedule repeats: the planned dose, else newest draw, else the vial's usual dose. */
   amount: number | null
 }
 
@@ -88,10 +88,21 @@ export const useProtocolsStore = defineStore('protocols', () => {
     return lastDrawFor(protocol.key, shelf.vials, shelf.draws)
   }
 
-  /** Epoch ms the next dose is due; null before the first draw. */
-  function nextDueOf(protocol: ProtocolRow): number | null {
+  /** Epoch ms the next dose is due; null when nothing is due (e.g. asNeeded, or interval before first draw). */
+  function nextDueOf(protocol: ProtocolRow, now: number): number | null {
     const last = lastDrawOf(protocol)
-    return nextDueAt(last ? toEpochMs(last.takenAt) : null, protocol.intervalHours)
+    return nextDue(
+      protocol.schedule,
+      last ? toEpochMs(last.takenAt) : null,
+      toEpochMs(protocol.createdAt),
+      now,
+      localCalendar,
+    )
+  }
+
+  /** Hours between `dueAt` and the preceding slot (or the interval itself). */
+  function gapOf(protocol: ProtocolRow, dueAt: number): number {
+    return gapHours(protocol.schedule, dueAt, localCalendar)
   }
 
   /**
@@ -106,8 +117,10 @@ export const useProtocolsStore = defineStore('protocols', () => {
     const ids = new Set(vials.map((v) => v.id))
     const unit = shelf.draws.find((d) => ids.has(d.vialId))?.dose.unit ?? vial.unit
     const history = shelf.dosesOf(ids, unit)
+    const planned = protocolFor(key)?.plannedDose ?? null
     const usual = vial.typicalDose
     const amount =
+      (planned && areCompatible(planned.unit, unit) ? convert(planned, unit).value : null) ??
       history[history.length - 1]?.amount ??
       (usual && areCompatible(usual.unit, unit) ? convert(usual, unit).value : null)
     return { peptide: findPeptide(vial.peptideId), pk: shelf.pkFor(vial), unit, history, amount }
@@ -118,15 +131,29 @@ export const useProtocolsStore = defineStore('protocols', () => {
     return shelf.activeVials.find((v) => sameProductKey(v) === protocol.key)
   }
 
-  /** Where a protocol's levels are heading; null without a half-life or a logged draw. */
+  /** Where a protocol's levels are heading; null without a half-life, logged draw, or schedule. */
   function projectionOf(protocol: ProtocolRow, now: number): ProtocolProjection | null {
     const levels = levelsOf(protocol.key)
     if (!levels?.pk || !levels.history.length) return null
+    const last = lastDrawOf(protocol)
+    const doseTimes = projectedDoseTimes(
+      protocol.schedule,
+      last ? toEpochMs(last.takenAt) : null,
+      toEpochMs(protocol.createdAt),
+      now,
+      localCalendar,
+    )
+    if (!doseTimes.length) return null
+    const planned = protocol.plannedDose
+    const repeatDose =
+      planned && areCompatible(planned.unit, levels.unit)
+        ? convert(planned, levels.unit).value
+        : null
     return {
       projection: projectLevels({
         params: levels.pk.params,
-        intervalHours: protocol.intervalHours,
-        amount: null,
+        doseTimes,
+        amount: repeatDose,
         history: levels.history,
         now,
       }),
@@ -162,6 +189,7 @@ export const useProtocolsStore = defineStore('protocols', () => {
     hasVial,
     lastDrawOf,
     nextDueOf,
+    gapOf,
     drawVialOf,
     levelsOf,
     projectionOf,

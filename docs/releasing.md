@@ -15,6 +15,8 @@ there is no Mac.
    attaches them to a GitHub release; `ios.yml` uploads an iOS build to App Store Connect
    (TestFlight), once its secrets are set; F-Droid picks up the new tag and builds it.
 
+Backups made by 0.5.0 (backup version 7) do not restore on older versions.
+
 ## Signing
 
 Create one upload key and keep it out of the repository, backed up in two places. A lost key

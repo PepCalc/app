@@ -6,6 +6,7 @@ import type { A1cUnit, GlucoseContext, GlucoseUnit } from '@/domain/glucose'
 import type { PhotoPose } from '@/domain/photos'
 import type { PkParameters } from '@/domain/pk'
 import type { Severity, Symptom } from '@/domain/symptoms'
+import type { Course, Schedule } from '@/domain/schedule'
 import type { AmountUnit, Quantity } from '@/domain/units'
 
 /** A reconstituted (or still dry) vial on the user's shelf. Timestamps are UTC ISO-8601. */
@@ -50,8 +51,10 @@ export interface ProtocolRow {
   key: string
   /** The peptide's name when the protocol was made, shown if no vial matches any more. */
   name: string
-  /** Hours between doses: 12 for twice daily, 24 daily, 168 weekly. */
-  intervalHours: number
+  schedule: Schedule
+  /** What the user plans to take each time; null when they have not said. Never from the catalog. */
+  plannedDose: Quantity | null
+  course: Course | null
   notes: string
   createdAt: string
   updatedAt: string
@@ -195,6 +198,22 @@ export function createDatabase(name = DB_NAME): PepcalcDb {
   db.version(4).stores({
     vitals: 'id, kind, measuredAt',
   })
+  // Schedules gain kinds: an interval becomes one kind of schedule. No index changes.
+  db.version(5).upgrade((tx) =>
+    tx
+      .table('protocols')
+      .toCollection()
+      .modify((row) => {
+        const hours = row.intervalHours
+        row.schedule =
+          typeof hours === 'number' && Number.isFinite(hours) && hours > 0 && hours <= 8760
+            ? { kind: 'interval', everyHours: hours }
+            : { kind: 'asNeeded' }
+        row.plannedDose = null
+        row.course = null
+        delete row.intervalHours
+      }),
+  )
   /*
    * Rows reach IndexedDB as plain data. Stores hold reactive state, and a reactive proxy passed
    * to a write would fail the whole write with DataCloneError; copying here covers every table

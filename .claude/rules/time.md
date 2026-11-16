@@ -9,3 +9,6 @@ paths: ['src/**']
   `Date.now()` and `toLocale*String()` elsewhere. Pass a `Clock` into code that needs "now" so
   tests can fix it.
 - Display uses the device locale and time zone through `Intl`, never a hard-coded format.
+- A time of day or a calendar date that is not an instant (a schedule's 08:00, a course's start)
+  is stored as numbers or `YYYY-MM-DD`, and becomes an instant only through
+  `src/services/time.ts`.

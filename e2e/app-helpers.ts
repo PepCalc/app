@@ -64,7 +64,10 @@ export async function prepareTodaySchedule(page: Page) {
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
   await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
-  await page.getByRole('option', { name: 'Weekly' }).click()
+  await page.getByRole('option', { name: 'Every N hours', exact: true }).click()
+  await dialog.getByLabel('Every', { exact: true }).fill('7')
+  await dialog.locator('.v-select').filter({ hasText: 'Unit' }).click()
+  await page.getByRole('option', { name: 'days', exact: true }).click()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
 

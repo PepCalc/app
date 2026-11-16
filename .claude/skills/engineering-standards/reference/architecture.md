@@ -9,7 +9,8 @@ src/
   domain/        pure logic: units (dose quantities), bodyUnits (weight and height),
                  unitDefaults (regional default display units from CLDR), reconstitution, diluent advice, syringe, pk, levels (pooling and the curve
                  model), overlay (several peptides on one chart), projection (levels ahead),
-                 schedule (when a protocol is next due), inventory, blend, listing (paging,
+                 schedule (when a protocol is next due), timeOfDay (wall-clock HH:MM input values),
+                 inventory, blend, listing (paging,
                  ordering), vials (numbering, keys), vial age, body (measurements, length
                  units, BMI, WHO bands), glucose, symptoms, photos, collage and crop (photo
                  collage), doseBands (dose bands and callout pills on a trend), progressStats
@@ -61,7 +62,8 @@ per-visit; anything that must survive a reload goes into the database.
 
 - IndexedDB via Dexie, database `pepcalc`. Tables: `vials`, `draws`, `settings` (key/value);
   the journal's `measurements`, `symptoms`, `glucose`, `photos`, `photoImages` and
-  `photoThumbs` (version 2); `protocols` (version 3); `vitals` (version 4: blood pressure and
+  `photoThumbs` (version 2); `protocols` (version 3, holding `schedule`, `plannedDose` and
+  `course` from version 5); `vitals` (version 4: blood pressure and
   resting heart rate, stored as typed in mmHg and bpm, with no unit setting).
 - Writes pass through `toPlain` (`src/db/plain.ts`) in a Dexie middleware. IndexedDB cannot
   clone a Vue proxy; without the copy a store that saves its own reactive state fails with
@@ -80,8 +82,19 @@ per-visit; anything that must survive a reload goes into the database.
 - `navigator.storage.persist()` is requested on launch (Settings shows the result). Safari may
   still evict data; a backup file (Settings, Save a backup) is the only guarantee. Safari tabs
   and Home Screen apps on iOS keep separate storage.
-- Backups are versioned JSON (`format: "pepcalc-backup"`). `parseBackup` validates untrusted
-  input fully before `restoreBackup` replaces data atomically.
+- Backups are versioned JSON (`format: "pepcalc-backup"`, version 7). `parseBackup` validates
+  untrusted input fully (migrating older protocol rows on restore) before `restoreBackup`
+  replaces data atomically.
+
+## Schedules
+
+A protocol's `schedule` is one of five kinds: `interval` (every N hours from the last draw),
+`daily` (fixed times each day), `weekly` (chosen ISO weekdays at fixed times), `cycle` (days on
+and days off from a local `YYYY-MM-DD` anchor date) or `asNeeded` (no due time). Fixed-time slots
+are built from local wall-clock time through `LocalCalendar` (`src/services/time.ts`), so a
+chosen time stays at that wall-clock hour across daylight-saving changes. A draw covers a slot `s`
+when logged at or after `s` minus half the gap from the preceding slot, capped at 12 hours; the
+next due time is the first uncovered slot. `asNeeded` has no due time and always returns null.
 
 ## PK model
 

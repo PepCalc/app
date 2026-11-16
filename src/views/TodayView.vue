@@ -222,8 +222,10 @@ const hasSections = computed(
             :title="item.title"
             :due-label="
               item.dueAt !== null
-                ? dueText(dueState(item.dueAt, item.intervalHours, now))
-                : undefined
+                ? dueText(dueState(item.dueAt, item.gapHours, now))
+                : item.asNeeded
+                  ? 'As needed'
+                  : undefined
             "
             :detail="item.detail"
             :to="item.to"
@@ -231,8 +233,8 @@ const hasSections = computed(
           >
             <template v-if="item.dueAt !== null" #countdown>
               <DoseCountdown
-                :state="dueState(item.dueAt, item.intervalHours, now)"
-                :remaining="remainingFraction(item.dueAt, item.intervalHours, now)"
+                :state="dueState(item.dueAt, item.gapHours, now)"
+                :remaining="remainingFraction(item.dueAt, item.gapHours, now)"
               />
             </template>
             <template v-if="item.vialId" #actions>

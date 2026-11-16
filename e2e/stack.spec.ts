@@ -19,7 +19,10 @@ test('manages a peptide on Stack, keeps levels off VialView, and supports redire
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const proto = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
   await proto.locator('.v-select').filter({ hasText: 'How often' }).click()
-  await page.getByRole('option', { name: 'Weekly' }).click()
+  await page.getByRole('option', { name: 'Every N hours', exact: true }).click()
+  await proto.getByLabel('Every', { exact: true }).fill('7')
+  await proto.locator('.v-select').filter({ hasText: 'Unit' }).click()
+  await page.getByRole('option', { name: 'days', exact: true }).click()
   await proto.getByRole('button', { name: 'Save' }).click()
   await expect(proto).toBeHidden()
 

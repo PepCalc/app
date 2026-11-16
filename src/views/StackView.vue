@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { anyDoseInEffect } from '@/domain/pk'
-import { dueState, dueText, intervalText } from '@/domain/schedule'
+import { dueState, dueText, scheduleText } from '@/domain/schedule'
 import { roundTo, unitLabel } from '@/domain/units'
 import { useNow } from '@/composables/useNow'
 import { vialAgeFor } from '@/composables/useVialAge'
 import { useProtocolsStore } from '@/stores/protocols'
 import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
-import { daysBetween, formatRelativeDays } from '@/services/time'
+import { daysBetween, formatRelativeDays, formatTimeOfDay, weekdayName } from '@/services/time'
 import VialAgeBadge from '@/components/shelf/VialAgeBadge.vue'
 import { mdiChevronRight, mdiPlus } from '@/plugins/icons'
 
@@ -32,7 +32,9 @@ const activeRows = computed(() =>
     const age = vialAgeFor(primary, now.value, settings)
 
     const parts: string[] = []
-    if (protocol) parts.push(capitalize(intervalText(protocol.intervalHours)))
+    if (protocol) {
+      parts.push(capitalize(scheduleText(protocol.schedule, formatTimeOfDay, weekdayName)))
+    }
     if (rem) {
       const amount = `${roundTo(rem.amount, 3)} ${unitLabel(rem.unit)} left`
       parts.push(rem.vialCount > 1 ? `${rem.vialCount} vials, ${amount}` : amount)
@@ -43,9 +45,15 @@ const activeRows = computed(() =>
 
     let dueLabel = 'No schedule'
     if (protocol) {
-      const dueAt = protocols.nextDueOf(protocol)
-      dueLabel =
-        dueAt !== null ? dueText(dueState(dueAt, protocol.intervalHours, now.value)) : 'No draw yet'
+      if (protocol.schedule.kind === 'asNeeded') {
+        dueLabel = ''
+      } else {
+        const dueAt = protocols.nextDueOf(protocol, now.value)
+        dueLabel =
+          dueAt !== null
+            ? dueText(dueState(dueAt, protocols.gapOf(protocol, dueAt), now.value))
+            : 'No draw yet'
+      }
     }
 
     return [
@@ -109,7 +117,9 @@ const chartedCount = computed(
               <VialAgeBadge v-if="row.age && row.age.tier !== 'fresh'" :age="row.age" />
             </v-list-item-subtitle>
             <template #append>
-              <span class="text-body-small pc-muted mr-2">{{ row.dueLabel }}</span>
+              <span v-if="row.dueLabel" class="text-body-small pc-muted mr-2">{{
+                row.dueLabel
+              }}</span>
               <v-icon :icon="mdiChevronRight" />
             </template>
           </v-list-item>

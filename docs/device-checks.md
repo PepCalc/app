@@ -26,3 +26,10 @@ The e2e suite covers only the web build. Run these checks on a phone before a re
 1. Every tab opens: Today, Stack, Calculator, Progress, Settings.
 2. On Android, pressing the system back button from a peptide page returns to Stack, and from All entries returns to Progress.
 3. The floating Log button clears the Android gesture bar cleanly at the bottom of every tab.
+
+## Schedules
+
+1. Install 0.4.0 with protocols, update to this build: every protocol reads as before.
+2. Save a backup on 0.4.0, restore it on this build: same.
+3. Change the device's time zone with a daily 08:00 schedule: it is still due at 08:00.
+4. In the Android app: the same three checks.

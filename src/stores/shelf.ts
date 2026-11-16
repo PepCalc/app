@@ -28,6 +28,7 @@ import {
   type Quantity,
 } from '@/domain/units'
 import { daysBetween, formatRelativeDays, toEpochMs } from '@/services/time'
+import { useProtocolsStore } from './protocols'
 
 /**
  * The shelf (vials) and the draw log. The whole dataset is small enough to hold in memory,
@@ -162,24 +163,37 @@ export const useShelfStore = defineStore('shelf', () => {
   }
 
   /**
-   * What a new draw from `vial` is pre-filled with (see startingDose): the dose, and the syringe
-   * of the draw it came from while that syringe is still in the catalog; null where nothing is
-   * known, so the caller keeps its own default.
+   * What a new draw from `vial` is pre-filled with: the protocol's planned dose when set, else
+   * `startingDose` (last draw, else vial's usual dose); and the syringe of the draw it came from
+   * while that syringe is still in the catalog; null where nothing is known, so the caller keeps
+   * its own default.
    */
   function drawDefaultsFor(vial: VialRow): { dose: Quantity | null; syringeId: string | null } {
     const start = startingDoseFor(vial)
+    const syringeId =
+      start &&
+      start.kind !== 'usual' &&
+      syringeCatalog.syringes.some((s) => s.id === start.draw.syringeId)
+        ? start.draw.syringeId
+        : null
+    const planned = useProtocolsStore().protocolFor(sameProductKey(vial))?.plannedDose ?? null
+    if (planned && areCompatible(planned.unit, vial.unit)) {
+      return { dose: planned, syringeId }
+    }
     if (!start) return { dose: null, syringeId: null }
     if (start.kind === 'usual') return { dose: start.dose, syringeId: null }
-    const { dose, syringeId } = start.draw
-    const known = syringeCatalog.syringes.some((s) => s.id === syringeId)
-    return { dose, syringeId: known ? syringeId : null }
+    return { dose: start.draw.dose, syringeId }
   }
 
   /**
-   * "Last drawn: 300 mcg, 2 days ago" when a starting dose came from a logged draw, so a
-   * pre-filled dose is never mistaken for a suggestion; null for the vial's usual dose.
+   * "From your schedule: 250 mcg." when a planned dose applies, else "Last drawn: 300 mcg,
+   * 2 days ago" when a starting dose came from a logged draw; null for the vial's usual dose.
    */
   function startingDoseHint(vial: VialRow, now: number): string | null {
+    const planned = useProtocolsStore().protocolFor(sameProductKey(vial))?.plannedDose ?? null
+    if (planned && areCompatible(planned.unit, vial.unit)) {
+      return `From your schedule: ${roundTo(planned.value, 4)} ${unitLabel(planned.unit)}.`
+    }
     const start = startingDoseFor(vial)
     if (!start || start.kind === 'usual') return null
     const { dose, takenAt, vialId } = start.draw

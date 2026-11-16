@@ -4,12 +4,25 @@ import { findPeptide } from '@/data'
 import type { ProtocolRow } from '@/db/database'
 import type { NewProtocol } from '@/db/repository'
 import { levelKey, levelsCaption } from '@/domain/levels'
-import { dueState, dueText, intervalText, lastDrawFor, remainingFraction } from '@/domain/schedule'
-import { roundTo, unitLabel } from '@/domain/units'
+import {
+  courseText,
+  dueState,
+  dueText,
+  lastDrawFor,
+  remainingFraction,
+  scheduleText,
+} from '@/domain/schedule'
+import { formatQuantity, roundTo, unitLabel } from '@/domain/units'
 import { CUSTOM_PEPTIDE } from '@/composables/useCalculator'
 import { useEntries } from '@/composables/useEntries'
 import { useNow } from '@/composables/useNow'
-import { formatDateTime, toEpochMs } from '@/services/time'
+import {
+  formatDateTime,
+  formatTimeOfDay,
+  localCalendar,
+  toEpochMs,
+  weekdayName,
+} from '@/services/time'
 import { useConfirmStore } from '@/stores/confirm'
 import { useLogStore } from '@/stores/log'
 import { useNotifyStore } from '@/stores/notify'
@@ -56,22 +69,38 @@ const drawVial = computed(() =>
   protocol.value ? protocols.drawVialOf(protocol.value) : activeVials.value[0],
 )
 const lastDraw = computed(() => lastDrawFor(props.peptideKey, shelf.vials, shelf.draws))
-const dueAt = computed(() => (protocol.value ? protocols.nextDueOf(protocol.value) : null))
+const dueAt = computed(() =>
+  protocol.value ? protocols.nextDueOf(protocol.value, now.value) : null,
+)
 
 const countdown = computed(() => {
   if (!protocol.value || dueAt.value === null) return null
-  const { intervalHours } = protocol.value
+  const gap = protocols.gapOf(protocol.value, dueAt.value)
   return {
-    state: dueState(dueAt.value, intervalHours, now.value),
-    remaining: remainingFraction(dueAt.value, intervalHours, now.value),
+    state: dueState(dueAt.value, gap, now.value),
+    remaining: remainingFraction(dueAt.value, gap, now.value),
   }
 })
 
-const dueLabel = computed(() => {
+const scheduleHeading = computed(() => {
   if (!protocol.value) return ''
+  const text = scheduleText(protocol.value.schedule, formatTimeOfDay, weekdayName)
+  return text.charAt(0).toUpperCase() + text.slice(1)
+})
+
+const dueLabel = computed(() => {
+  if (!protocol.value || protocol.value.schedule.kind === 'asNeeded') return ''
   if (dueAt.value === null || !countdown.value) return 'No draw logged yet'
   return dueText(countdown.value.state)
 })
+
+const courseLabel = computed(() =>
+  protocol.value ? courseText(protocol.value.course, now.value, localCalendar) : null,
+)
+
+const plannedLabel = computed(() =>
+  protocol.value?.plannedDose ? `Planned: ${formatQuantity(protocol.value.plannedDose)}` : null,
+)
 
 const lastText = computed(() => {
   const d = lastDraw.value
@@ -118,7 +147,9 @@ const dialogProducts = computed(() => [{ key: props.peptideKey, name: name.value
 async function saveProtocol(input: NewProtocol) {
   if (protocol.value) {
     await protocols.updateProtocol(protocol.value.id, {
-      intervalHours: input.intervalHours,
+      schedule: input.schedule,
+      plannedDose: input.plannedDose,
+      course: input.course,
       notes: input.notes,
     })
     notify.show('Protocol saved')
@@ -160,13 +191,11 @@ async function deleteProtocol(p: ProtocolRow) {
           <v-card>
             <v-card-item>
               <p class="pc-eyebrow">Schedule</p>
-              <v-card-title v-if="protocol">{{
-                intervalText(protocol.intervalHours)
-              }}</v-card-title>
+              <v-card-title v-if="protocol">{{ scheduleHeading }}</v-card-title>
             </v-card-item>
             <v-card-text class="pc-stack">
               <template v-if="protocol">
-                <div class="peptide-due">
+                <div v-if="dueLabel" class="peptide-due">
                   <DoseCountdown
                     v-if="countdown"
                     :state="countdown.state"
@@ -174,6 +203,9 @@ async function deleteProtocol(p: ProtocolRow) {
                   />
                   <p class="text-title-medium">{{ dueLabel }}</p>
                 </div>
+                <p v-if="plannedLabel || courseLabel" class="pc-muted pc-num">
+                  {{ [plannedLabel, courseLabel].filter(Boolean).join(' · ') }}
+                </p>
                 <p v-if="lastText" class="pc-muted">
                   Last: <span class="pc-num">{{ lastText }}</span>
                 </p>

@@ -7,7 +7,8 @@ import { useLogStore } from '@/stores/log'
 import { useProtocolsStore } from '@/stores/protocols'
 
 export interface PepCalcDueItem extends DueItem {
-  intervalHours: number
+  gapHours: number
+  asNeeded: boolean
   vialId: string | null
   to: RouteLocationRaw
   log: () => void
@@ -26,19 +27,24 @@ export function useDueItems(now: Ref<number>): {
         .filter((p) => protocols.hasVial(p))
         .map((p) => {
           const last = protocols.lastDrawOf(p)
-          let detail = 'No doses yet'
+          const parts: string[] = []
+          if (p.plannedDose) parts.push(`Planned: ${formatQuantity(p.plannedDose)}`)
           if (last) {
             const day = formatDay(toEpochMs(last.takenAt), now.value)
             const when = day === 'Today' || day === 'Yesterday' ? day.toLowerCase() : day
-            detail = `Last: ${formatQuantity(last.dose)}, ${when}`
+            parts.push(`Last: ${formatQuantity(last.dose)}, ${when}`)
+          } else if (!p.plannedDose) {
+            parts.push('No doses yet')
           }
+          const dueAt = protocols.nextDueOf(p, now.value)
           const vialId = protocols.drawVialOf(p)?.id ?? null
           return {
             id: p.id,
             title: protocols.nameFor(p),
-            detail,
-            dueAt: protocols.nextDueOf(p),
-            intervalHours: p.intervalHours,
+            detail: parts.join(' · '),
+            dueAt,
+            gapHours: dueAt !== null ? protocols.gapOf(p, dueAt) : 0,
+            asNeeded: p.schedule.kind === 'asNeeded',
             vialId,
             to: { name: 'peptide', params: { key: p.key } },
             log: () => log.start('dose', { vialId: vialId ?? undefined }),

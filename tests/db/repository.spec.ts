@@ -133,12 +133,17 @@ describe('backup', () => {
     const p = await repo.addProtocol({
       key: 'semaglutide',
       name: 'Semaglutide',
-      intervalHours: 168,
+      schedule: { kind: 'interval', everyHours: 168 },
+      plannedDose: null,
+      course: null,
       notes: '',
     })
     expect(p.createdAt).toBe('2026-10-25T12:00:00.000Z')
-    await repo.updateProtocol(p.id, { intervalHours: 24 })
-    expect((await repo.listProtocols())[0]!.intervalHours).toBe(24)
+    await repo.updateProtocol(p.id, { schedule: { kind: 'interval', everyHours: 24 } })
+    expect((await repo.listProtocols())[0]!.schedule).toEqual({
+      kind: 'interval',
+      everyHours: 24,
+    })
 
     const text = JSON.stringify(await exportBackup(db, fixedClock))
     const other = createDatabase(`restore-protocols-${counter}`)
@@ -146,7 +151,7 @@ describe('backup', () => {
     await restoreBackup(other, parseBackup(text))
     expect((await createRepository(other).listProtocols())[0]).toMatchObject({
       key: 'semaglutide',
-      intervalHours: 24,
+      schedule: { kind: 'interval', everyHours: 24 },
     })
     await other.delete()
 
@@ -162,7 +167,9 @@ describe('backup', () => {
     await repo.addProtocol({
       key: 'name:my peptide',
       name: 'My Peptide',
-      intervalHours: 24,
+      schedule: { kind: 'interval', everyHours: 24 },
+      plannedDose: null,
+      course: null,
       notes: '',
     })
 
@@ -178,7 +185,9 @@ describe('backup', () => {
     await repo.addProtocol({
       key: 'semaglutide',
       name: 'Semaglutide',
-      intervalHours: 24,
+      schedule: { kind: 'interval', everyHours: 24 },
+      plannedDose: null,
+      course: null,
       notes: '',
     })
     const { protocols: _p, ...rest } = await exportBackup(db, fixedClock)
@@ -188,16 +197,18 @@ describe('backup', () => {
     expect(await repo.listProtocols()).toEqual([])
   })
 
-  it('rejects a protocol without a positive interval', async () => {
+  it('rejects a protocol without a valid schedule', async () => {
     const repo = createRepository(db, fixedClock)
     await repo.addProtocol({
       key: 'semaglutide',
       name: 'Semaglutide',
-      intervalHours: 24,
+      schedule: { kind: 'interval', everyHours: 24 },
+      plannedDose: null,
+      course: null,
       notes: '',
     })
     const backup = await exportBackup(db, fixedClock)
-    backup.protocols[0]!.intervalHours = 0
+    backup.protocols[0]!.schedule = { kind: 'interval', everyHours: 0 }
     expect(() => parseBackup(JSON.stringify(backup))).toThrow(/Protocol 1/)
   })
 
@@ -425,7 +436,7 @@ describe('journal', () => {
   it('round-trips everything through a backup file', async () => {
     await seed()
     const parsed = parseBackup(JSON.stringify(await exportBackup(db, fixedClock)))
-    expect(parsed.version).toBe(6)
+    expect(parsed.version).toBe(7)
     expect(parsed.measurements).toHaveLength(1)
     expect(parsed.symptoms).toHaveLength(1)
     expect(parsed.glucose).toHaveLength(2)

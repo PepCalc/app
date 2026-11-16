@@ -15,6 +15,7 @@ import type {
 import { isValidMeasurement } from '@/domain/body'
 import { A1C_UNITS, GLUCOSE_CONTEXTS, GLUCOSE_UNITS } from '@/domain/glucose'
 import { PHOTO_POSES } from '@/domain/photos'
+import { isValidCourse, isValidSchedule } from '@/domain/schedule'
 import { SEVERITIES, SYMPTOMS } from '@/domain/symptoms'
 import { isValidBloodPressure, isValidHeartRate } from '@/domain/vitals'
 import { restoredHealthSync } from '@/domain/healthSync'
@@ -31,11 +32,11 @@ const BACKUP_FORMAT = 'pepcalc-backup'
 /*
  * 2 linked blend components to the catalog; 3 added the journal (measurements, side effects,
  * blood sugar, photos); 4 added protocols; 5 added blood pressure and heart rate;
- * 6 added glucose monitor days. An older file restores with what it predates empty;
- * an app that only knows an older version refuses a newer file rather than dropping what it
- * cannot read.
+ * 6 added glucose monitor days; 7 added schedule kinds, planned doses and courses on protocols.
+ * An older file restores with what it predates empty; an app that only knows an older version
+ * refuses a newer file rather than dropping what it cannot read.
  */
-const BACKUP_VERSION = 6
+const BACKUP_VERSION = 7
 
 /** The data's name inside a zip backup; photos sit beside it as `photos/<id>.jpg`. */
 const ARCHIVE_DATA = 'pepcalc-backup.json'
@@ -223,7 +224,10 @@ function checkProtocol(p: unknown, i: number): asserts p is ProtocolRow {
     typeof p.key === 'string' &&
     p.key.length > 0 &&
     typeof p.name === 'string' &&
-    isPositive(p.intervalHours) &&
+    isValidSchedule(p.schedule) &&
+    (p.plannedDose === null ||
+      (isQuantity(p.plannedDose) && isPositive((p.plannedDose as { value: number }).value))) &&
+    (p.course === null || isValidCourse(p.course)) &&
     typeof p.notes === 'string' &&
     isIso(p.createdAt) &&
     isIso(p.updatedAt)
@@ -321,6 +325,19 @@ function addComponentIds(v: unknown): void {
   }
 }
 
+/** Protocols before version 7 carried a single `intervalHours` number. */
+function upgradeProtocol(p: unknown): void {
+  if (!isRecord(p)) return
+  const hours = p.intervalHours
+  p.schedule =
+    typeof hours === 'number' && Number.isFinite(hours) && hours > 0 && hours <= 8760
+      ? { kind: 'interval', everyHours: hours }
+      : { kind: 'asNeeded' }
+  p.plannedDose ??= null
+  p.course ??= null
+  delete p.intervalHours
+}
+
 /** Validate untrusted JSON before anything touches the database. */
 export function parseBackup(text: string): BackupFile {
   let data: unknown
@@ -365,6 +382,7 @@ export function parseBackup(text: string): BackupFile {
   vials.forEach(checkVial)
   const vialUnits = new Map((vials as VialRow[]).map((v) => [v.id, v.unit]))
   draws.forEach((d, i) => checkDraw(d, i, vialUnits))
+  if (data.version < 7) protocols.forEach(upgradeProtocol)
   protocols.forEach(checkProtocol)
   measurements.forEach(checkMeasurement)
   symptoms.forEach(checkSymptom)

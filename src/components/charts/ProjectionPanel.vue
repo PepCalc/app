@@ -24,8 +24,8 @@ const props = defineProps<{
   source: PkSource | undefined
   /** User-supplied parameters; take precedence over the catalog. */
   override: PkParameters | null
-  intervalHours: number
-  intervalLabel: string
+  doseTimes: number[]
+  scheduleLabel: string
   /** Repeated dose in `unitLabel`, or null before any is known. */
   amount: number | null
   /** Logged doses in `unitLabel`, oldest first. */
@@ -37,18 +37,23 @@ const now = useNow()
 
 const params = computed<PkParameters | null>(() => props.override ?? props.source?.pk ?? null)
 const userSupplied = computed(() => props.override !== null)
+const description = computed(() => {
+  if (props.amount === null) return 'Percent of steady peak. Log a dose to see amounts.'
+  const startsLower = /^[a-z0-9]/.test(props.scheduleLabel)
+  const sep = startsLower ? ' ' : ', '
+  return `At ${formatAmount(props.amount, props.unitLabel)}${sep}${props.scheduleLabel}.`
+})
 </script>
 
 <template>
-  <section v-if="params" class="projection-panel pc-stack" aria-label="Projected levels">
+  <section
+    v-if="params && doseTimes.length"
+    class="projection-panel pc-stack"
+    aria-label="Projected levels"
+  >
     <div>
       <p class="pc-eyebrow">Projected levels</p>
-      <p class="text-body-small pc-muted">
-        <template v-if="amount !== null">
-          At {{ formatAmount(amount, unitLabel) }} {{ intervalLabel }}.
-        </template>
-        <template v-else>Percent of steady peak. Log a dose to see amounts.</template>
-      </p>
+      <p class="text-body-small pc-muted">{{ description }}</p>
     </div>
     <div class="d-flex flex-wrap ga-2 align-center">
       <span class="pc-badge pc-badge--brand pc-num"
@@ -61,7 +66,7 @@ const userSupplied = computed(() => props.override !== null)
     </div>
     <ProjectionChart
       :params="params"
-      :interval-hours="intervalHours"
+      :dose-times="doseTimes"
       :amount="amount"
       :history="history"
       :unit-label="unitLabel"
@@ -77,6 +82,9 @@ const userSupplied = computed(() => props.override !== null)
       />
     </MoreInfo>
   </section>
+  <p v-else-if="params && !doseTimes.length" class="text-body-small pc-muted">
+    No schedule to project.
+  </p>
   <p v-else-if="source?.pkUnavailableReason" class="text-body-small pc-muted">
     {{ source.pkUnavailableReason }}
   </p>

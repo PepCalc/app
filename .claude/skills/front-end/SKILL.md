@@ -49,7 +49,8 @@ One-line rules; detail lives in `reference/`. Read a reference when its trigger 
     em-dashes. Legal and safety wording is the exception and keeps its full text.
 13. Never tell the user what dose to take. A preset is "from the label" or carries its
     `SourceBadge`; community-reported values never look like clinical ones; a schedule's
-    interval is always the user's own.
+    interval is always the user's own. A planned dose is the user's entry. Never prefill it,
+    rank it or comment on it.
 14. The first-run notice (`common/DisclaimerDialog.vue`) says some peptides are
     investigational or not approved for human use. Nothing elsewhere softens or contradicts
     it.

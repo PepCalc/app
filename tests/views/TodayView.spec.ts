@@ -92,7 +92,9 @@ describe('TodayView', () => {
     await protocols.addProtocol({
       key: 'semaglutide',
       name: 'Semaglutide',
-      intervalHours: 168,
+      schedule: { kind: 'interval', everyHours: 168 },
+      plannedDose: null,
+      course: null,
       notes: '',
     })
     await journal.addWeight({
@@ -131,7 +133,9 @@ describe('TodayView', () => {
     await protocols.addProtocol({
       key: 'bpc-157',
       name: 'BPC-157',
-      intervalHours: 24,
+      schedule: { kind: 'interval', everyHours: 24 },
+      plannedDose: null,
+      course: null,
       notes: '',
     })
 

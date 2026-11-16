@@ -34,7 +34,7 @@ const MAX_DOSE_MARKS = 60
 
 const props = defineProps<{
   params: PkParameters
-  intervalHours: number
+  doseTimes: number[]
   /** The dose the schedule repeats; null shows percent of the steady peak. */
   amount: number | null
   /** Logged doses, oldest first, in `unitLabel`. */
