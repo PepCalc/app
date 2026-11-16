@@ -73,6 +73,29 @@ describe('repository', () => {
     expect(await repo.listDraws()).toHaveLength(1)
   })
 
+  it('updateDraw changes only the given fields', async () => {
+    const repo = createRepository(db, fixedClock)
+    const vial = await repo.addVial(vialInput)
+    const draw = await repo.addDraw({
+      vialId: vial.id,
+      takenAt: '2026-10-21T08:00:00.000Z',
+      dose: { value: 0.25, unit: 'mg' },
+      volumeMl: 0.1,
+      syringeId: 'u100-1ml',
+      notes: 'original',
+    })
+    await repo.updateDraw(draw.id, {
+      dose: { value: 0.5, unit: 'mg' },
+      volumeMl: 0.2,
+    })
+    const updated = (await repo.listDraws()).find((d) => d.id === draw.id)!
+    expect(updated.dose).toEqual({ value: 0.5, unit: 'mg' })
+    expect(updated.volumeMl).toBe(0.2)
+    expect(updated.takenAt).toBe('2026-10-21T08:00:00.000Z')
+    expect(updated.syringeId).toBe('u100-1ml')
+    expect(updated.notes).toBe('original')
+  })
+
   it('stores settings', async () => {
     const repo = createRepository(db, fixedClock)
     await repo.setSetting('defaultSyringeId', 'u100-0.5ml')

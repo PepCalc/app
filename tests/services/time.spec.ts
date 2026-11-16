@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  atLocalTime,
   daysBetween,
+  formatDate,
+  formatDay,
   formatHours,
+  formatTime,
   fromLocalInputValue,
   nowIso,
   toLocalInputValue,
@@ -25,5 +29,20 @@ describe('time', () => {
 
   it('counts whole days', () => {
     expect(daysBetween('2026-10-20T12:00:00Z', new Date('2026-10-25T11:00:00Z'))).toBe(4)
+  })
+})
+
+describe('formatDay and formatTime', () => {
+  it('labels today, yesterday and earlier local days', () => {
+    const now = new Date(2026, 10, 16, 14, 0).getTime()
+    expect(formatDay(new Date(2026, 10, 16, 8, 10).getTime(), now)).toBe('Today')
+    expect(formatDay(new Date(2026, 10, 15, 23, 50).getTime(), now)).toBe('Yesterday')
+    const older = new Date(2026, 10, 10, 9, 0).getTime()
+    expect(formatDay(older, now)).toBe(formatDate(atLocalTime(older, 0, 0, 0)))
+  })
+
+  it('formats a local time of day', () => {
+    const text = formatTime(new Date(2026, 10, 16, 8, 5).getTime())
+    expect(text).toMatch(/8:05/)
   })
 })

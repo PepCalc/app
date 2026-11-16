@@ -4,22 +4,21 @@ import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { useShelfStore } from '@/stores/shelf'
 import { useProtocolsStore } from '@/stores/protocols'
-import { useSettingsStore } from '@/stores/settings'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
 import { useNow } from '@/composables/useNow'
 import { usePaging } from '@/composables/usePaging'
 import { findPeptide } from '@/data'
 import type { DrawRow } from '@/db/database'
-import type { NewDraw, NewVial } from '@/db/repository'
+import type { NewVial } from '@/db/repository'
 import { sortByTime, type SortDirection } from '@/domain/listing'
 import { concentrationOf } from '@/domain/reconstitution'
 import { roundTo, unitLabel } from '@/domain/units'
 import { daysBetween, formatDateTime, formatRelativeDays, toEpochMs } from '@/services/time'
+import { useLogStore } from '@/stores/log'
 import PkPanel from '@/components/charts/PkPanel.vue'
 import DrawList from '@/components/shelf/DrawList.vue'
 import VialFormDialog from '@/components/shelf/VialFormDialog.vue'
-import LogDrawDialog from '@/components/shelf/LogDrawDialog.vue'
 import VialAgePanel from '@/components/shelf/VialAgePanel.vue'
 import VialAgeBadge from '@/components/shelf/VialAgeBadge.vue'
 import { useVialAge } from '@/composables/useVialAge'
@@ -38,13 +37,12 @@ const props = defineProps<{ id: string }>()
 const router = useRouter()
 const shelf = useShelfStore()
 const protocols = useProtocolsStore()
-const settings = useSettingsStore()
+const log = useLogStore()
 const notify = useNotifyStore()
 const confirm = useConfirmStore()
 const now = useNow()
 
 const editing = ref(false)
-const logging = ref(false)
 
 /*
  * Edit, archive and delete share the title row. On a phone three labelled buttons leave no room
@@ -124,11 +122,6 @@ async function saveVial(changes: Partial<NewVial>) {
   // A rename can carry the peptide's protocol to the new name.
   await protocols.load()
   notify.show('Vial updated', 'success')
-}
-
-async function saveDraw(draw: NewDraw) {
-  await shelf.addDraw(draw)
-  notify.show('Draw logged', 'success')
 }
 
 async function deleteDraw(draw: DrawRow) {
@@ -248,7 +241,7 @@ async function deleteVial() {
                 color="primary"
                 variant="flat"
                 :prepend-icon="mdiNeedle"
-                @click="logging = true"
+                @click="log.start('dose', { vialId: vial.id })"
               >
                 Log a draw
               </v-btn>
@@ -295,12 +288,6 @@ async function deleteVial() {
       </div>
 
       <VialFormDialog v-model="editing" :vial="vial" @save="saveVial" />
-      <LogDrawDialog
-        v-model="logging"
-        :vial="vial"
-        :default-syringe-id="settings.defaultSyringeId"
-        @save="saveDraw"
-      />
     </template>
 
     <v-card v-else-if="shelf.loaded" variant="tonal">

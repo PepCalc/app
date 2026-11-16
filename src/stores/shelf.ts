@@ -182,6 +182,11 @@ export const useShelfStore = defineStore('shelf', () => {
     return row
   }
 
+  async function updateDraw(id: string, changes: Partial<NewDraw>) {
+    await repository.updateDraw(id, changes)
+    await load()
+  }
+
   async function deleteDraw(id: string) {
     await repository.deleteDraw(id)
     await load()
@@ -210,6 +215,7 @@ export const useShelfStore = defineStore('shelf', () => {
     updateVial,
     deleteVial,
     addDraw,
+    updateDraw,
     deleteDraw,
   }
 })

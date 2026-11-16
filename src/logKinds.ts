@@ -4,14 +4,17 @@ import type { EntryKind } from '@/domain/entries'
 import type { LogTarget } from '@/stores/log'
 import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
+import { useShelfStore } from '@/stores/shelf'
 import { toIso } from '@/services/time'
 import {
   mdiCameraOutline,
   mdiHeartPulse,
+  mdiNeedle,
   mdiScaleBathroom,
   mdiStethoscope,
   mdiWaterOutline,
 } from '@/plugins/icons'
+import LogDrawDialog from '@/components/shelf/LogDrawDialog.vue'
 import LogWeightDialog from '@/components/journal/LogWeightDialog.vue'
 import LogSymptomDialog from '@/components/journal/LogSymptomDialog.vue'
 import LogGlucoseDialog from '@/components/journal/LogGlucoseDialog.vue'
@@ -35,7 +38,7 @@ export interface LogKind {
 function emptyProps(kind: EntryKind): Record<string, unknown> {
   switch (kind) {
     case 'dose':
-      return {}
+      return { draw: null }
     case 'weight':
       return { weight: null }
     case 'symptom':
@@ -50,6 +53,30 @@ function emptyProps(kind: EntryKind): Record<string, unknown> {
 }
 
 export const LOG_KINDS: readonly LogKind[] = [
+  {
+    kind: 'dose',
+    title: 'Draw',
+    plural: 'Draws',
+    icon: mdiNeedle,
+    disabled: () =>
+      useShelfStore().activeVials.length > 0
+        ? null
+        : { hint: 'Save a vial first.', to: { name: 'calculator' } },
+    dialog: LogDrawDialog,
+    props: (target) => {
+      if (!target) return emptyProps('dose')
+      const shelf = useShelfStore()
+      if (target.id === null) {
+        return {
+          draw: null,
+          vialId: target.context.vialId,
+          startAt: target.context.at,
+        }
+      }
+      const draw = shelf.draws.find((d) => d.id === target.id)
+      return draw ? { draw } : null
+    },
+  },
   {
     kind: 'weight',
     title: 'Weight',

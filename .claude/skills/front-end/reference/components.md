@@ -25,12 +25,17 @@ Part of the `front-end` skill.
 | `shelf/VialCard.vue`, `DrawList.vue`                                                           | Shelf list and draw history                                                                                                                                                      |
 | `protocols/ProtocolCard.vue`, `ProtocolDialog.vue`, `DoseCountdown.vue`                        | A peptide's protocol with a countdown ring to the next dose; add or edit one (`domain/schedule.ts`)                                                                              |
 | `shelf/VialAgeBadge.vue`, `VialAgePanel.vue`                                                   | Days since mixing against the use window (text, not colour alone); the window's source and storage advice                                                                        |
-| `shelf/VialFormDialog.vue`, `LogDrawDialog.vue`                                                | Edit a vial (composition, PK override), log a draw                                                                                                                               |
+| `shelf/VialFormDialog.vue`, `LogDrawDialog.vue`                                                | Edit a vial (composition, PK override); log, edit or delete a draw                                                                                                               |
+| `journal/LogHost.vue`                                                                          | Mounted once in `App.vue`: the Log button, the sheet, and every log dialog                                                                                                       |
+| `journal/LogButton.vue`, `journal/LogSheet.vue`                                                | Floating Log button and bottom sheet listing every loggable kind                                                                                                                 |
+| `journal/EntriesTimeline.vue`                                                                  | Every logged thing by day, with kind filters; a row opens its dialog through the log store                                                                                       |
 | `charts/TrendCard.vue`, `charts/BodyChart.vue`, `charts/DoseLegend.vue`, `charts/bodyChart.ts` | A body measure over time. On weight and BMI the line takes the colour of the dose in use and a pill marks each change (`domain/doseBands.ts`); `DoseLegend` lists the strengths. |
 | `share/ShareTrendDialog.vue`                                                                   | Trend image; numbers, photos and doses each opt-in                                                                                                                               |
 
 ## Patterns
 
+- To log or edit anything, call `useLogStore().start(kind, context)` or `.edit(entry)`. Never mount a log dialog in a view.
+- A new kind of entry is one adapter case in `useEntries.ts`, one row in `logKinds.ts`, and its dialog.
 - Dialogs reset their form from props each time they open, so abandoned edits never leak.
 - A view that edits data calls a store action, then `notify.show()`.
 - Every number with a source shows a `SourceBadge`; community-reported values never look like

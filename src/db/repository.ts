@@ -107,6 +107,10 @@ export function createRepository(db: PepcalcDb, clock: Clock = systemClock) {
       return row
     },
 
+    async updateDraw(id: string, changes: Partial<NewDraw>): Promise<void> {
+      await db.draws.update(id, changes)
+    },
+
     async deleteDraw(id: string): Promise<void> {
       await db.draws.delete(id)
     },

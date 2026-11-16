@@ -80,13 +80,13 @@ test('logs weight, derives BMI from the profile height, and converts units', asy
 
   await logWeight(page, '177', '2026-10-08T08:00')
   await expect(page.getByText(/−2\.2 lb/)).toBeVisible()
-  await page.getByRole('tab', { name: /Weights/ }).click()
+  await page.getByRole('button', { name: /^Weight / }).click()
   await expect(page.getByRole('listitem').filter({ hasText: '177 lb' })).toBeVisible()
 
   await openTab(page, 'Settings')
   await choose(page, 'Weight unit', 'Kilograms')
   await openTab(page, 'Journal')
-  await page.getByRole('tab', { name: /Weights/ }).click()
+  await page.getByRole('button', { name: /^Weight / }).click()
   await expect(page.getByRole('listitem').filter({ hasText: '81.3 kg' })).toBeVisible()
 })
 
@@ -115,7 +115,7 @@ test('logs side effects and blood sugar, in the units chosen in Settings', async
   await openTab(page, 'Journal')
   await expect(page.getByText('HbA1c 55 mmol/mol').first()).toBeVisible()
 
-  await page.getByRole('tab', { name: /Side effects/ }).click()
+  await page.getByRole('button', { name: /^Side effects / }).click()
   // The entry's title alone; the week's badge reads "Joint pain × 1".
   await expect(page.getByText('Joint pain', { exact: true })).toBeVisible()
 })
@@ -146,7 +146,7 @@ test('logs blood pressure and heart rate, charts them and lists them', async ({ 
   await expect(page.getByRole('dialog', { name: 'Share as an image' })).toBeVisible()
   await page.keyboard.press('Escape')
 
-  await page.getByRole('tab', { name: /Vitals/ }).click()
+  await page.getByRole('button', { name: /^Vitals / }).click()
   await expect(page.getByRole('listitem').filter({ hasText: '128/82 mmHg' })).toBeVisible()
   await expect(page.getByRole('listitem').filter({ hasText: '64 bpm' })).toBeVisible()
 })

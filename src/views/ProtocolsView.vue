@@ -5,29 +5,23 @@ import { useProtocolsStore } from '@/stores/protocols'
 import { useConfirmStore } from '@/stores/confirm'
 import { useNotifyStore } from '@/stores/notify'
 import { useNow } from '@/composables/useNow'
-import { usePaging } from '@/composables/usePaging'
 import { findPeptide } from '@/data'
-import type { DrawRow, ProtocolRow } from '@/db/database'
+import type { ProtocolRow } from '@/db/database'
 import type { NewProtocol } from '@/db/repository'
 import type { PeptideLevels } from '@/domain/levels'
-import { sortByTime, type SortDirection } from '@/domain/listing'
-import { sameProductKey } from '@/domain/vials'
 import { anyDoseInEffect } from '@/domain/pk'
 import { OVERLAY_MAX, type OverlayInput } from '@/domain/overlay'
 import { useLevelPickStore } from '@/stores/levelPick'
-import { roundTo, unitLabel } from '@/domain/units'
-import { formatDate, formatDateTime, formatHours, toEpochMs } from '@/services/time'
-import DrawList from '@/components/shelf/DrawList.vue'
+import { unitLabel } from '@/domain/units'
+import { formatHours } from '@/services/time'
 import PkPanel from '@/components/charts/PkPanel.vue'
 import OverlayChart from '@/components/charts/OverlayChart.vue'
-import ListPager from '@/components/common/ListPager.vue'
 import MoreInfo from '@/components/common/MoreInfo.vue'
 import SourceList from '@/components/common/SourceList.vue'
-import SortToggle from '@/components/common/SortToggle.vue'
 import ExportReportDialog from '@/components/report/ExportReportDialog.vue'
 import ProtocolCard from '@/components/protocols/ProtocolCard.vue'
 import ProtocolDialog from '@/components/protocols/ProtocolDialog.vue'
-import { mdiFilePdfBox, mdiFilterVariant, mdiPlus } from '@/plugins/icons'
+import { mdiFilePdfBox, mdiPlus } from '@/plugins/icons'
 
 const shelf = useShelfStore()
 const protocols = useProtocolsStore()
@@ -144,72 +138,7 @@ function captionFor(g: PeptideLevels): string {
   return text
 }
 
-/* Draws */
-
 const exporting = ref(false)
-const vialNames = computed(() => new Map(shelf.vials.map((v) => [v.id, shelf.displayName(v)])))
-
-/** The peptide each draw belongs to, by vial; draws of a deleted vial have none. */
-const drawKey = computed(() => {
-  const keyByVial = new Map(shelf.vials.map((v) => [v.id, sameProductKey(v)]))
-  return (d: DrawRow) => keyByVial.get(d.vialId)
-})
-
-/** Only peptides with draws are worth filtering by. */
-const filterItems = computed(() => {
-  const withDraws = new Set(shelf.draws.map(drawKey.value))
-  return [
-    { title: 'All peptides', value: null as string | null },
-    ...protocols.products
-      .filter((p) => withDraws.has(p.key))
-      .map((p) => ({ title: p.name, value: p.key as string | null })),
-  ]
-})
-
-const filterKey = ref<string | null>(null)
-// A filter whose peptide has gone (its vials were deleted) would hide every draw.
-watch(filterItems, (items) => {
-  if (!items.some((i) => i.value === filterKey.value)) filterKey.value = null
-})
-
-const direction = ref<SortDirection>('desc')
-const filteredDraws = computed(() =>
-  filterKey.value === null
-    ? shelf.draws
-    : shelf.draws.filter((d) => drawKey.value(d) === filterKey.value),
-)
-const sortedDraws = computed(() =>
-  sortByTime(filteredDraws.value, (d) => toEpochMs(d.takenAt), direction.value),
-)
-const { state: paging, current: drawPage, reset } = usePaging(sortedDraws)
-watch([direction, filterKey], reset)
-
-/**
- * The visible page of draws grouped by local calendar day, in the chosen order. The level charts
- * above use every draw, not just this page or this filter.
- */
-const groups = computed(() => {
-  const map = new Map<string, DrawRow[]>()
-  for (const d of drawPage.value.items) {
-    const day = formatDate(d.takenAt)
-    const list = map.get(day) ?? []
-    list.push(d)
-    map.set(day, list)
-  }
-  return [...map.entries()].map(([day, draws]) => ({ day, draws }))
-})
-
-async function deleteDraw(draw: DrawRow) {
-  const ok = await confirm.ask({
-    title: 'Delete this draw?',
-    text: `${roundTo(draw.dose.value, 4)} ${unitLabel(draw.dose.unit)} on ${formatDateTime(draw.takenAt)}`,
-    confirmText: 'Delete',
-    destructive: true,
-  })
-  if (!ok) return
-  await shelf.deleteDraw(draw.id)
-  notify.show('Draw deleted')
-}
 </script>
 
 <template>
@@ -368,32 +297,6 @@ async function deleteDraw(draw: DrawRow) {
         </v-card>
       </div>
     </section>
-
-    <section v-if="shelf.draws.length" aria-labelledby="draws-heading">
-      <div class="d-flex align-center flex-wrap ga-3 mb-3">
-        <h2 id="draws-heading" class="pc-display text-title-large flex-grow-1">Draws</h2>
-        <v-select
-          v-if="filterItems.length > 2"
-          v-model="filterKey"
-          :items="filterItems"
-          label="Peptide"
-          density="compact"
-          :prepend-inner-icon="mdiFilterVariant"
-          hide-details
-          class="protocols-filter"
-        />
-        <SortToggle v-model="direction" label="Order of draws" />
-      </div>
-      <v-card v-for="group in groups" :key="group.day" class="mb-4">
-        <v-card-item>
-          <v-card-title class="text-title-large">{{ group.day }}</v-card-title>
-        </v-card-item>
-        <v-card-text>
-          <DrawList :draws="group.draws" :vial-names="vialNames" @delete="deleteDraw" />
-        </v-card-text>
-      </v-card>
-      <ListPager v-model="paging.page" :current="drawPage" noun="draws" />
-    </section>
   </div>
 </template>
 
@@ -411,9 +314,5 @@ async function deleteDraw(draw: DrawRow) {
 .protocols-levels {
   display: grid;
   gap: 16px;
-}
-
-.protocols-filter {
-  flex: 0 1 220px;
 }
 </style>

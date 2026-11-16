@@ -84,9 +84,8 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
   await expect(page.getByRole('link', { name: /^Semaglutide #2/ })).toBeVisible()
   await expect(page.getByText('Day 0 of 28')).toHaveCount(2)
 
-  await page.goto('./#/protocols')
+  await page.getByRole('link', { name: /^Semaglutide #2/ }).click()
   await expect(page.getByText('1–10 of 11 draws')).toBeVisible()
-  await expect(page.getByText(/· Semaglutide #2/)).toHaveCount(10)
   await page
     .getByRole('navigation', { name: 'draws pages' })
     .getByRole('button', { name: /2/ })
@@ -94,6 +93,10 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
   await expect(page.getByText('11–11 of 11 draws')).toBeVisible()
   await page.getByRole('button', { name: 'Oldest first' }).click()
   await expect(page.getByText('1–10 of 11 draws')).toBeVisible()
+
+  await page.goto('./#/journal')
+  await expect(page.getByText('1–10 of 11 entries')).toBeVisible()
+  await expect(page.getByText('0.25 mg Semaglutide #2')).toHaveCount(10)
 })
 
 test('sets a protocol, counts down to the next dose, and filters draws by peptide', async ({
@@ -137,11 +140,10 @@ test('sets a protocol, counts down to the next dose, and filters draws by peptid
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText(/^Next dose at .+, in about 12 hours$/)).toBeVisible()
 
-  await expect(page.getByText(/· (Semaglutide|BPC-157)$/)).toHaveCount(2)
-  await page.locator('.v-select').filter({ hasText: 'All peptides' }).click()
-  await page.getByRole('option', { name: 'BPC-157' }).click()
-  await expect(page.getByText(/· BPC-157$/)).toHaveCount(1)
-  await expect(page.getByText(/· Semaglutide$/)).toHaveCount(0)
+  await page.goto('./#/journal')
+  await page.getByRole('button', { name: /^Draws / }).click()
+  await expect(page.getByText('0.25 mg Semaglutide')).toBeVisible()
+  await expect(page.getByText('250 mcg BPC-157')).toBeVisible()
 })
 
 /** The pulse is infinite, so merely shortening it, as the app's global rule does, would strobe. */

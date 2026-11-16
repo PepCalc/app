@@ -17,6 +17,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
 import { useNow } from '@/composables/useNow'
 import { useBodyMetrics } from '@/composables/useBodyMetrics'
+import { useEntries } from '@/composables/useEntries'
 import { formatDate, formatDateTime, toEpochMs } from '@/services/time'
 import {
   mdiFilePdfBox,
@@ -29,7 +30,7 @@ import SourceList from '@/components/common/SourceList.vue'
 import TrendCard from '@/components/charts/TrendCard.vue'
 import PhotosCard from '@/components/photos/PhotosCard.vue'
 import SymptomSummaryCard from '@/components/journal/SymptomSummaryCard.vue'
-import JournalEntries from '@/components/journal/JournalEntries.vue'
+import EntriesTimeline from '@/components/journal/EntriesTimeline.vue'
 import ExportReportDialog from '@/components/report/ExportReportDialog.vue'
 
 /**
@@ -42,6 +43,7 @@ const settings = useSettingsStore()
 const shelf = useShelfStore()
 const now = useNow()
 const body = useBodyMetrics()
+const { entries } = useEntries()
 
 const exporting = ref(false)
 
@@ -262,7 +264,7 @@ const hasAnything = computed(
 
     <section class="mt-6" aria-labelledby="entries-heading">
       <h2 id="entries-heading" class="pc-display text-title-large mb-4">Entries</h2>
-      <JournalEntries />
+      <EntriesTimeline :entries="entries" />
     </section>
   </div>
 </template>

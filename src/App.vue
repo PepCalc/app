@@ -147,7 +147,7 @@ onMounted(async () => {
     </v-app-bar>
 
     <v-navigation-drawer v-if="wide" permanent rail rail-width="96" class="rail">
-      <v-list nav density="comfortable" class="pt-4">
+      <v-list nav density="comfortable" class="rail-list">
         <v-list-item
           v-for="item in NAV"
           :key="item.name"
@@ -248,6 +248,10 @@ onMounted(async () => {
 
 .rail :deep(.v-navigation-drawer__content) {
   padding-top: var(--safe-area-inset-top, env(safe-area-inset-top));
+}
+
+.rail-list {
+  padding-top: 84px;
 }
 
 .bottom-nav {

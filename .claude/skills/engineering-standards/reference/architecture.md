@@ -15,17 +15,18 @@ src/
                  collage), doseBands (dose bands and callout pills on a trend), report
                  (periods, windows, axis ticks), drawTotals (totals by unit), vitals (blood
                  pressure and heart rate), healthSync (what to import and export, matching),
-                 catalog types
+                 entries, entryText, catalog types
   brand.ts       per-app strings read by shared components (wordmark, health sync summary)
+  logKinds.ts    loggable entry kind definitions (labels, icons, routes, order)
   data/          peptides.json, syringes.json, their JSON Schemas, typed loader (index.ts)
   db/            Dexie database (schema history), repository, backup export/restore
   stores/        Pinia: shelf (vials + draws), protocols (a schedule per peptide), journal
                  (measurements, side effects, blood sugar, vitals), photos, levelPick (which
-                 peptides a chart shows), settings, healthSync (Health apps choices), notify,
+                 peptides a chart shows), settings, healthSync (Health apps choices), log, notify,
                  confirm
   composables/   useCalculator, useDiluentAdvisor, useBodyMetrics, useCameraAccess,
                  useChartColors, useDoseBands, useInstallPrompt, useStoragePersistence, useNow,
-                 usePaging, usePhotoPins, useVialAge, useHideOnScroll, useReportExport,
+                 useEntries, usePaging, usePhotoPins, useVialAge, useHideOnScroll, useReportExport,
                  useHealthAutoSync, useWeightSummary
   services/      time.ts (the only clock and date formatter), locale.ts (device region and
                  measurement system), fileTransfer.ts (share/download),

@@ -53,6 +53,14 @@ export function formatTime(epochMs: number): string {
   return timeFormat.format(new Date(epochMs))
 }
 
+/** Local day heading for a timeline: "Today", "Yesterday", or the formatted date. */
+export function formatDay(epochMs: number, now: number): string {
+  const day = atLocalTime(epochMs, 0, 0, 0)
+  if (day === atLocalTime(now, 0, 0, 0)) return 'Today'
+  if (day === atLocalTime(now, -1, 0, 0)) return 'Yesterday'
+  return formatDate(day)
+}
+
 /** Value for an <input type="datetime-local"> in the device's local time. */
 export function toLocalInputValue(iso: string): string {
   const d = new Date(iso)

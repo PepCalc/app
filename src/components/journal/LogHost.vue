@@ -3,10 +3,12 @@ import { watch } from 'vue'
 import { LOG_KINDS, type LogKind } from '@/logKinds'
 import { useLogStore } from '@/stores/log'
 import { useNotifyStore } from '@/stores/notify'
+import LogButton from './LogButton.vue'
+import LogSheet from './LogSheet.vue'
 
 /**
- * Single host for every log dialog. Keeping each dialog mounted and toggling its model-value
- * ensures its open-watcher resets the form.
+ * Single host for the Log button, sheet, and every log dialog. Keeping each dialog mounted and
+ * toggling its model-value ensures its open-watcher resets the form.
  */
 const log = useLogStore()
 const notify = useNotifyStore()
@@ -39,6 +41,8 @@ function onToggle(k: LogKind, open: boolean) {
 </script>
 
 <template>
+  <LogButton />
+  <LogSheet />
   <component
     :is="k.dialog"
     v-for="k in LOG_KINDS"
