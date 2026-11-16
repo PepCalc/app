@@ -6,6 +6,12 @@
 /** The phone's system, as copy names it: "in Android settings". */
 export const systemName = __PLATFORM__ === 'ios' ? 'iOS' : 'Android'
 
+/** Where to turn PepCalc's notifications back on when the app cannot open the screen itself. */
+export const notificationSettingsSteps =
+  __PLATFORM__ === 'ios'
+    ? 'Open Settings, then Apps, PepCalc, Notifications.'
+    : 'Open Android Settings, then Apps, PepCalc, Notifications.'
+
 /** Where to turn the camera back on when the app cannot open the screen itself. */
 export const cameraSettingsSteps =
   __PLATFORM__ === 'ios'
@@ -23,3 +29,9 @@ export const healthAccessSteps = 'Open Settings, then Privacy & Security, Health
  * the source of what PepCalc wrote, so sync never takes back its own readings.
  */
 export const appSourceId = 'io.github.pepcalc.app'
+
+/**
+ * The apps the web build points to for notifications. Update when the iOS app reaches the App
+ * Store, so iPhone users are pointed to it too.
+ */
+export const nativeApps = 'the PepCalc app for Android'

@@ -17,7 +17,9 @@ src/
                  (headline weight change and weekly rate), range (chart window ranges), report
                  (periods, windows, axis ticks), drawTotals (totals by unit), vitals (blood
                  pressure and heart rate), healthSync (what to import and export, matching),
-                 entries, entryText, due (due-card sorting), catalog types
+                 entries, entryText, due (due-card sorting), reminderDays (reminder plans
+                 from schedules), reminders (when to remind, grouping, capping, notification
+                 wording), calendar (calendar invites), catalog types
   brand.ts       per-app strings read by shared components (wordmark, health sync summary)
   logKinds.ts    loggable entry kind definitions (labels, icons, routes, order)
   data/          peptides.json, syringes.json, their JSON Schemas, typed loader (index.ts)
@@ -28,16 +30,17 @@ src/
                  confirm
   composables/   useCalculator, useDiluentAdvisor, useBodyMetrics, useCameraAccess,
                  useChartColors, useDoseBands, useDueItems, useInstallPrompt, useStoragePersistence, useNow,
-                 useEntries, usePaging, usePhotoPins, useVialAge, useHideOnScroll, useReportExport,
+                 useEntries, usePaging, usePhotoPins, useReminderSync, useVialAge, useHideOnScroll, useReportExport,
                  useSystemRows, useHealthAutoSync, useWeightSummary
   services/      time.ts (the only clock and date formatter), locale.ts (device region and
                  measurement system), fileTransfer.ts (share/download),
                  nativeFileTransfer.ts (the same through the apps' share sheet), platform.ts
                  (words that depend on the build), photos/ (canvas re-encode),
+                 reminders/ (native local notifications),
                  pdf/ (dependency-free PDF writer), report/ (the PDF report: data, layout, charts),
                  health/ (Apple Health and Health Connect through @capgo/capacitor-health,
                  loaded only in the apps; runSync, the sync loop)
-  components/    calculator/, charts/, common/, journal/, photos/, protocols/, report/,
+  components/    calculator/, charts/, common/, journal/, photos/, protocols/, reminders/, report/,
                  share/, shelf/, today/ (DueCard, SystemList)
   views/         one per route: Today, Stack, Peptide, Levels, Vial, Calculator, Progress, Entries, Settings, Health
                  (apps only)
@@ -96,6 +99,37 @@ chosen time stays at that wall-clock hour across daylight-saving changes. A draw
 when logged at or after `s` minus half the gap from the preceding slot, capped at 12 hours; the
 next due time is the first uncovered slot. `asNeeded` has no due time and always returns null.
 
+## Reminders
+
+Dose reminders exist only in the native app: a web app can notify on time only through a push
+server, which PepCalc will not run. `domain/reminderDays.ts` turns a protocol's schedule and next
+due time into a `ReminderPlan` over a 7-day horizon: exact times for `daily`, `weekly`, `cycle` and
+sub-24-hour `interval` schedules, or due days for intervals of 24 hours or more (`asNeeded`
+produces none). `domain/reminders.ts` plans exact-time reminders with `leadMinutes` (`planAtTimes`)
+or day-based reminders (`planReminders`), groups reminders falling in the same minute
+(`groupByMinute`), and caps at 60 pending notifications (`MAX_PENDING`) because iOS silently drops
+pending local notifications past 64 per app. `useReminderSync` (mounted in App) replaces every
+pending notification whenever protocols, vials, draws or reminder settings change, and on
+`visibilitychange`. Alarms are inexact and `SCHEDULE_EXACT_ALARM` is removed from the manifest.
+Text is generic unless the user turns on names (`showNames`, off by default). A single-subject tap
+routes to `#/?log=<protocol id>`, which Today turns into Log a draw for that peptide's active
+vial; a grouped tap routes to Today (`#/`).
+
+A peptide page's Reminder section and Settings open Add reminder (`components/reminders/AddReminderDialog.vue`):
+Notify me or Add calendar invite. Notify me asks for permission only after explaining it, turns the
+reminder on once allowed, and when blocked opens PepCalc's notification settings through an
+app-local plugin (`NotificationSettingsPlugin`), checking again on return. Permission checks go
+through `services/reminders/notificationAccess.ts`, which is "unsupported" on the web (shown
+disabled with the reason). Reminder choices live under the `reminders` setting key, sanitised on
+load; restoring a backup keeps the choices with every subject turned off (`restoredReminders`).
+
+Calendar export (`domain/calendar.ts`, `components/reminders/CalendarInviteForm.vue`) handles each
+schedule kind: whole-day intervals produce one event at a chosen time (`everyDays`), `daily`
+produces one event per scheduled time (`everyDays: 1`), `weekly` produces one event per time
+(`weekdays`), and `cycle` produces one `.ics` event per time with 12 weeks of `RDATE` lines and no
+Google or Outlook links; sub-24-hour intervals and `asNeeded` explain why calendar export is not
+offered.
+
 ## PK model
 
 `domain/pk.ts` implements a one-compartment model with first-order absorption and elimination
@@ -142,7 +176,8 @@ Rules the writer keeps:
 `vite build --mode android` and `--mode ios` set `__NATIVE__` and `__PLATFORM__` and write to
 `dist-android/` or `dist-ios/`; `PEPCALC_PLATFORM=ios` makes `cap sync` copy the iOS one.
 Android-only calls (clearing the camera's capture file) check `__PLATFORM__`. Each has an
-app-local `RegionalPreferences` plugin (Java and Swift) that reads the device's region and
+app-local `NotificationSettings` plugin (Java and Swift) that opens PepCalc's notification settings,
+and an app-local `RegionalPreferences` plugin (Java and Swift) that reads the device's region and
 measurement system. iOS is built and uploaded only by `.github/workflows/ios.yml`.
 
 ## PWA and hosting

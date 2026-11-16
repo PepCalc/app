@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useTheme } from 'vuetify'
 import { db } from '@/db'
 import {
@@ -33,7 +33,14 @@ import { useProtocolsStore } from '@/stores/protocols'
 import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
 import { useHealthSyncStore } from '@/stores/healthSync'
-import { healthStoreName } from '@/services/platform'
+import { healthStoreName, nativeApps, notificationSettingsSteps } from '@/services/platform'
+import { remindersSupported } from '@/composables/useReminderSync'
+import {
+  checkNotificationAccess,
+  openNotificationSettings,
+  requestNotificationAccess,
+  type NotificationAccess,
+} from '@/services/reminders/notificationAccess'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
 import { useStoragePersistence } from '@/composables/useStoragePersistence'
@@ -322,6 +329,41 @@ const INSTALL_SCREENSHOTS: Partial<Record<InstallPlatform, InstallScreenshot>> =
 
 const installShot = computed(() => INSTALL_SCREENSHOTS[install.state.platform])
 
+/*
+ * Reminders switched on can still be silenced: after a restore onto a new phone, or when
+ * notifications are turned off in the phone's settings. Say so rather than fail quietly, and
+ * check again when the user comes back from them.
+ */
+const access = ref<NotificationAccess | null>(null)
+const anyReminderOn = computed(() =>
+  protocols.protocols.some((p) => protocols.hasVial(p) && settings.reminderFor(p.id).enabled),
+)
+const notificationsBlocked = computed(
+  () => anyReminderOn.value && (access.value === 'denied' || access.value === 'prompt'),
+)
+
+async function checkNotifications() {
+  access.value = anyReminderOn.value ? await checkNotificationAccess() : null
+}
+
+function onVisible() {
+  if (document.visibilityState === 'visible') void checkNotifications()
+}
+onMounted(() => {
+  void checkNotifications()
+  document.addEventListener('visibilitychange', onVisible)
+})
+onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisible))
+watch(anyReminderOn, checkNotifications)
+
+async function fixNotifications() {
+  if (access.value === 'denied') {
+    if (!(await openNotificationSettings())) notify.show(notificationSettingsSteps, 'info')
+    return
+  }
+  access.value = await requestNotificationAccess()
+}
+
 async function promptInstall() {
   if (await install.actions.promptInstall()) notify.show('PepCalc installed', 'success')
 }
@@ -522,6 +564,39 @@ const formatMb = (bytes: number | null) =>
               </v-btn>
             </div>
           </template>
+        </v-card-text>
+      </v-card>
+
+      <v-card>
+        <v-card-item>
+          <p class="pc-eyebrow">Reminders</p>
+          <v-card-title>Dose reminders</v-card-title>
+        </v-card-item>
+        <v-card-text class="pc-stack">
+          <v-alert v-if="notificationsBlocked" type="warning" variant="tonal" density="compact">
+            <p>Notifications are off for PepCalc, so reminders won't appear.</p>
+            <div class="pc-actions">
+              <v-btn variant="tonal" @click="fixNotifications">
+                {{ access === 'denied' ? 'Open settings' : 'Allow notifications' }}
+              </v-btn>
+            </div>
+          </v-alert>
+          <template v-if="remindersSupported">
+            <div class="pc-stack pc-stack--tight">
+              <v-switch
+                :model-value="settings.reminders.showNames"
+                label="Show peptide names in notifications"
+                color="primary"
+                hide-details
+                @update:model-value="settings.setReminderNames(!!$event)"
+              />
+              <p class="text-body-small pc-muted">When off, reminders just say a dose is due.</p>
+            </div>
+          </template>
+          <p v-else>Add a calendar invite. For notifications, use {{ nativeApps }}.</p>
+          <p class="text-body-small pc-muted">
+            <router-link :to="{ name: 'stack' }"> Set a reminder on each peptide. </router-link>
+          </p>
         </v-card-text>
       </v-card>
 

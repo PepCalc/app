@@ -38,6 +38,16 @@ describe('time', () => {
   })
 })
 
+describe('atLocalTime', () => {
+  it('lands on a local wall-clock time a whole number of days later', () => {
+    const start = new Date(2026, 9, 20, 21, 30).getTime()
+    const at = new Date(atLocalTime(start, 2, 9, 5))
+    expect([at.getFullYear(), at.getMonth(), at.getDate(), at.getHours(), at.getMinutes()]).toEqual(
+      [2026, 9, 22, 9, 5],
+    )
+  })
+})
+
 describe('formatDay and formatTime', () => {
   it('labels today, yesterday and earlier local days', () => {
     const now = new Date(2026, 10, 16, 14, 0).getTime()

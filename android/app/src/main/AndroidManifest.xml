@@ -115,4 +115,11 @@
         file is the user's copy.
     -->
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+
+    <!--
+        Dose reminders are inexact alarms: a few minutes' drift does not matter for a dose, and
+        exact alarms would send the user to a system settings screen for a permission PepCalc
+        does not need. The notifications plugin declares it, so it is removed here.
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove" />
 </manifest>

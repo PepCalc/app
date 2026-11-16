@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, type ComputedRef } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
+import { computed, watch, type ComputedRef } from 'vue'
+import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import { formatWeight, formatWeightChange, unitsSummary } from '@/domain/bodyUnits'
 import type { SourceRef } from '@/domain/catalog'
 import { formatA1c, formatGlucose, GLUCOSE_CONTEXT_LABELS } from '@/domain/glucose'
@@ -17,6 +17,8 @@ import { useSystemRows } from '@/composables/useSystemRows'
 import { vialAgeFor, type VialAge } from '@/composables/useVialAge'
 import { formatDate, formatTodayDate, toEpochMs } from '@/services/time'
 import { useJournalStore } from '@/stores/journal'
+import { useLogStore } from '@/stores/log'
+import { useProtocolsStore } from '@/stores/protocols'
 import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
 import SourceList from '@/components/common/SourceList.vue'
@@ -36,13 +38,36 @@ interface TileItem {
 }
 
 const shelf = useShelfStore()
+const protocols = useProtocolsStore()
 const journal = useJournalStore()
+const log = useLogStore()
 const settings = useSettingsStore()
 const now = useNow()
 const body = useBodyMetrics()
 const { items: dueItems } = useDueItems(now)
 const { rows: systemRows } = useSystemRows(now)
 const { entries } = useEntries()
+
+/*
+ * A tapped dose reminder arrives as `?log=<protocol id>`. It waits for the stores to load,
+ * opens Log a draw for that protocol's active vial if it still exists, and clears the query
+ * so a reload or Back does not open the dialog again.
+ */
+const route = useRoute()
+const router = useRouter()
+watch(
+  () => [route.query.log, protocols.loaded, shelf.loaded] as const,
+  ([id]) => {
+    if (typeof id !== 'string' || !protocols.loaded || !shelf.loaded) return
+    const p = protocols.protocols.find((row) => row.id === id)
+    const vial = p ? protocols.drawVialOf(p) : undefined
+    if (vial) {
+      log.start('dose', { vialId: vial.id })
+    }
+    void router.replace({ query: {} })
+  },
+  { immediate: true },
+)
 
 const isEmpty = computed(() => shelf.loaded && !shelf.vials.length)
 

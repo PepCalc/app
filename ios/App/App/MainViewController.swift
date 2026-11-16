@@ -5,6 +5,7 @@ import UIKit
 /// Capacitor would not find them on its own (Main.storyboard names this class).
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(NotificationSettingsPlugin())
         bridge?.registerPluginInstance(CameraAccessPlugin())
         bridge?.registerPluginInstance(RegionalPreferencesPlugin())
     }

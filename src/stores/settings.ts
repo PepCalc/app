@@ -12,6 +12,12 @@ import {
   type RegionalPreferences,
   type UnitDefaults,
 } from '@/domain/unitDefaults'
+import {
+  DEFAULT_REMINDER,
+  sanitizeReminderSettings,
+  type Reminder,
+  type ReminderSettings,
+} from '@/domain/reminders'
 import { areValidLimits, type AgeLimits } from '@/domain/vialAge'
 import { regionalPreferences } from '@/services/locale'
 
@@ -57,6 +63,7 @@ const SETTING_KEYS = {
   glucoseUnit: 'glucoseUnit',
   a1cUnit: 'a1cUnit',
   profile: 'profile',
+  reminders: 'reminders',
 } as const
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -73,6 +80,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const glucoseUnit = ref<GlucoseUnit>(LEGACY_UNITS.glucoseUnit)
   const a1cUnit = ref<A1cUnit>(LEGACY_UNITS.a1cUnit)
   const profile = ref<Profile>({ ...EMPTY_PROFILE })
+  const reminders = ref<ReminderSettings>(sanitizeReminderSettings(null))
 
   async function load() {
     const [
@@ -88,6 +96,7 @@ export const useSettingsStore = defineStore('settings', () => {
       gUnit,
       aUnit,
       storedProfile,
+      remind,
     ] = await Promise.all([
       repository.getSetting<string>(SETTING_KEYS.defaultSyringeId),
       repository.getSetting<ThemePreference>(SETTING_KEYS.theme),
@@ -101,6 +110,7 @@ export const useSettingsStore = defineStore('settings', () => {
       repository.getSetting<GlucoseUnit>(SETTING_KEYS.glucoseUnit),
       repository.getSetting<A1cUnit>(SETTING_KEYS.a1cUnit),
       repository.getSetting<unknown>(SETTING_KEYS.profile),
+      repository.getSetting<unknown>(SETTING_KEYS.reminders),
     ])
     if (syringe && syringeCatalog.syringes.some((s) => s.id === syringe)) {
       defaultSyringeId.value = syringe
@@ -135,6 +145,7 @@ export const useSettingsStore = defineStore('settings', () => {
     glucoseUnit.value = units.glucoseUnit
     a1cUnit.value = units.a1cUnit
     profile.value = sanitizeProfile(storedProfile)
+    reminders.value = sanitizeReminderSettings(remind)
     await Promise.all(
       (Object.keys(toStore) as (keyof UnitDefaults)[]).map((key) => {
         const value = toStore[key]
@@ -214,6 +225,33 @@ export const useSettingsStore = defineStore('settings', () => {
     await repository.setSetting(SETTING_KEYS.profile, { ...next })
   }
 
+  /** One subject's reminder choices, or the defaults (off, 9:00) if never set. */
+  function reminderFor(subjectId: string): Reminder {
+    return reminders.value.subjects[subjectId] ?? { ...DEFAULT_REMINDER }
+  }
+
+  async function saveReminders(next: ReminderSettings) {
+    // Sanitising also copies out of the reactive proxy, which IndexedDB cannot clone.
+    const clean = sanitizeReminderSettings(next)
+    reminders.value = clean
+    await repository.setSetting(SETTING_KEYS.reminders, clean)
+  }
+
+  async function setReminder(subjectId: string, changes: Partial<Reminder>) {
+    const current = reminders.value
+    await saveReminders({
+      ...current,
+      subjects: {
+        ...current.subjects,
+        [subjectId]: { ...reminderFor(subjectId), ...changes },
+      },
+    })
+  }
+
+  async function setReminderNames(showNames: boolean) {
+    await saveReminders({ ...reminders.value, showNames })
+  }
+
   return {
     loaded,
     defaultSyringeId,
@@ -228,6 +266,7 @@ export const useSettingsStore = defineStore('settings', () => {
     glucoseUnit,
     a1cUnit,
     profile,
+    reminders,
     load,
     setDefaultSyringe,
     setTheme,
@@ -241,5 +280,8 @@ export const useSettingsStore = defineStore('settings', () => {
     setGlucoseUnit,
     setA1cUnit,
     updateProfile,
+    reminderFor,
+    setReminder,
+    setReminderNames,
   }
 })

@@ -119,4 +119,23 @@ describe('settings.load', () => {
     expect(settings.weightUnit).toBe('lb')
     expect(settings.heightUnit).toBe('ftin')
   })
+
+  it('persists reminder choices and showNames across a reload', async () => {
+    const settings = useSettingsStore()
+    await settings.load()
+    await settings.setReminder('proto-1', { enabled: true, leadMinutes: 15, hour: 20, minute: 30 })
+    await settings.setReminderNames(true)
+
+    setActivePinia(createPinia())
+    const reloaded = useSettingsStore()
+    await reloaded.load()
+    expect(reloaded.reminders.showNames).toBe(true)
+    expect(reloaded.reminderFor('proto-1')).toEqual({
+      enabled: true,
+      hour: 20,
+      minute: 30,
+      dayBefore: false,
+      leadMinutes: 15,
+    })
+  })
 })

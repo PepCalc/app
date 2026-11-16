@@ -46,3 +46,4 @@ One-line rules; detail lives in `reference/`. Front-end styling and components a
 9. No network requests of any kind; every asset is bundled and precached (`.claude/rules/data-and-privacy.md`).
 10. Schema changes add a Dexie version with an upgrade; backup validation follows row shapes.
 11. Time is UTC ISO in storage and formatted only in `src/services/time.ts`.
+12. A notification's text is generic unless the user turns names on.

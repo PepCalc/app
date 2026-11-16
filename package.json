@@ -42,6 +42,7 @@
     "@capacitor/core": "8.5.3",
     "@capacitor/filesystem": "8.1.5",
     "@capacitor/ios": "8.5.3",
+    "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/share": "8.0.3",
     "@capgo/capacitor-health": "8.11.12",
     "@fontsource/hanken-grotesk": "5.3.0",

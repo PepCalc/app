@@ -123,6 +123,41 @@ export function formatDateRange(startMs: number, endMs: number): string {
   return dateFormat.formatRange(new Date(startMs), new Date(endMs))
 }
 
+const weekdayFormat = new Intl.DateTimeFormat(undefined, { weekday: 'long' })
+
+/** "Thursday" for a due date, in the device's language. */
+export function formatWeekday(epochMs: number): string {
+  return weekdayFormat.format(new Date(epochMs))
+}
+
+/** A Date for an epoch, for APIs that take one (native notification schedules). */
+export function toDate(epochMs: number): Date {
+  return new Date(epochMs)
+}
+
+/** The local calendar date and wall-clock time of an instant, for calendar files and links. */
+export function localParts(epochMs: number): {
+  year: number
+  month: number
+  day: number
+  hour: number
+  minute: number
+} {
+  const d = new Date(epochMs)
+  return {
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+    day: d.getDate(),
+    hour: d.getHours(),
+    minute: d.getMinutes(),
+  }
+}
+
+/** The device's IANA time zone ("Europe/London"), so a calendar repeats at local time. */
+export function deviceTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone
+}
+
 /** UTC ISO for an epoch, such as a chosen file's last-modified time. */
 export function toIso(epochMs: number): string {
   return new Date(epochMs).toISOString()

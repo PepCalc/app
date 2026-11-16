@@ -3,7 +3,10 @@ import { computed, ref } from 'vue'
 import { findPeptide } from '@/data'
 import type { ProtocolRow } from '@/db/database'
 import type { NewProtocol } from '@/db/repository'
+import { describeInterval, type CalendarSpec } from '@/domain/calendar'
 import { levelKey, levelsCaption } from '@/domain/levels'
+import { reminderPlanFor } from '@/domain/reminderDays'
+import { MAX_PENDING, planAtTimes, planReminders } from '@/domain/reminders'
 import {
   courseText,
   dueState,
@@ -11,15 +14,24 @@ import {
   lastDrawFor,
   remainingFraction,
   scheduleText,
+  slots,
 } from '@/domain/schedule'
 import { formatQuantity, roundTo, unitLabel } from '@/domain/units'
 import { CUSTOM_PEPTIDE } from '@/composables/useCalculator'
 import { useEntries } from '@/composables/useEntries'
 import { useNow } from '@/composables/useNow'
 import {
+  buildProtocolReminderPlan,
+  REMINDER_HORIZON_DAYS,
+  remindersSupported,
+} from '@/composables/useReminderSync'
+import {
+  atLocalTime,
+  fileDate,
   formatDateTime,
   formatTimeOfDay,
   localCalendar,
+  localParts,
   toEpochMs,
   weekdayName,
 } from '@/services/time'
@@ -27,13 +39,17 @@ import { useConfirmStore } from '@/stores/confirm'
 import { useLogStore } from '@/stores/log'
 import { useNotifyStore } from '@/stores/notify'
 import { useProtocolsStore } from '@/stores/protocols'
+import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
 import PkPanel from '@/components/charts/PkPanel.vue'
 import EntriesTimeline from '@/components/journal/EntriesTimeline.vue'
 import DoseCountdown from '@/components/protocols/DoseCountdown.vue'
 import ProtocolDialog from '@/components/protocols/ProtocolDialog.vue'
+import AddReminderDialog from '@/components/reminders/AddReminderDialog.vue'
+import ReminderControls from '@/components/reminders/ReminderControls.vue'
 import VialCard from '@/components/shelf/VialCard.vue'
 import {
+  mdiBellOutline,
   mdiCalculatorVariantOutline,
   mdiChevronLeft,
   mdiNeedle,
@@ -45,6 +61,7 @@ const props = defineProps<{ peptideKey: string }>()
 
 const shelf = useShelfStore()
 const protocols = useProtocolsStore()
+const settings = useSettingsStore()
 const log = useLogStore()
 const confirm = useConfirmStore()
 const notify = useNotifyStore()
@@ -52,6 +69,7 @@ const now = useNow()
 const { entries } = useEntries()
 
 const dialogOpen = ref(false)
+const reminderOpen = ref(false)
 
 const vials = computed(() => shelf.vialsOf(props.peptideKey))
 const activeVials = computed(() => vials.value.filter((v) => v.status === 'active'))
@@ -141,6 +159,154 @@ const drawIds = computed(
 const drawEntries = computed(() =>
   entries.value.filter((e) => e.kind === 'dose' && drawIds.value.has(e.id)),
 )
+
+const DAY_MS = 86_400_000
+const CYCLE_CALENDAR_WEEKS = 12
+
+const reminderOn = computed(
+  () => remindersSupported && !!protocol.value && settings.reminderFor(protocol.value.id).enabled,
+)
+
+const reminderPlan = computed(() => {
+  const p = protocol.value
+  if (!p) {
+    return {
+      mode: 'days' as const,
+      repeating: false,
+      nextReminderAt: null as number | null,
+      capped: false,
+    }
+  }
+  const plan = reminderPlanFor({
+    schedule: p.schedule,
+    dueAt: dueAt.value,
+    now: now.value,
+    horizonDays: REMINDER_HORIZON_DAYS,
+    cal: localCalendar,
+  })
+  const rule = settings.reminderFor(p.id)
+  const { capped } = buildProtocolReminderPlan({
+    protocols: protocols.protocols,
+    hasVial: protocols.hasVial,
+    nameFor: protocols.nameFor,
+    nextDueOf: protocols.nextDueOf,
+    reminderFor: settings.reminderFor,
+    showNames: settings.reminders.showNames,
+    now: now.value,
+  })
+  if (plan.mode === 'times') {
+    const [next] = planAtTimes({
+      subjectId: p.id,
+      times: plan.times,
+      rule,
+      now: now.value,
+      max: MAX_PENDING,
+    })
+    return { mode: 'times' as const, repeating: false, nextReminderAt: next?.at ?? null, capped }
+  }
+  if (plan.mode === 'days') {
+    const [next] = planReminders({
+      subjectId: p.id,
+      days: plan.days,
+      repeating: plan.repeating,
+      rule,
+      now: now.value,
+      atLocalTime,
+    })
+    return {
+      mode: 'days' as const,
+      repeating: plan.repeating,
+      nextReminderAt: next?.at ?? null,
+      capped,
+    }
+  }
+  return { mode: 'days' as const, repeating: false, nextReminderAt: null, capped }
+})
+
+const calendarSpec = computed<CalendarSpec>(() => {
+  const p = protocol.value
+  if (!p) return { kind: 'unsupported', message: 'Add a schedule first.' }
+  const s = p.schedule
+  if (s.kind === 'asNeeded') {
+    return {
+      kind: 'unsupported',
+      message: 'As-needed schedules have no fixed times for a calendar.',
+    }
+  }
+  if (s.kind === 'interval') {
+    if (s.everyHours % 24 !== 0) {
+      return {
+        kind: 'unsupported',
+        message: remindersSupported
+          ? `Calendars can't repeat every ${s.everyHours} hours from your last dose. Use Notify me.`
+          : `Calendars can't repeat every ${s.everyHours} hours from your last dose. Set fixed times on the schedule instead.`,
+      }
+    }
+    if (dueAt.value === null) return { kind: 'needsDose' }
+    const days = s.everyHours / 24
+    const text = describeInterval(days)
+    return {
+      kind: 'atChosenTime',
+      startDayMs: dueAt.value,
+      recurrence: { kind: 'everyDays', days },
+      description: `Repeats ${text}, from your last logged draw in PepCalc. If your draw day changes, add it again.`,
+      summary: text,
+    }
+  }
+  const from = dueAt.value !== null ? Math.max(now.value, dueAt.value) : now.value
+  const matchesTime = (slotMs: number, hour: number, minute: number) => {
+    const parts = localParts(slotMs)
+    return parts.hour === hour && parts.minute === minute
+  }
+  if (s.kind === 'daily') {
+    const daySlots = slots(s, from, from + 2 * DAY_MS, localCalendar)
+    const starts = s.times
+      .map((t) => {
+        const startMs = daySlots.find((ms) => matchesTime(ms, t.hour, t.minute))
+        return startMs !== undefined ? { startMs, timeLabel: formatTimeOfDay(t) } : null
+      })
+      .filter((x): x is { startMs: number; timeLabel: string } => x !== null)
+    return {
+      kind: 'fixedTimes',
+      starts,
+      recurrence: { kind: 'everyDays', days: 1 },
+      description: 'Repeats every day, from your schedule in PepCalc.',
+      summary: 'every day',
+    }
+  }
+  if (s.kind === 'weekly') {
+    const weekSlots = slots(s, from, from + 8 * DAY_MS, localCalendar)
+    const starts = s.times
+      .map((t) => {
+        const startMs = weekSlots.find((ms) => matchesTime(ms, t.hour, t.minute))
+        return startMs !== undefined ? { startMs, timeLabel: formatTimeOfDay(t) } : null
+      })
+      .filter((x): x is { startMs: number; timeLabel: string } => x !== null)
+    const daysText = s.days.map((d) => weekdayName(d)).join(', ')
+    return {
+      kind: 'fixedTimes',
+      starts,
+      recurrence: { kind: 'weekdays', days: s.days },
+      description: `Repeats every week (${daysText}), from your schedule in PepCalc.`,
+      summary: `every week on ${daysText}`,
+    }
+  }
+  const cycleSlots = slots(s, from, now.value + CYCLE_CALENDAR_WEEKS * 7 * DAY_MS, localCalendar)
+  const starts = s.times
+    .map((t) => {
+      const startMs = cycleSlots.find((ms) => matchesTime(ms, t.hour, t.minute))
+      return startMs !== undefined ? { startMs, timeLabel: formatTimeOfDay(t) } : null
+    })
+    .filter((x): x is { startMs: number; timeLabel: string } => x !== null)
+  const dates = [...new Set(cycleSlots.map((ms) => fileDate(ms)))]
+  return {
+    kind: 'fixedTimes',
+    starts,
+    recurrence: { kind: 'dates', dates },
+    description: `${s.onDays} days on, ${s.offDays} off, for the next 12 weeks in PepCalc.`,
+    summary: '12 weeks of on-days',
+  }
+})
 
 const dialogProducts = computed(() => [{ key: props.peptideKey, name: name.value }])
 
@@ -242,6 +408,48 @@ async function deleteProtocol(p: ProtocolRow) {
             </v-card-text>
           </v-card>
 
+          <v-card v-if="protocol">
+            <v-card-item>
+              <p class="pc-eyebrow">Reminder</p>
+              <v-card-title>Dose reminder</v-card-title>
+            </v-card-item>
+            <v-card-text class="pc-stack">
+              <template v-if="reminderOn">
+                <ReminderControls
+                  :subject-id="protocol.id"
+                  :mode="reminderPlan.mode"
+                  :repeating="reminderPlan.repeating"
+                  :has-due="dueAt !== null"
+                  :next-reminder-at="reminderPlan.nextReminderAt"
+                />
+                <p v-if="reminderPlan.capped" class="text-body-small pc-muted">
+                  Open PepCalc now and then to keep reminders coming.
+                </p>
+                <div class="pc-actions">
+                  <v-btn variant="text" @click="reminderOpen = true">Reminder options</v-btn>
+                </div>
+              </template>
+              <template v-else>
+                <p class="pc-muted">
+                  {{
+                    remindersSupported
+                      ? 'Get a notification when a dose is due, or add a calendar invite.'
+                      : 'Add a dose schedule to your calendar.'
+                  }}
+                </p>
+                <div class="pc-actions">
+                  <v-btn
+                    variant="tonal"
+                    :prepend-icon="mdiBellOutline"
+                    @click="reminderOpen = true"
+                  >
+                    Add reminder
+                  </v-btn>
+                </div>
+              </template>
+            </v-card-text>
+          </v-card>
+
           <section class="pc-stack pc-stack--tight">
             <h2 class="pc-display text-title-large">Vials</h2>
             <VialCard
@@ -293,6 +501,19 @@ async function deleteProtocol(p: ProtocolRow) {
         :name="name"
         @save="saveProtocol"
         @delete="deleteProtocol"
+      />
+      <AddReminderDialog
+        v-if="protocol"
+        v-model="reminderOpen"
+        :subject-id="protocol.id"
+        :name="name"
+        :due-at="dueAt"
+        :calendar="calendarSpec"
+        :mode="reminderPlan.mode"
+        :repeating="reminderPlan.repeating"
+        :last-taken-at="lastDraw?.takenAt ?? null"
+        :next-reminder-at="reminderPlan.nextReminderAt"
+        :capped="reminderPlan.capped"
       />
     </template>
 

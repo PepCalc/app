@@ -19,6 +19,7 @@ import { isValidCourse, isValidSchedule } from '@/domain/schedule'
 import { SEVERITIES, SYMPTOMS } from '@/domain/symptoms'
 import { isValidBloodPressure, isValidHeartRate } from '@/domain/vitals'
 import { restoredHealthSync } from '@/domain/healthSync'
+import { restoredReminders } from '@/domain/reminders'
 import { AMOUNT_UNITS, areCompatible, type AmountUnit } from '@/domain/units'
 import { nowIso, systemClock, type Clock } from '@/services/time'
 
@@ -488,11 +489,13 @@ export async function restoreBackup(
     await db.photos.bulkAdd(backup.photos)
     await db.photoImages.bulkAdd(photoFiles.map((f) => ({ id: f.id, bytes: f.image })))
     await db.photoThumbs.bulkAdd(photoFiles.map((f) => ({ id: f.id, bytes: f.thumb })))
-    // Health sync starts over, off, on whatever phone the backup lands on.
+    // Health sync and reminders start over, off, on whatever phone the backup lands on.
     await db.settings.bulkPut(
-      backup.settings.map((s) =>
-        s.key === 'healthSync' ? { key: s.key, value: restoredHealthSync(s.value) } : s,
-      ),
+      backup.settings.map((s) => {
+        if (s.key === 'healthSync') return { key: s.key, value: restoredHealthSync(s.value) }
+        if (s.key === 'reminders') return { key: s.key, value: restoredReminders(s.value) }
+        return s
+      }),
     )
   })
 }

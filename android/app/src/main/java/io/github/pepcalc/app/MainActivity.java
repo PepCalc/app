@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         // App-local plugins register before the bridge starts.
+        registerPlugin(NotificationSettingsPlugin.class);
         registerPlugin(CameraAccessPlugin.class);
         registerPlugin(RegionalPreferencesPlugin.class);
         super.onCreate(savedInstanceState);

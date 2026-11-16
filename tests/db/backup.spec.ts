@@ -192,4 +192,30 @@ describe('backup schedules (v6 -> v7)', () => {
     }
     expect(() => parseBackup(JSON.stringify(v8))).toThrow(/newer version/)
   })
+
+  it('keeps reminder choices on restore while turning every reminder off', async () => {
+    const backup = await exportBackup(db, fixedClock)
+    backup.settings = [
+      {
+        key: 'reminders',
+        value: {
+          showNames: true,
+          subjects: {
+            p1: { enabled: true, hour: 8, minute: 30, dayBefore: true, leadMinutes: 10 },
+          },
+        },
+      },
+    ]
+    const other = createDatabase(`backup-restore-reminders-${++counter}`)
+    await other.open()
+    await restoreBackup(other, backup)
+    const row = await other.settings.get('reminders')
+    expect(row?.value).toEqual({
+      showNames: true,
+      subjects: {
+        p1: { enabled: false, hour: 8, minute: 30, dayBefore: true, leadMinutes: 10 },
+      },
+    })
+    await other.delete()
+  })
 })

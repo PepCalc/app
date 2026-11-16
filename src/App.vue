@@ -9,6 +9,7 @@ import { usePhotosStore } from '@/stores/photos'
 import { useProtocolsStore } from '@/stores/protocols'
 import { useInstallPrompt } from '@/composables/useInstallPrompt'
 import { useHideOnScroll } from '@/composables/useHideOnScroll'
+import { useReminderSync } from '@/composables/useReminderSync'
 import { useHealthAutoSync } from '@/composables/useHealthAutoSync'
 import { useHealthSyncStore } from '@/stores/healthSync'
 import AppLogo from '@/components/common/AppLogo.vue'
@@ -31,6 +32,7 @@ const shelf = useShelfStore()
 const journal = useJournalStore()
 const photos = usePhotosStore()
 const healthSync = useHealthSyncStore()
+useReminderSync()
 useHealthAutoSync()
 const protocols = useProtocolsStore()
 const theme = useTheme()

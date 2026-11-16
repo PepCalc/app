@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification icon: the mark's syringe and vial P, without the tile (see public/favicon.svg). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group
+        android:translateX="-6"
+        android:translateY="-10">
+        <path
+            android:pathData="M164,100h20a16,16 0 0,1 16,16v236a16,16 0 0,1 -16,16h-20a20,20 0 0,1 -20,-20V120a20,20 0 0,1 20,-20z"
+            android:fillColor="#FFFFFFFF" />
+        <path
+            android:pathData="M152,368h40l-12,22h-16z"
+            android:fillColor="#FFFFFFFF" />
+        <path
+            android:pathData="M172,390v40"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="12"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M276,124a80,80 0 1,0 0,160a80,80 0 1,0 0,-160z"
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="48" />
+        <path
+            android:pathData="M233.7,192a44,44 0 1,0 84.6,0z"
+            android:fillColor="#99FFFFFF" />
+    </group>
+</vector>

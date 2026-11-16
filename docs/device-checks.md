@@ -33,3 +33,14 @@ The e2e suite covers only the web build. Run these checks on a phone before a re
 2. Save a backup on 0.4.0, restore it on this build: same.
 3. Change the device's time zone with a daily 08:00 schedule: it is still due at 08:00.
 4. In the Android app: the same three checks.
+
+## Reminders
+
+1. Add reminder, Notify me: the explanation shows first, then the system prompt.
+2. A schedule time two minutes ahead: the notification arrives; its text names no peptide.
+3. Turn names on: the next notification names it.
+4. Tap it: Today opens with the draw dialog for that peptide.
+5. Two peptides at the same time: one notification, `2 doses due`.
+6. Deny permission: the panel explains and offers to open settings; after allowing there and returning, the panel updates without a restart.
+7. Restore a backup with reminders on: every reminder is off afterwards.
+8. Airplane mode throughout: all of the above still work.
