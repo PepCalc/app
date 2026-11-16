@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { vialBalance } from '@/domain/inventory'
+import { shelfNotices, vialBalance, type VialBalance } from '@/domain/inventory'
 import { splitBlendDose, blendTotalMg } from '@/domain/blend'
 
 describe('vial balance', () => {
@@ -46,5 +46,60 @@ describe('blends', () => {
     const split = splitBlendDose({ value: 8, unit: 'mg' }, klow, 'mcg')
     expect(split.map((s) => s.dose.value)).toEqual([5000, 1000, 1000, 1000])
     expect(split.every((s) => s.dose.unit === 'mcg')).toBe(true)
+  })
+})
+
+describe('shelfNotices', () => {
+  const okBalance = (dosesLeft: number | null, overdrawn = false): VialBalance => ({
+    remainingAmount: overdrawn ? 0 : 1,
+    remainingMl: overdrawn ? 0 : 1,
+    usedFraction: overdrawn ? 1 : 0.5,
+    dosesLeft,
+    overdrawn,
+  })
+
+  it('flags 2 doses left, omits 3 doses left and null usual dose', () => {
+    const notices = shelfNotices(
+      [
+        { id: 'v1', name: 'BPC-157', status: 'active' },
+        { id: 'v2', name: 'Semaglutide', status: 'active' },
+        { id: 'v3', name: 'Tirzepatide', status: 'active' },
+      ],
+      new Map([
+        ['v1', okBalance(2)],
+        ['v2', okBalance(3)],
+        ['v3', okBalance(null)],
+      ]),
+      new Map(),
+    )
+    expect(notices.map((n) => n.text)).toEqual(['BPC-157: about 2 doses left.'])
+  })
+
+  it('flags nearing and past use windows, overdrawn vials, ignores archived, and orders by name', () => {
+    const limits = { nearingDays: 21, pastDays: 28 }
+    const notices = shelfNotices(
+      [
+        { id: 'z', name: 'Tirzepatide', status: 'active' },
+        { id: 'a', name: 'BPC-157', status: 'active' },
+        { id: 'm', name: 'Semaglutide', status: 'active' },
+        { id: 'old', name: 'Archived', status: 'archived' },
+      ],
+      new Map([
+        ['z', okBalance(0, true)],
+        ['a', okBalance(5)],
+        ['m', okBalance(5)],
+        ['old', okBalance(1, true)],
+      ]),
+      new Map([
+        ['a', { days: 24, tier: 'nearing', limits }],
+        ['m', { days: 30, tier: 'past', limits }],
+        ['old', { days: 40, tier: 'past', limits }],
+      ]),
+    )
+    expect(notices.map((n) => [n.vialId, n.kind, n.text])).toEqual([
+      ['a', 'age', 'BPC-157: Day 24 of 28 · use soon'],
+      ['m', 'age', 'Semaglutide: Day 30 · 28-day limit reached'],
+      ['z', 'overdrawn', 'Tirzepatide: draws exceed the vial.'],
+    ])
   })
 })

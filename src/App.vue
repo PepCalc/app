@@ -23,6 +23,7 @@ import {
   mdiCellphoneArrowDown,
   mdiCogOutline,
   mdiNotebookOutline,
+  mdiWaves,
 } from '@/plugins/icons'
 
 const settings = useSettingsStore()
@@ -39,8 +40,9 @@ const router = useRouter()
 const install = useInstallPrompt()
 
 const NAV = [
-  { name: 'calculator', title: 'Calculator', icon: mdiCalculatorVariantOutline },
+  { name: 'today', title: 'Today', icon: mdiWaves },
   { name: 'stack', title: 'Stack', icon: mdiBookshelf },
+  { name: 'calculator', title: 'Calculator', icon: mdiCalculatorVariantOutline },
   { name: 'journal', title: 'Journal', icon: mdiNotebookOutline },
   { name: 'settings', title: 'Settings', icon: mdiCogOutline },
 ] as const
@@ -143,13 +145,13 @@ onMounted(async () => {
       @focusin="bar.actions.reveal"
     >
       <v-app-bar-title>
-        <router-link :to="{ name: 'calculator' }" class="brand" aria-label="PepCalc, calculator">
+        <router-link :to="{ name: 'today' }" class="brand" aria-label="PepCalc, today">
           <AppLogo :size="30" />
         </router-link>
       </v-app-bar-title>
     </v-app-bar>
 
-    <v-navigation-drawer v-if="wide" permanent rail rail-width="96" class="rail">
+    <v-navigation-drawer v-if="wide" permanent rail rail-width="104" class="rail">
       <v-list nav density="comfortable" class="rail-list">
         <v-list-item
           v-for="item in NAV"
@@ -271,6 +273,7 @@ onMounted(async () => {
 .rail-item {
   justify-content: center;
   min-height: 64px;
+  padding-inline: 4px;
 }
 
 .install-banner {

@@ -71,8 +71,8 @@ const SHOTS = [
   {
     scheme: 'light',
     show: async (page) => {
-      await openTab(page, 'Calculator')
-      await page.getByText('1 · Peptide').waitFor()
+      await openTab(page, 'Today')
+      await page.getByRole('heading', { name: 'In your system' }).waitFor()
     },
   },
   {

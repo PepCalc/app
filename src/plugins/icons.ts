@@ -40,4 +40,5 @@ export {
   mdiStethoscope,
   mdiViewGridOutline,
   mdiWaterOutline,
+  mdiWaves,
 } from '@mdi/js'

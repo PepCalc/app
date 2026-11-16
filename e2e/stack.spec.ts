@@ -4,7 +4,7 @@ import { acceptDisclaimer, choose } from './helpers'
 test('manages a peptide on Stack, keeps levels off VialView, and supports redirects and Compare levels', async ({
   page,
 }) => {
-  await page.goto('./')
+  await page.goto('./#/calculator')
   await acceptDisclaimer(page)
 
   // Save Semaglutide and Tirzepatide vials.
@@ -48,7 +48,7 @@ test('manages a peptide on Stack, keeps levels off VialView, and supports redire
   await expect(page).toHaveURL(new RegExp(`#/stack/vial/${vialId}$`))
 
   // Add a second peptide to compare levels, then archive the first vial.
-  await page.goto('./#/')
+  await page.goto('./#/calculator')
   await expect(page.getByRole('button', { name: 'Save vial to shelf' })).toBeVisible()
   await page.locator('.v-select').first().click()
   await page

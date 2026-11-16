@@ -105,6 +105,17 @@ export function formatMonthDay(epochMs: number): string {
   return axisDayFormat.format(new Date(epochMs))
 }
 
+const todayHeadingFormat = new Intl.DateTimeFormat(undefined, {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+})
+
+/** "Mon, Nov 16" in the device's locale, for Today's heading. */
+export function formatTodayDate(epochMs: number): string {
+  return todayHeadingFormat.format(new Date(epochMs))
+}
+
 /** "Sep 29 – Oct 29, 2026" in the device's locale. */
 export function formatDateRange(startMs: number, endMs: number): string {
   return dateFormat.formatRange(new Date(startMs), new Date(endMs))

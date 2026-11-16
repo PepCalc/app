@@ -120,6 +120,7 @@ export default defineConfig(({ command, mode }) => {
           background_color: '#fbf8f3',
           theme_color: '#3f6b52',
           categories: ['medical', 'utilities'],
+          shortcuts: [{ name: 'Calculator', url: `${base}#/calculator` }],
           icons: [
             { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
             { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },

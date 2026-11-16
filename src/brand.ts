@@ -4,4 +4,6 @@ export const brand = {
   wordmark: ['Pep', 'Calc'] as const,
   /** Health apps: what never leaves the app. */
   staysInApp: 'Draws, protocols, side effects, HbA1c and photos stay in PepCalc.',
+  /** Primary action on a Today due card. */
+  logDoseLabel: 'Log a draw',
 } as const

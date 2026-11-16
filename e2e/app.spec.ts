@@ -1,9 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
 import { acceptDisclaimer, choose, waitForServiceWorker } from './helpers'
 
-test('calculates the standard check: 5 mg in 2 mL, 250 mcg is 10 units', async ({ page }) => {
-  await page.goto('./')
+/** Opens the Calculator view and accepts the first-run notice. */
+async function openCalculator(page: Page) {
+  await page.goto('./#/calculator')
   await acceptDisclaimer(page)
+}
+
+test('calculates the standard check: 5 mg in 2 mL, 250 mcg is 10 units', async ({ page }) => {
+  await openCalculator(page)
   await page.locator('.v-select').first().click()
   await page.getByRole('option', { name: /BPC-157/ }).click()
   await choose(page, 'Peptide in vial', '5 mg')
@@ -16,8 +21,7 @@ test('calculates the standard check: 5 mg in 2 mL, 250 mcg is 10 units', async (
 })
 
 test('the mixing advisor dilutes GHK-Cu and fills in the water', async ({ page }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.locator('.v-select').first().click()
   await page.getByRole('option', { name: /GHK-Cu/ }).click()
   await choose(page, 'Peptide in vial', '50 mg')
@@ -38,8 +42,7 @@ test('the mixing advisor dilutes GHK-Cu and fills in the water', async ({ page }
 })
 
 test('saves a vial, logs a draw and tracks the balance', async ({ page }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   // Semaglutide defaults: 5 mg vial, 3 mL water, 0.25 mg dose.
   await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
@@ -67,10 +70,9 @@ test('saves a vial, logs a draw and tracks the balance', async ({ page }) => {
 })
 
 test('numbers twin vials, ages them, and pages the draw history', async ({ page }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   for (let i = 0; i < 2; i++) {
-    await page.goto('./#/')
+    await page.goto('./#/calculator')
     await expect(page.getByTestId('draw-headline')).toHaveText('15')
     await page.getByRole('button', { name: 'Save vial to shelf' }).click()
     await expect(page.getByText('From your shelf')).toBeVisible()
@@ -103,12 +105,11 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
 test('sets a protocol, counts down to the next dose, and filters draws by peptide', async ({
   page,
 }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await page.getByRole('button', { name: 'Log this draw now' }).click()
   await expect(page.getByText(/Logged 0.25 mg of Semaglutide/)).toBeVisible()
-  await page.goto('./#/')
+  await page.goto('./#/calculator')
   await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await page.locator('.v-select').first().click()
   await page.getByRole('option', { name: /BPC-157/ }).click()
@@ -146,11 +147,10 @@ test('sets a protocol, counts down to the next dose, and filters draws by peptid
 })
 
 test('projects levels while setting a protocol, then draws them on its page', async ({ page }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
-  await page.goto('./#/')
+  await page.goto('./#/calculator')
   await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await page.locator('.v-select').first().click()
   await page.getByRole('option', { name: /BPC-157/ }).click()
@@ -195,14 +195,13 @@ test('projects levels while setting a protocol, then draws them on its page', as
 })
 
 test('calculates a draw from a protocol, then switches vial', async ({ page }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Use a different vial' })).toBeHidden()
 
   // A second vial of the same peptide, used most recently, with less water.
-  await page.goto('./#/')
+  await page.goto('./#/calculator')
   await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await choose(page, 'Bacteriostatic water added', '2 mL')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
@@ -231,12 +230,11 @@ test('calculates a draw from a protocol, then switches vial', async ({ page }) =
 })
 
 test('overlays the levels of several peptides on one chart', async ({ page }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await page.getByRole('button', { name: 'Log this draw now' }).click()
   await expect(page.getByText(/Logged .+ of Semaglutide/)).toBeVisible()
-  await page.goto('./#/')
+  await page.goto('./#/calculator')
   await expect(page.getByRole('button', { name: 'Save vial to shelf' })).toBeVisible()
   await page.locator('.v-select').first().click()
   await page
@@ -263,8 +261,7 @@ test('overlays the levels of several peptides on one chart', async ({ page }) =>
 })
 
 test("marks one peptide's doses on the weight line and switches peptide", async ({ page }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await page.getByRole('link', { name: 'Open vial' }).click()
   for (const [when, amount] of [
@@ -279,7 +276,7 @@ test("marks one peptide's doses on the weight line and switches peptide", async 
     await expect(draw).toBeHidden()
   }
 
-  await page.goto('./#/')
+  await page.goto('./#/calculator')
   await expect(page.getByRole('button', { name: 'Save vial to shelf' })).toBeVisible()
   await page.locator('.v-select').first().click()
   await page
@@ -342,8 +339,7 @@ test('works offline after the first visit, including stored data', async ({
     browserName === 'webkit',
     'Playwright WebKit does not drive service workers reliably; offline is verified on Chromium',
   )
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await waitForServiceWorker(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
@@ -355,7 +351,7 @@ test('works offline after the first visit, including stored data', async ({
   await expect(page.getByText('Semaglutide').first()).toBeVisible()
 
   // The calculator chunk (with the chart library) must also come from the precache.
-  await page.goto('./#/')
+  await page.goto('./#/calculator')
   await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await context.setOffline(false)
 })
@@ -377,6 +373,7 @@ test('serves a manifest and service worker scoped to the base path', async ({
   expect(manifest.scope).toBe('/app/')
   expect(manifest.display).toBe('standalone')
   expect(manifest.icons.some((i: { purpose?: string }) => i.purpose === 'maskable')).toBe(true)
+  expect(manifest.shortcuts).toContainEqual({ name: 'Calculator', url: '/app/#/calculator' })
   const scope = await page.evaluate(async () => (await navigator.serviceWorker.ready).scope)
   expect(new URL(scope).pathname).toBe('/app/')
 })
@@ -387,8 +384,7 @@ test('makes no third-party requests', async ({ page }) => {
     const url = new URL(r.url())
     if (url.hostname !== 'localhost') foreign.push(r.url())
   })
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.goto('./#/settings')
   await page.goto('./#/shelf')
   expect(foreign).toEqual([])
@@ -452,8 +448,7 @@ async function scrollInSteps(page: Page, step: number, steps: number) {
 test('the top bar scrolls away when reading and returns on scrolling up', async ({ page }) => {
   // Short enough that the calculator scrolls on a tablet too.
   await page.setViewportSize({ width: page.viewportSize()!.width, height: 480 })
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.locator('.v-select').first().click()
   await page.getByRole('option', { name: /Semaglutide/ }).click()
   await choose(page, 'Dose', '0.5 mg')
@@ -539,15 +534,14 @@ test('a tab tapped while the page is still coasting from a fling opens', async (
   browserName,
 }) => {
   test.skip(browserName !== 'chromium', 'raw touch input needs the DevTools protocol')
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   const tab = (title: string) => page.locator('.v-bottom-navigation .v-btn', { hasText: title })
   test.skip((await tab('Stack').count()) === 0, 'phones only: wide layouts have a rail')
 
   await flingThenTapTab(page, 'Stack')
   await expect(page.getByRole('heading', { level: 1, name: 'Stack' })).toBeVisible()
 
-  // Back on the first tab, the Stack tab no longer looks pressed (no ripple left behind).
+  // Back on the Calculator tab, the Stack tab no longer looks pressed (no ripple left behind).
   await tab('Calculator').tap()
   await expect(page.getByRole('heading', { level: 1, name: 'How much to draw' })).toBeVisible()
   await expect(page.locator('.v-bottom-navigation .v-ripple__container')).toHaveCount(0)
@@ -572,8 +566,7 @@ test('a tab tapped while the page is still coasting from a fling opens', async (
 })
 
 test('estimated levels can be previewed as a shareable image', async ({ page }) => {
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.locator('.v-select').first().click()
   await page.getByRole('option', { name: /Semaglutide/ }).click()
   await choose(page, 'Peptide in vial', '5 mg')
@@ -595,8 +588,7 @@ test('shares the mix and the draw as an image', async ({ page }) => {
   await page.addInitScript(() => {
     delete (navigator as { canShare?: unknown }).canShare
   })
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await page.locator('.v-select').first().click()
   await page.getByRole('option', { name: /BPC-157/ }).click()
   await choose(page, 'Peptide in vial', '5 mg')
@@ -622,8 +614,7 @@ test('exports draws and estimated levels as a PDF, offline', async ({
     browserName === 'webkit',
     'Playwright WebKit does not drive service workers reliably; offline is verified on Chromium',
   )
-  await page.goto('./')
-  await acceptDisclaimer(page)
+  await openCalculator(page)
   await waitForServiceWorker(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await page.getByRole('button', { name: 'Log this draw now' }).click()

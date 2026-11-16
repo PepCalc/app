@@ -3,6 +3,7 @@ import { acceptDisclaimer, choose, chooseUnits } from './helpers'
 
 async function openTab(page: Page, name: string) {
   await page.getByRole('link', { name, exact: true }).first().click()
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
 }
 
 /** `when` is a datetime-local value; the default, now, is to the minute, so two quick logs tie. */

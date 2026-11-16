@@ -8,6 +8,12 @@ import {
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
+    name: 'today',
+    component: () => import('@/views/TodayView.vue'),
+    meta: { title: 'Today' },
+  },
+  {
+    path: '/calculator',
     name: 'calculator',
     component: () => import('@/views/CalculatorView.vue'),
     meta: { title: 'Calculator' },
@@ -79,11 +85,18 @@ function appBarHeight(): number {
  * a bookmark would 404. With a hash every URL resolves to index.html.
  */
 export function createAppRouter(history: RouterHistory = createWebHashHistory()) {
-  return createRouter({
+  const router = createRouter({
     history,
     routes,
     // A section link lands below the app bar and any status bar inset above it.
     scrollBehavior: (to) =>
       to.hash ? { el: to.hash, top: appBarHeight() + 24, behavior: 'smooth' } : { top: 0 },
   })
+  // Older links open the calculator directly when a vial or peptide query is present.
+  router.beforeEach((to) =>
+    to.name === 'today' && (to.query.vial || to.query.peptide)
+      ? { name: 'calculator', query: to.query }
+      : true,
+  )
+  return router
 }

@@ -1,4 +1,5 @@
 import { convert, type AmountUnit, type Quantity } from './units'
+import { vialAgeText, type AgeLimits, type AgeTier } from './vialAge'
 
 export interface VialContents {
   amount: number
@@ -43,4 +44,71 @@ export function vialBalance(
     dosesLeft: typical > 0 ? Math.floor(remainingAmount / typical + 1e-9) : null,
     overdrawn: used > vial.amount + 1e-9,
   }
+}
+
+export interface ShelfNoticeVial {
+  id: string
+  name: string
+  status: 'active' | 'archived'
+}
+
+export interface ShelfNoticeAge {
+  days: number
+  tier: AgeTier
+  limits: AgeLimits
+}
+
+export interface ShelfNotice {
+  id: string
+  vialId: string
+  kind: 'low' | 'age' | 'overdrawn'
+  text: string
+  tone: 'notice' | 'alert'
+}
+
+/**
+ * Active vials that need attention (low supply, nearing or past use limit, or overdrawn),
+ * sorted by vial name.
+ */
+export function shelfNotices(
+  vials: readonly ShelfNoticeVial[],
+  balances: ReadonlyMap<string, VialBalance>,
+  ages: ReadonlyMap<string, ShelfNoticeAge | null>,
+): ShelfNotice[] {
+  const active = vials
+    .filter((v) => v.status === 'active')
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const notices: ShelfNotice[] = []
+  for (const vial of active) {
+    const balance = balances.get(vial.id)
+    if (balance?.overdrawn) {
+      notices.push({
+        id: `${vial.id}:overdrawn`,
+        vialId: vial.id,
+        kind: 'overdrawn',
+        text: `${vial.name}: draws exceed the vial.`,
+        tone: 'alert',
+      })
+    } else if (balance && balance.dosesLeft !== null && balance.dosesLeft <= 2) {
+      const noun = balance.dosesLeft === 1 ? 'dose' : 'doses'
+      notices.push({
+        id: `${vial.id}:low`,
+        vialId: vial.id,
+        kind: 'low',
+        text: `${vial.name}: about ${balance.dosesLeft} ${noun} left.`,
+        tone: 'notice',
+      })
+    }
+    const age = ages.get(vial.id)
+    if (age && (age.tier === 'nearing' || age.tier === 'past')) {
+      notices.push({
+        id: `${vial.id}:age`,
+        vialId: vial.id,
+        kind: 'age',
+        text: `${vial.name}: ${vialAgeText(age)}`,
+        tone: age.tier === 'past' ? 'alert' : 'notice',
+      })
+    }
+  }
+  return notices
 }

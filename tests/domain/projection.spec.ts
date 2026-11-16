@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { amountAt, rateConstants, type DoseEvent } from '@/domain/pk'
-import { levelTrace, projectLevels } from '@/domain/projection'
+import { curveTrace, levelTrace, projectLevels } from '@/domain/projection'
+import { levelsModel } from '@/domain/levels'
 
 const H = 3_600_000
 const WEEK = 168 * H
@@ -219,5 +220,30 @@ describe('levelTrace', () => {
     const trace = levelTrace(p, NOW)
     expect(trace.past).toEqual([])
     expect(trace.now[0]).toBe(0)
+  })
+})
+
+describe('curveTrace', () => {
+  it('scales a levels curve into [0, 1] and reaches 1 at its peak', () => {
+    const model = levelsModel({
+      params: SEMAGLUTIDE,
+      doses: [{ at: NOW - 24 * H, amount: 1 }],
+      preview: null,
+      unitLabel: 'mg',
+      now: NOW,
+    })
+    const points = curveTrace(model)
+    expect(points.length).toBeGreaterThan(2)
+    for (const [x, y] of points) {
+      expect(x).toBeGreaterThanOrEqual(0)
+      expect(x).toBeLessThanOrEqual(1)
+      expect(y).toBeGreaterThanOrEqual(0)
+      expect(y).toBeLessThanOrEqual(1)
+    }
+    expect(Math.max(...points.map(([, y]) => y))).toBeCloseTo(1, 3)
+  })
+
+  it('is empty when there are no logged points', () => {
+    expect(curveTrace({ window: { start: 0, end: 100 }, logged: [] })).toEqual([])
   })
 })

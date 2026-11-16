@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   amountAt,
   chartWindow,
+  levelNow,
   rateConstants,
   simulate,
   singleDoseAmount,
@@ -161,5 +162,39 @@ describe('steady state', () => {
   it('scales with the dose', () => {
     const k = rateConstants({ halfLifeHours: 168, tmaxHours: 56 })
     expect(steadyLevels(2.4, 168, k).peak).toBeCloseTo(steadyLevels(1, 168, k).peak * 2.4, 9)
+  })
+})
+
+describe('levelNow', () => {
+  const params = { halfLifeHours: 168, tmaxHours: 56 }
+
+  it('is zero before any dose', () => {
+    expect(levelNow([], params, 0)).toEqual({ amount: 0, percentOfPeak: 0 })
+    expect(levelNow([{ at: 10 * H, amount: 1 }], params, 5 * H)).toEqual({
+      amount: 0,
+      percentOfPeak: 0,
+    })
+  })
+
+  it('is 100 percent at the peak of a single dose', () => {
+    const res = levelNow([{ at: 0, amount: 1 }], params, params.tmaxHours * H)
+    expect(res.amount).toBeGreaterThan(0)
+    expect(res.percentOfPeak).toBe(100)
+  })
+
+  it('falls under 5 percent after five half-lives', () => {
+    const res = levelNow([{ at: 0, amount: 1 }], params, 5 * params.halfLifeHours * H)
+    expect(res.amount).toBeGreaterThan(0)
+    expect(res.percentOfPeak).toBeLessThan(5)
+  })
+
+  it('sums pooled doses linearly', () => {
+    const d1 = { at: 0, amount: 1 }
+    const d2 = { at: 48 * H, amount: 2 }
+    const at = 96 * H
+    const a = levelNow([d1], params, at).amount
+    const b = levelNow([d2], params, at).amount
+    const pooled = levelNow([d1, d2], params, at).amount
+    expect(pooled).toBeCloseTo(a + b, 10)
   })
 })

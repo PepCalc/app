@@ -9,6 +9,9 @@ Part of the `front-end` skill.
 | `common/PresetPicker.vue`                                                                      | Number input as preset chips plus a Custom field; chips are buttons with `aria-pressed`                                                                                          |
 | `common/SourceBadge.vue`                                                                       | Shows where a number came from (label, trial, standard, community, ...)                                                                                                          |
 | `common/SourceList.vue`                                                                        | A list of sources, each with its badge and a link                                                                                                                                |
+| `common/StatTile.vue`                                                                          | Compact reading tile (label, value, optional note, optional link) used in Today's Latest grid                                                                                    |
+| `today/DueCard.vue`                                                                            | Scheduled peptide card on Today: countdown slot, due text, last-draw detail, link to peptide page, `Calculate` and `Log a draw` actions                                          |
+| `today/SystemList.vue`                                                                         | "In your system" list on Today with `Estimate` badge, amount now, percent of peak, inline trace SVG, and links to each peptide's page                                            |
 | `common/ListPager.vue`, `SortToggle.vue`                                                       | Range caption and `v-pagination` (hidden on one page); newest or oldest first toggle                                                                                             |
 | `common/AppLogo.vue`                                                                           | The brand: mark (`src/assets/brand/pepcalc-mark.svg`, same art as `public/favicon.svg`) plus the two-tone wordmark                                                               |
 | `common/AppSnackbar.vue`, `AppConfirm.vue`                                                     | Render the notify and confirm stores; mounted once in `App.vue`                                                                                                                  |
@@ -34,7 +37,7 @@ Part of the `front-end` skill.
 
 ## Views
 
-- `views/CalculatorView.vue`, `views/StackView.vue`, `views/PeptideView.vue`, `views/LevelsView.vue`, `views/VialView.vue`, `views/JournalView.vue`, `views/SettingsView.vue`, `views/HealthView.vue` (apps only).
+- `views/TodayView.vue`, `views/StackView.vue`, `views/PeptideView.vue`, `views/LevelsView.vue`, `views/VialView.vue`, `views/CalculatorView.vue`, `views/JournalView.vue`, `views/SettingsView.vue`, `views/HealthView.vue` (apps only).
 
 ## Patterns
 
@@ -44,6 +47,7 @@ Part of the `front-end` skill.
 - A view that edits data calls a store action, then `notify.show()`.
 - Every number with a source shows a `SourceBadge`; community-reported values never look like
   clinical ones.
+- Today lists what is due, what is in the system and the latest readings. It has no log buttons except one per due card; everything else goes through the Log button.
 - One-home rule: the full estimated-level chart (`PkPanel`) lives on the peptide's page (`PeptideView`), pooling every draw of that peptide across its vials (`shelf.pooledDosesFor`, `shelf.levelGroups`). The vial page links to the peptide's page instead of repeating `PkPanel`; the calculator keeps its draft dose preview folded under `Preview levels` (`MoreInfo`); the multi-peptide overlay lives on its own comparison page (`LevelsView` at `/stack/levels`).
 - A trend chart is one grid with one value axis. Do not add a second panel under it.
 - Share dialogs render their privacy switches compact through `ShareImageDialog`'s slot.

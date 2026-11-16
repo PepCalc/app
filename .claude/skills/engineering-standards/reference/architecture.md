@@ -15,7 +15,7 @@ src/
                  collage), doseBands (dose bands and callout pills on a trend), report
                  (periods, windows, axis ticks), drawTotals (totals by unit), vitals (blood
                  pressure and heart rate), healthSync (what to import and export, matching),
-                 entries, entryText, catalog types
+                 entries, entryText, due (due-card sorting), catalog types
   brand.ts       per-app strings read by shared components (wordmark, health sync summary)
   logKinds.ts    loggable entry kind definitions (labels, icons, routes, order)
   data/          peptides.json, syringes.json, their JSON Schemas, typed loader (index.ts)
@@ -25,9 +25,9 @@ src/
                  peptides a chart shows), settings, healthSync (Health apps choices), log, notify,
                  confirm
   composables/   useCalculator, useDiluentAdvisor, useBodyMetrics, useCameraAccess,
-                 useChartColors, useDoseBands, useInstallPrompt, useStoragePersistence, useNow,
+                 useChartColors, useDoseBands, useDueItems, useInstallPrompt, useStoragePersistence, useNow,
                  useEntries, usePaging, usePhotoPins, useVialAge, useHideOnScroll, useReportExport,
-                 useHealthAutoSync, useWeightSummary
+                 useSystemRows, useHealthAutoSync, useWeightSummary
   services/      time.ts (the only clock and date formatter), locale.ts (device region and
                  measurement system), fileTransfer.ts (share/download),
                  nativeFileTransfer.ts (the same through the apps' share sheet), platform.ts
@@ -36,8 +36,8 @@ src/
                  health/ (Apple Health and Health Connect through @capgo/capacitor-health,
                  loaded only in the apps; runSync, the sync loop)
   components/    calculator/, charts/, common/, journal/, photos/, protocols/, report/,
-                 share/, shelf/
-  views/         one per route: Calculator, Stack, Peptide, Levels, Vial, Journal, Settings, Health
+                 share/, shelf/, today/ (DueCard, SystemList)
+  views/         one per route: Today, Stack, Peptide, Levels, Vial, Calculator, Journal, Settings, Health
                  (apps only)
   plugins/       vuetify.ts (themes, defaults), icons.ts (inline SVG icons), fonts.ts
   styles/        tokens.css (design tokens), theme.css (global and Vuetify overrides)
@@ -142,10 +142,10 @@ measurement system. iOS is built and uploaded only by `.github/workflows/ios.yml
   `public/og.png` is the link-preview image and is kept out of the precache.
 
 - `vite-plugin-pwa` (generateSW) precaches every built asset, including the ECharts chunk and
-  fonts. `registerType: 'prompt'`: an update waits until the user reloads (`UpdatePrompt.vue`).
+  fonts. `registerType: 'prompt'`: an update waits until the user reloads (`UpdatePrompt.vue`). The manifest includes a `Calculator` shortcut to `#/calculator`.
 - Base path comes from `PEPCALC_BASE` (default `/app/`): the app is the `PepCalc/app`
   repository, served by Pages at `/app/` beside the website at the root. The router uses hash history so
-  every URL resolves to `index.html` on GitHub Pages and offline. Legacy routes (`/shelf`,
+  every URL resolves to `index.html` on GitHub Pages and offline. `/` opens `Today` (redirecting `/?vial=` and `/?peptide=` to `/calculator`), and `/calculator` opens the calculator. Legacy routes (`/shelf`,
   `/shelf/:id`, `/protocols`, `/history`) redirect permanently to `/stack` and `/stack/vial/:id`.
 - A production-only meta CSP (`default-src 'self'`) is injected by `vite.config.ts`, because
   GitHub Pages cannot set headers. Styles need `'unsafe-inline'` for Vuetify's theme tag.

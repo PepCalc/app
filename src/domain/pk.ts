@@ -265,3 +265,29 @@ export function summarizeLevels(
     : null
   return { now: amountAt(now, doses, rateConstants(params)), peak, clearsAt }
 }
+
+export interface LevelNow {
+  amount: number
+  /** 0 to 100, relative to the active window's peak (0 before any dose). */
+  percentOfPeak: number
+}
+
+/**
+ * Estimated amount in the body at `now` and its percentage of the curve's peak in the active
+ * window. Returns zeros before any dose has taken effect.
+ */
+export function levelNow(doses: readonly DoseEvent[], params: PkParameters, now: number): LevelNow {
+  const k = rateConstants(params)
+  const amount = amountAt(now, doses, k)
+  if (!doses.length || amount <= 0) return { amount: 0, percentOfPeak: 0 }
+  const lookback = lookbackHoursFor(params)
+  const window = chartWindow(doses, params, now, lookback)
+  if (lookback === undefined && !doses.some((d) => d.at >= window.start)) {
+    const lastPast = doses.filter((d) => d.at <= now).reduce((a, b) => (a.at > b.at ? a : b))
+    window.start = Math.min(window.start, lastPast.at)
+  }
+  const points = simulate(doses, params, window)
+  const peak = summarizeLevels(points, doses, params, now).peak?.amount ?? 0
+  const percentOfPeak = peak > 0 ? Math.min(100, Math.round((amount / peak) * 100)) : 0
+  return { amount, percentOfPeak }
+}

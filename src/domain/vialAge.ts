@@ -45,3 +45,11 @@ export function ageTier(ageDays: number, limits: AgeLimits): AgeTier {
   if (ageDays >= limits.nearingDays) return 'nearing'
   return 'fresh'
 }
+
+/** Plain-text label for a mixed vial's age, shared by VialAgeBadge and Today notices. */
+export function vialAgeText(age: { days: number; tier: AgeTier; limits: AgeLimits }): string {
+  const day = `Day ${age.days}`
+  if (age.tier === 'past') return `${day} · ${age.limits.pastDays}-day limit reached`
+  if (age.tier === 'nearing') return `${day} of ${age.limits.pastDays} · use soon`
+  return `${day} of ${age.limits.pastDays}`
+}

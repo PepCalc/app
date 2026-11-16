@@ -216,3 +216,21 @@ export function levelTrace(projection: LevelProjection, now: number, buckets = 1
     now: nowPoint ? scale(nowPoint) : [(now - window.start) / span, 0],
   }
 }
+
+/**
+ * A levels curve reduced to normalized [x, y] points in [0, 1] for a compact inline trace,
+ * scaled from 0 up to the curve's peak so height reflects the share of peak.
+ */
+export function curveTrace(
+  model: Pick<LevelsModel, 'window' | 'logged'>,
+  buckets = 48,
+): TracePoint[] {
+  const { window, logged } = model
+  const span = window.end - window.start
+  if (!logged.length || !(span > 0)) return []
+  const peak = Math.max(...logged.map((p) => p.amount), 1e-9)
+  return thin(logged, buckets, window.start, span).map((p) => [
+    (p.at - window.start) / span,
+    p.amount / peak,
+  ])
+}
