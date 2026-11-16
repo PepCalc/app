@@ -2,14 +2,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { OVERLAY_MAX, assignSlots } from '@/domain/overlay'
 
-/** Slot 0's colour is the body-measure line's, so a peptide gets it only when the rest are taken. */
+/** Slot 0's colour is the baseline colour, so overlay lines fill the other slots first. */
 const SLOT_ORDER = [1, 2, 3, 0]
 
 /**
- * The peptides chosen for charts that show several at once (the Protocols overlay and the trend
- * card's dose rows and level strip), and the colour slot of each. One choice serves both, so a
- * peptide keeps its colour from screen to screen. It lasts while the app is open and is not
- * stored: it is a view choice, not data.
+ * The peptides chosen for the Protocols overlay chart, and the colour slot of each. It lasts
+ * while the app is open and is not stored: it is a view choice, not data.
  */
 export const useLevelPickStore = defineStore('levelPick', () => {
   /** Null until the user picks, so the default follows the newest doses. */

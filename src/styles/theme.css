@@ -286,6 +286,38 @@
     background: var(--pc-chart-series-4);
   }
 
+  .pc-swatch--dose-1 {
+    background: var(--pc-chart-dose-1);
+  }
+
+  .pc-swatch--dose-2 {
+    background: var(--pc-chart-dose-2);
+  }
+
+  .pc-swatch--dose-3 {
+    background: var(--pc-chart-dose-3);
+  }
+
+  .pc-swatch--dose-4 {
+    background: var(--pc-chart-dose-4);
+  }
+
+  .pc-swatch--dose-5 {
+    background: var(--pc-chart-dose-5);
+  }
+
+  .pc-swatch--dose-6 {
+    background: var(--pc-chart-dose-6);
+  }
+
+  .pc-swatch--dose-7 {
+    background: var(--pc-chart-dose-7);
+  }
+
+  .pc-swatch--dose-8 {
+    background: var(--pc-chart-dose-8);
+  }
+
   /* A short list of options (share privacy switches): labels at the buttons' size. */
   .pc-options .v-selection-control .v-label {
     font-size: 0.875rem;

@@ -154,6 +154,21 @@
     --pc-chart-series-2: #2a78d6;
     --pc-chart-series-3: #d4824f;
     --pc-chart-series-4: #a34d9c;
+    /*
+     * Dose bands and callout pills on the weight line, in slot order. Slot 1 stays neutral
+     * stone as the starting baseline; neighbouring slots alternate warm/cool and lightness so
+     * adjacent strengths stay apart under deuteranopia and protanopia, pass 3:1 against
+     * --pc-surface, and keep 4.5:1 against --pc-chart-on-dose.
+     */
+    --pc-chart-dose-1: #5f5544;
+    --pc-chart-dose-2: #246bc2;
+    --pc-chart-dose-3: #b55633;
+    --pc-chart-dose-4: #125659;
+    --pc-chart-dose-5: #8f6114;
+    --pc-chart-dose-6: #8c3d86;
+    --pc-chart-dose-7: #1e6940;
+    --pc-chart-dose-8: #473fa3;
+    --pc-chart-on-dose: #fffdf9;
   }
 
   .v-theme--dark {
@@ -226,5 +241,15 @@
     --pc-chart-series-2: #3987e5;
     --pc-chart-series-3: #bd592f;
     --pc-chart-series-4: #b866b4;
+    /* The same eight dose hues stepped for the dark surface. */
+    --pc-chart-dose-1: #b3a286;
+    --pc-chart-dose-2: #5ca0f2;
+    --pc-chart-dose-3: #e5845d;
+    --pc-chart-dose-4: #4bc0bc;
+    --pc-chart-dose-5: #e5b152;
+    --pc-chart-dose-6: #d884d3;
+    --pc-chart-dose-7: #5cc78a;
+    --pc-chart-dose-8: #8d83eb;
+    --pc-chart-on-dose: #15120e;
   }
 }

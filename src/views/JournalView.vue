@@ -248,7 +248,7 @@ const hasAnything = computed(
     <section v-if="hasTrend" class="mt-6" aria-labelledby="trends-heading">
       <h2 id="trends-heading" class="pc-display text-title-large mb-4">Trends</h2>
       <div class="journal-grid journal-grid--wide">
-        <TrendCard :now="now" />
+        <TrendCard />
       </div>
     </section>
 

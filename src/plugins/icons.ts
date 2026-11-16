@@ -24,7 +24,6 @@ export {
   mdiPlus,
   mdiShieldLockOutline,
   mdiTrayArrowUp,
-  mdiChartBellCurve,
   mdiNeedle,
   mdiCellphoneArrowDown,
   mdiRefresh,

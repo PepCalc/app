@@ -276,12 +276,23 @@ test('overlays the levels of several peptides on one chart', async ({ page }) =>
   await expect(page.getByText('each scaled to its own peak')).toBeVisible()
 })
 
-test('shows doses and levels of several peptides under the weight chart', async ({ page }) => {
+test("marks one peptide's doses on the weight line and switches peptide", async ({ page }) => {
   await page.goto('./')
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
-  await page.getByRole('button', { name: 'Log this draw now' }).click()
-  await expect(page.getByText(/Logged .+ of Semaglutide/)).toBeVisible()
+  await page.getByRole('link', { name: 'Open vial' }).click()
+  for (const [when, amount] of [
+    ['2026-06-01T09:00', '0.25'],
+    ['2026-06-08T09:00', '0.5'],
+  ] as const) {
+    await page.getByRole('button', { name: 'Log a draw' }).first().click()
+    const draw = page.getByRole('dialog')
+    await draw.getByLabel('Dose').fill(amount)
+    await draw.getByLabel('Taken at').fill(when)
+    await draw.getByRole('button', { name: 'Log draw' }).click()
+    await expect(draw).toBeHidden()
+  }
+
   await page.goto('./#/')
   await expect(page.getByRole('button', { name: 'Save vial to shelf' })).toBeVisible()
   await page.locator('.v-select').first().click()
@@ -290,34 +301,49 @@ test('shows doses and levels of several peptides under the weight chart', async 
     .first()
     .click()
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
-  await page.getByRole('button', { name: 'Log this draw now' }).click()
-  await expect(page.getByText(/Logged .+ of Tirzepatide/)).toBeVisible()
+  await page.getByRole('link', { name: 'Open vial' }).click()
+  await page.getByRole('button', { name: 'Log a draw' }).first().click()
+  const tirzDraw = page.getByRole('dialog')
+  await tirzDraw.getByLabel('Dose').fill('2.5')
+  await tirzDraw.getByLabel('Taken at').fill('2026-06-15T09:00')
+  await tirzDraw.getByRole('button', { name: 'Log draw' }).click()
+  await expect(tirzDraw).toBeHidden()
 
   await page.goto('./#/journal')
-  await page.getByRole('button', { name: 'Log weight' }).first().click()
-  const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Weight').fill('90')
-  await dialog.getByRole('button', { name: 'Save' }).click()
+  for (const [when, weight] of [
+    ['2026-06-01T08:00', '92'],
+    ['2026-06-22T08:00', '88'],
+  ] as const) {
+    await page.getByRole('button', { name: 'Log weight' }).first().click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('Weight').fill(weight)
+    await dialog.getByLabel('When').fill(when)
+    await dialog.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByText('Weight logged')).toBeVisible()
+  }
 
-  const doses = page.getByRole('button', { name: 'Doses', exact: true })
-  await expect(doses).toHaveAttribute('aria-pressed', 'false')
-  await doses.click()
-  await page.getByRole('button', { name: 'Levels', exact: true }).click()
-  // Two peptides: their amounts are not comparable, so levels read as percent of peak.
-  const chart = page.getByRole('img', { name: /^Weight .+Doses below: / })
-  await expect(chart).toHaveAttribute('aria-label', /Tirzepatide, 1 dose .+Semaglutide, 1 dose/)
-  await expect(chart).toHaveAttribute('aria-label', /% of peak/)
+  const group = page.getByRole('group', { name: 'Doses of' })
+  const tirzChip = group.getByRole('button', { name: 'Tirzepatide' })
+  const semaChip = group.getByRole('button', { name: 'Semaglutide' })
+  await expect(tirzChip).toHaveAttribute('aria-pressed', 'true')
+  await expect(semaChip).toHaveAttribute('aria-pressed', 'false')
 
-  // One peptide reads in its own unit.
-  await page.locator('.v-chip').filter({ hasText: 'Semaglutide' }).click()
-  await expect(chart).toHaveAttribute('aria-label', /Tirzepatide \d[\d.]* mg\.$/)
+  const legend = page.getByRole('list', { name: 'Doses' })
+  await expect(legend.getByRole('listitem')).toHaveCount(1)
+  await expect(legend).toContainText('2.5 mg')
 
-  await expect(chart).toHaveAttribute('aria-label', /Doses below: /)
+  await semaChip.click()
+  await expect(semaChip).toHaveAttribute('aria-pressed', 'true')
+  await expect(legend.getByRole('listitem')).toHaveCount(2)
+  await expect(legend).toContainText('0.25 mg')
+  await expect(legend).toContainText('0.5 mg')
 
   await page.getByRole('button', { name: 'Share weight as an image' }).click()
   const share = page.getByRole('dialog', { name: 'Share as an image' })
-  await share.getByLabel('Include my doses').check()
-  await expect(share.getByText('Shown as Peptide A, Peptide B.')).toBeVisible()
+  await expect(share.getByLabel('Include estimated levels')).toHaveCount(0)
+  const includeDoses = share.getByLabel('Include my doses')
+  await expect(includeDoses).not.toBeChecked()
+  await includeDoses.check()
   await expect(share.getByAltText('Preview of the image to share')).toBeVisible()
 })
 

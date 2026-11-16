@@ -1,9 +1,16 @@
 import { init, use, type EChartsCoreOption } from 'echarts/core'
 import { LineChart, ScatterChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, MarkLineComponent } from 'echarts/components'
+import {
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  VisualMapPiecewiseComponent,
+} from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import markUrl from '@/assets/brand/pepcalc-mark.svg'
 import type { ChartColors } from '@/composables/useChartColors'
+import type { DoseLegendItem } from '@/domain/doseBands'
+import { formatAmount } from '@/domain/units'
 import { drawPin, PIN } from '@/components/charts/photoPins'
 import {
   drawBrandRow,
@@ -16,7 +23,15 @@ import {
 } from './cardCanvas'
 
 // An offscreen chart draws only what is registered in the module that creates it.
-use([LineChart, ScatterChart, GridComponent, LegendComponent, MarkLineComponent, CanvasRenderer])
+use([
+  LineChart,
+  ScatterChart,
+  GridComponent,
+  LegendComponent,
+  MarkLineComponent,
+  VisualMapPiecewiseComponent,
+  CanvasRenderer,
+])
 
 /** What a share card shows. Every value is already formatted for the device's locale. */
 export interface ShareCardContent {
@@ -33,6 +48,69 @@ export interface ShareCardContent {
   madeAt: string
   /** Progress photos to pin on the chart's first line: `src` is a thumbnail URL. */
   photos?: { at: number; value: number; src: string }[]
+  /** Dose strengths drawn on the trend chart, shown as a legend row below it. */
+  doseLegend?: { items: DoseLegendItem[]; named: boolean }
+}
+
+export interface LegendBox {
+  x: number
+  y: number
+  width: number
+}
+
+/**
+ * Measures and optionally draws a dose legend row (swatch then text, wrapping onto a second
+ * row at the caption's type size). Returns the height consumed in pixels.
+ */
+function layoutDoseLegend(
+  ctx: CanvasRenderingContext2D,
+  legend: readonly DoseLegendItem[],
+  named: boolean,
+  box: LegendBox,
+  colors: ChartColors,
+  draw: boolean,
+): number {
+  if (!legend.length) return 0
+  const rowH = 36
+  const swatchR = 8
+  const swatchGap = 10
+  const itemGap = 28
+  ctx.font = `400 26px ${colors.font}`
+  let x = box.x
+  let y = box.y
+  let rows = 1
+  for (const item of legend) {
+    const amount = formatAmount(item.amount, item.unitLabel)
+    const text = named ? `${item.label} ${amount}` : amount
+    const itemW = swatchR * 2 + swatchGap + ctx.measureText(text).width
+    if (x > box.x && x + itemW > box.x + box.width) {
+      if (rows >= 2) break
+      rows++
+      x = box.x
+      y += rowH
+    }
+    if (draw) {
+      ctx.fillStyle = colors.doses[item.slot] ?? colors.logged
+      ctx.beginPath()
+      ctx.arc(x + swatchR, y + rowH / 2 - 2, swatchR, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.fillStyle = colors.axis
+      ctx.fillText(text, x + swatchR * 2 + swatchGap, y + 26)
+    }
+    x += itemW + itemGap
+  }
+  return rows * rowH
+}
+
+/** Draws the dose legend (swatch then text, wrapping to a second row) inside `box`. */
+export function drawDoseLegend(
+  ctx: CanvasRenderingContext2D,
+  legend: readonly DoseLegendItem[],
+  named: boolean,
+  box: LegendBox,
+  colors: ChartColors,
+): number {
+  return layoutDoseLegend(ctx, legend, named, box, colors, true)
 }
 
 /** Portrait 4:5, the shape messaging apps show without cropping. */
@@ -108,12 +186,27 @@ export async function renderShareCard(
   ctx.strokeStyle = t['glass-edge']
   ctx.lineWidth = 2
   ctx.stroke()
+
+  const legend = content.doseLegend
+  const legendH = legend?.items.length
+    ? layoutDoseLegend(
+        ctx,
+        legend.items,
+        legend.named,
+        { x: PAD, y: 0, width: inner },
+        chartColors,
+        false,
+      )
+    : 0
+  const legendPad = legendH ? legendH + 16 : 0
+  const chartH = panelH - 56 - legendPad
+
   if (content.chart) {
     const host = document.createElement('div')
     const chart = init(host, null, {
       renderer: 'canvas',
       width: inner / 2,
-      height: (panelH - 56) / 2,
+      height: chartH / 2,
       devicePixelRatio: 2,
     })
     try {
@@ -123,7 +216,7 @@ export async function renderShareCard(
         PAD,
         y + 28,
         inner,
-        panelH - 56,
+        chartH,
       )
       // Pins are drawn here rather than as chart symbols: ECharts loads image symbols after
       // the first render, which would leave them out of this one-shot image.
@@ -138,6 +231,16 @@ export async function renderShareCard(
     } finally {
       chart.dispose()
     }
+  }
+
+  if (legend?.items.length) {
+    drawDoseLegend(
+      ctx,
+      legend.items,
+      legend.named,
+      { x: PAD, y: y + 28 + chartH + 16, width: inner },
+      chartColors,
+    )
   }
 
   // Caption.

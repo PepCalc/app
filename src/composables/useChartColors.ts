@@ -9,6 +9,10 @@ export interface ChartColors {
   now: string
   /** Overlay series colours, in slot order. */
   series: string[]
+  /** Dose band and pill colours, in slot order. */
+  doses: string[]
+  /** Text colour on a dose pill. */
+  onDose: string
   text: string
   surface: string
   font: string
@@ -25,6 +29,8 @@ function readColors(): ChartColors {
     axis: read('--pc-chart-axis'),
     now: read('--pc-chart-now'),
     series: [1, 2, 3, 4].map((n) => read(`--pc-chart-series-${n}`)),
+    doses: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => read(`--pc-chart-dose-${n}`)),
+    onDose: read('--pc-chart-on-dose'),
     text: read('--pc-text-1'),
     surface: read('--pc-surface'),
     font: read('--pc-font'),

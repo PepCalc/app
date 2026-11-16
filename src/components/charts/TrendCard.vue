@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
 import { BMI_BANDS, BMI_SOURCE } from '@/domain/body'
+import { doseBands } from '@/domain/doseBands'
 import {
   decimalsFor,
   fromA1cPercent,
@@ -13,43 +14,37 @@ import { spreadEvenly, valueAt } from '@/domain/photos'
 import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
 import { useChartColors } from '@/composables/useChartColors'
+import { useDoseBands } from '@/composables/useDoseBands'
 import { usePhotoPins } from '@/composables/usePhotoPins'
+import { useWeightSummary } from '@/composables/useWeightSummary'
 import PhotoDialog from '@/components/photos/PhotoDialog.vue'
 import type { PhotoRow } from '@/db/database'
 import { useSettingsStore } from '@/stores/settings'
 import { useBodyMetrics } from '@/composables/useBodyMetrics'
 import { toEpochMs } from '@/services/time'
-import {
-  mdiChartBellCurve,
-  mdiImageOutline,
-  mdiNeedle,
-  mdiShareVariantOutline,
-} from '@/plugins/icons'
-import { OVERLAY_MAX } from '@/domain/overlay'
-import { stripScale } from '@/domain/levelStrip'
-import { usePeptidePanels } from '@/composables/usePeptidePanels'
-import { panelInput } from './bodyChart'
+import { mdiImageOutline, mdiNeedle, mdiShareVariantOutline } from '@/plugins/icons'
 import MoreInfo from '@/components/common/MoreInfo.vue'
 import SourceList from '@/components/common/SourceList.vue'
 import BodyChart from './BodyChart.vue'
+import DoseLegend from './DoseLegend.vue'
 import ShareTrendDialog from '@/components/share/ShareTrendDialog.vue'
 
 /**
  * Every body measure over time in one card: weight, BMI, HbA1c, glucose, blood pressure and
  * resting heart rate. Glucose draws fasting readings as the line and readings from other times
  * of day as separate points, since they are not comparable with each other. Blood pressure
- * draws systolic as the line and diastolic as a dashed line below it. Whatever is shown can be shared as an image.
- * Progress photos can be pinned to the weight line, at the date each was taken. Doses show as
- * one row per peptide under the measure, and estimated levels in a strip below that.
+ * draws systolic as the line and diastolic as a dashed line below it. Whatever is shown can be
+ * shared as an image. Progress photos pin to the weight line, and doses colour the weight and
+ * BMI lines by strength with callout pills at each change.
  */
 type TrendMeasure = 'weight' | 'bmi' | 'a1c' | 'glucose' | 'cgm' | 'bp' | 'hr'
-
-const props = defineProps<{ now: number }>()
 
 const journal = useJournalStore()
 const settings = useSettingsStore()
 const body = useBodyMetrics()
+const { goalKg } = useWeightSummary()
 const labelId = useId()
+const pickId = useId()
 const shareOpen = ref(false)
 
 const a1c = computed(() => journal.glucose.filter((g) => g.kind === 'a1c'))
@@ -193,6 +188,7 @@ const chart = computed(() => {
         guides: [],
       }
     default: {
+      const goal = goalKg.value
       return {
         points: oldestFirst(
           journal.weights.map((w) => ({
@@ -203,7 +199,7 @@ const chart = computed(() => {
         unitLabel: settings.weightUnit,
         measure: 'Weight',
         decimals: 1,
-        guides: [],
+        guides: goal ? [{ value: fromKg(goal, settings.weightUnit), label: 'Goal' }] : [],
       }
     }
   }
@@ -252,27 +248,17 @@ function openPhoto(id: string) {
   photoOpen.value = true
 }
 
-/*
- * Doses and estimated levels under the measure, both off until asked for. Every measure here is
- * in real units, so one peptide's levels read in its own unit; several read as percent of each
- * one's peak (see `domain/levelStrip.ts`).
- */
-const panels = usePeptidePanels()
-const pickId = useId()
-const showDoses = ref(false)
-const showLevels = ref(false)
-const canPanels = computed(() => panels.groups.value.length > 0)
-
-const extras = computed(() => {
-  if (!showDoses.value && !showLevels.value) return {}
-  const times = [...chart.value.points, ...(chart.value.secondary?.points ?? [])].map((p) => p.at)
-  const curves = panels.peptides.value.filter((p) => p.strip).length
-  return panelInput(panels.peptides.value, times, props.now, {
-    lanes: showDoses.value,
-    levels: showLevels.value,
-    scale: stripScale(false, curves),
-  })
-})
+const { candidates, marked, pick, doses: doseInputs } = useDoseBands()
+const showDoses = ref(true)
+const isDoseMeasure = computed(() => mode.value === 'weight' || mode.value === 'bmi')
+const bands = computed(() =>
+  isDoseMeasure.value ? doseBands(doseInputs.value, chart.value.points) : null,
+)
+const hasShots = computed(() => (bands.value?.shots.length ?? 0) > 0)
+const canDoses = computed(() => isDoseMeasure.value && (hasShots.value || pick.value))
+const chartDoses = computed(() =>
+  showDoses.value && hasShots.value ? (bands.value ?? undefined) : undefined,
+)
 
 const convertedUnits = computed(
   () =>
@@ -281,12 +267,7 @@ const convertedUnits = computed(
 )
 
 const hasMore = computed(
-  () =>
-    !!extras.value.lanes ||
-    (showLevels.value && panels.peptides.value.length > 0) ||
-    mode.value === 'bmi' ||
-    mode.value === 'cgm' ||
-    convertedUnits.value,
+  () => !!chartDoses.value || mode.value === 'bmi' || mode.value === 'cgm' || convertedUnits.value,
 )
 </script>
 
@@ -305,7 +286,7 @@ const hasMore = computed(
       </template>
     </v-card-item>
     <v-card-text class="pc-stack">
-      <div v-if="MEASURES.length > 1 || canPin || canPanels" class="trend-controls">
+      <div v-if="MEASURES.length > 1 || canPin || canDoses" class="trend-controls">
         <p :id="labelId" class="d-sr-only">Measure</p>
         <v-btn-toggle
           v-if="MEASURES.length > 1"
@@ -327,47 +308,29 @@ const hasMore = computed(
         >
           Photos
         </v-btn>
-        <template v-if="canPanels">
-          <v-btn
-            :prepend-icon="mdiNeedle"
-            :variant="showDoses ? 'tonal' : 'outlined'"
-            :aria-pressed="showDoses"
-            @click="showDoses = !showDoses"
-          >
-            Doses
-          </v-btn>
-          <v-btn
-            :prepend-icon="mdiChartBellCurve"
-            :variant="showLevels ? 'tonal' : 'outlined'"
-            :aria-pressed="showLevels"
-            @click="showLevels = !showLevels"
-          >
-            Levels
-          </v-btn>
-        </template>
-      </div>
-      <div v-if="(showDoses || showLevels) && panels.groups.value.length > 1">
-        <p :id="pickId" class="pc-label">Show up to {{ OVERLAY_MAX }}</p>
-        <v-chip-group
-          v-model="panels.chosen.value"
-          multiple
-          column
-          :max="OVERLAY_MAX"
-          :aria-labelledby="pickId"
+        <v-btn
+          v-if="canDoses"
+          :prepend-icon="mdiNeedle"
+          :variant="showDoses ? 'tonal' : 'outlined'"
+          :aria-pressed="showDoses"
+          @click="showDoses = !showDoses"
         >
+          Doses
+        </v-btn>
+      </div>
+      <div v-if="isDoseMeasure && showDoses && pick">
+        <p :id="pickId" class="pc-label">Doses of</p>
+        <v-chip-group v-model="marked" role="group" mandatory column :aria-labelledby="pickId">
           <v-chip
-            v-for="g in panels.groups.value"
-            :key="g.key"
-            :value="g.key"
+            v-for="c in candidates"
+            :key="c.key"
+            :value="c.key"
+            :aria-pressed="marked === c.key"
+            tag="button"
             filter
             variant="outlined"
           >
-            <span
-              v-if="panels.slots.value.has(g.key)"
-              :class="['pc-swatch', `pc-swatch--${panels.slots.value.get(g.key)! + 1}`]"
-              aria-hidden="true"
-            />
-            {{ g.label }}
+            {{ c.label }}
           </v-chip>
         </v-chip-group>
       </div>
@@ -379,14 +342,14 @@ const hasMore = computed(
         :decimals="chart.decimals"
         :guides="chart.guides"
         :photos="chartPhotos"
-        :lanes="extras.lanes"
-        :levels="extras.levels"
-        :window="extras.window"
+        :doses="chartDoses"
         @photo="openPhoto"
       />
-      <p v-if="showLevels && panels.withoutCurve.value.length" class="text-body-small pc-muted">
-        No curve for {{ panels.withoutCurve.value.join(', ') }}.
-      </p>
+      <DoseLegend
+        v-if="chartDoses?.legend.length"
+        :legend="chartDoses.legend"
+        :named="chartDoses.named"
+      />
       <p v-if="chartPhotos.length" class="text-body-small pc-muted">Tap a photo to open it.</p>
       <p v-if="mode === 'glucose' && !chart.points.length" class="text-body-small pc-muted">
         No fasting readings yet; readings from other times of day show as points.
@@ -398,27 +361,9 @@ const hasMore = computed(
         <p v-if="mode === 'cgm'" class="text-body-small pc-muted">
           One point per day from your glucose monitor: the average, and the median dashed.
         </p>
-        <p v-if="extras.lanes" class="text-body-small pc-muted">
-          Each tick is a dose. Labels show new strengths.
+        <p v-if="chartDoses" class="text-body-small pc-muted">
+          Colour shows the dose in use. Labels mark each change.
         </p>
-        <template v-if="showLevels && panels.peptides.value.length">
-          <p v-if="extras.levels" class="text-body-small pc-muted">
-            {{
-              extras.levels.scale === 'amount'
-                ? 'Estimated amount in your body, based on your doses.'
-                : "Estimated levels as a percent of each peptide's peak."
-            }}
-          </p>
-          <div v-for="src in panels.sources.value" :key="src.key" class="pc-stack pc-stack--tight">
-            <p class="text-body-small">
-              <strong>{{ src.label }}</strong>
-              <span v-if="src.userSupplied" class="pc-badge pc-badge--notice ms-2">
-                <span class="pc-badge__dot" />User-supplied values
-              </span>
-            </p>
-            <SourceList v-if="src.pk" flat :sources="src.pk.sources" />
-          </div>
-        </template>
         <template v-if="mode === 'bmi'">
           <p class="text-body-small pc-muted">
             Dashed lines are the WHO adult bands. BMI is a screening measure and doesn't tell muscle
@@ -429,13 +374,7 @@ const hasMore = computed(
         <SourceList v-if="convertedUnits" flat :sources="GLUCOSE_UNIT_SOURCES" />
       </MoreInfo>
     </v-card-text>
-    <ShareTrendDialog
-      v-model="shareOpen"
-      :measure="mode"
-      :now="now"
-      :photos="pinned"
-      :peptides="panels.peptides.value"
-    />
+    <ShareTrendDialog v-model="shareOpen" :measure="mode" :photos="pinned" :doses="doseInputs" />
     <PhotoDialog v-model="photoOpen" :photo="viewing" :prepared="null" taken-at="" />
   </v-card>
 </template>

@@ -4,30 +4,30 @@ Part of the `front-end` skill.
 
 ## Shared components
 
-| Component                                                               | Use                                                                                                                       |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `common/PresetPicker.vue`                                               | Number input as preset chips plus a Custom field; chips are buttons with `aria-pressed`                                   |
-| `common/SourceBadge.vue`                                                | Shows where a number came from (label, trial, standard, community, ...)                                                   |
-| `common/SourceList.vue`                                                 | A list of sources, each with its badge and a link                                                                         |
-| `common/ListPager.vue`, `SortToggle.vue`                                | Range caption and `v-pagination` (hidden on one page); newest or oldest first toggle                                      |
-| `common/AppLogo.vue`                                                    | The brand: mark (`src/assets/brand/pepcalc-mark.svg`, same art as `public/favicon.svg`) plus the two-tone wordmark        |
-| `common/AppSnackbar.vue`, `AppConfirm.vue`                              | Render the notify and confirm stores; mounted once in `App.vue`                                                           |
-| `common/UpdatePrompt.vue`                                               | Service-worker update and offline-ready notices                                                                           |
-| `common/DisclaimerDialog.vue`                                           | First-run research-use acknowledgement                                                                                    |
-| `calculator/SyringeGraphic.vue`                                         | SVG syringe drawn from a `SyringeSpec`; accessible label states the reading                                               |
-| `calculator/DiluentAdvisor.vue`                                         | Bottom sheet: ranks water volumes for planned doses and vial size; emits the chosen mL                                    |
-| `calculator/DrawResult.vue`                                             | Headline reading, warnings, syringe picker, readings on every syringe                                                     |
-| `charts/PkPanel.vue`                                                    | Chooses catalog or user-supplied PK, shows sources and caveats, or why no curve exists; optional `title` and `caption`    |
-| `charts/PkChart.vue`                                                    | ECharts curve: logged doses (solid) and the previewed draw (dashed), "Now" marker                                         |
-| `charts/levelsChart.ts`                                                 | The curve's model and ECharts option, shared by `PkChart` and the share card so both draw the same thing                  |
-| `charts/ShareLevelsDialog.vue`                                          | Previews the levels card (`levelsShareCard.ts`, a 1080x1350 PNG drawn on device) and shares it; name and amounts optional |
-| `report/ExportReportDialog.vue`                                         | Period and section choice, then PDF export (`useReportExport`); opened from Protocols and Journal                         |
-| `shelf/VialCard.vue`, `DrawList.vue`                                    | Shelf list and draw history                                                                                               |
-| `protocols/ProtocolCard.vue`, `ProtocolDialog.vue`, `DoseCountdown.vue` | A peptide's protocol with a countdown ring to the next dose; add or edit one (`domain/schedule.ts`)                       |
-| `shelf/VialAgeBadge.vue`, `VialAgePanel.vue`                            | Days since mixing against the use window (text, not colour alone); the window's source and storage advice                 |
-| `shelf/VialFormDialog.vue`, `LogDrawDialog.vue`                         | Edit a vial (composition, PK override), log a draw                                                                        |
-| `charts/TrendCard.vue`, `BodyChart.vue`, `bodyChart.ts`                 | A body measure over time; photo pins; dose rows and a level strip for picked peptides (`usePeptidePanels`)                |
-| `share/ShareTrendDialog.vue`                                            | Trend image; doses, levels and peptide names each opt-in, first two picked peptides                                       |
+| Component                                                                                      | Use                                                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `common/PresetPicker.vue`                                                                      | Number input as preset chips plus a Custom field; chips are buttons with `aria-pressed`                                                                                          |
+| `common/SourceBadge.vue`                                                                       | Shows where a number came from (label, trial, standard, community, ...)                                                                                                          |
+| `common/SourceList.vue`                                                                        | A list of sources, each with its badge and a link                                                                                                                                |
+| `common/ListPager.vue`, `SortToggle.vue`                                                       | Range caption and `v-pagination` (hidden on one page); newest or oldest first toggle                                                                                             |
+| `common/AppLogo.vue`                                                                           | The brand: mark (`src/assets/brand/pepcalc-mark.svg`, same art as `public/favicon.svg`) plus the two-tone wordmark                                                               |
+| `common/AppSnackbar.vue`, `AppConfirm.vue`                                                     | Render the notify and confirm stores; mounted once in `App.vue`                                                                                                                  |
+| `common/UpdatePrompt.vue`                                                                      | Service-worker update and offline-ready notices                                                                                                                                  |
+| `common/DisclaimerDialog.vue`                                                                  | First-run research-use acknowledgement                                                                                                                                           |
+| `calculator/SyringeGraphic.vue`                                                                | SVG syringe drawn from a `SyringeSpec`; accessible label states the reading                                                                                                      |
+| `calculator/DiluentAdvisor.vue`                                                                | Bottom sheet: ranks water volumes for planned doses and vial size; emits the chosen mL                                                                                           |
+| `calculator/DrawResult.vue`                                                                    | Headline reading, warnings, syringe picker, readings on every syringe                                                                                                            |
+| `charts/PkPanel.vue`                                                                           | Chooses catalog or user-supplied PK, shows sources and caveats, or why no curve exists; optional `title` and `caption`                                                           |
+| `charts/PkChart.vue`                                                                           | ECharts curve: logged doses (solid) and the previewed draw (dashed), "Now" marker                                                                                                |
+| `charts/levelsChart.ts`                                                                        | The curve's model and ECharts option, shared by `PkChart` and the share card so both draw the same thing                                                                         |
+| `charts/ShareLevelsDialog.vue`                                                                 | Previews the levels card (`levelsShareCard.ts`, a 1080x1350 PNG drawn on device) and shares it; name and amounts optional                                                        |
+| `report/ExportReportDialog.vue`                                                                | Period and section choice, then PDF export (`useReportExport`); opened from Protocols and Journal                                                                                |
+| `shelf/VialCard.vue`, `DrawList.vue`                                                           | Shelf list and draw history                                                                                                                                                      |
+| `protocols/ProtocolCard.vue`, `ProtocolDialog.vue`, `DoseCountdown.vue`                        | A peptide's protocol with a countdown ring to the next dose; add or edit one (`domain/schedule.ts`)                                                                              |
+| `shelf/VialAgeBadge.vue`, `VialAgePanel.vue`                                                   | Days since mixing against the use window (text, not colour alone); the window's source and storage advice                                                                        |
+| `shelf/VialFormDialog.vue`, `LogDrawDialog.vue`                                                | Edit a vial (composition, PK override), log a draw                                                                                                                               |
+| `charts/TrendCard.vue`, `charts/BodyChart.vue`, `charts/DoseLegend.vue`, `charts/bodyChart.ts` | A body measure over time. On weight and BMI the line takes the colour of the dose in use and a pill marks each change (`domain/doseBands.ts`); `DoseLegend` lists the strengths. |
+| `share/ShareTrendDialog.vue`                                                                   | Trend image; numbers, photos and doses each opt-in                                                                                                                               |
 
 ## Patterns
 
@@ -38,10 +38,7 @@ Part of the `front-end` skill.
 - Level curves pool every draw of a peptide across its vials (`shelf.pooledDosesFor`,
   `shelf.levelGroups`), so the calculator, vial page and Protocols agree. Protocols shows one
   `PkPanel` per peptide (small multiples), never several peptides on one axis.
-- The trend card's dose rows and level strip use the same pick and colours as the Protocols
-  overlay (`stores/levelPick.ts`). Several peptides always read as percent of peak; one peptide
-  beside a measure in real units reads in its own unit (`domain/levelStrip.ts`). Rows label only
-  a change of strength (`domain/doseLanes.ts`). Every panel shares one left edge so dates align.
+- A trend chart is one grid with one value axis. Do not add a second panel under it.
 - Share dialogs render their privacy switches compact through `ShareImageDialog`'s slot.
 - A protocol belongs to a peptide, not a vial (`sameProductKey`, as vial numbering uses): its
   last dose is the newest draw from any of the peptide's vials, and a blend is its own product.

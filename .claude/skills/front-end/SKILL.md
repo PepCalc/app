@@ -37,7 +37,8 @@ One-line rules; detail lives in `reference/`. Read a reference when its trigger 
 9. Destructive actions await `useConfirmStore().ask()`; feedback goes through
    `useNotifyStore().show()`; never a local `v-snackbar`.
 10. Every chart has a text summary (`aria-label`), and notes and sources sit under `MoreInfo`
-    below it; series identity never relies on colour alone (the preview curve is dashed).
+    below it; series identity never relies on colour alone (the preview curve is dashed). A dose is
+    told by its label and the legend's text; colour repeats it.
 11. Charts use ECharts through `echarts/core` with only the parts registered; colours come from
     `useChartColors()`, never literals.
 

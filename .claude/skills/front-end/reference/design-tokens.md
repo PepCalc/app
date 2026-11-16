@@ -30,7 +30,7 @@ cards are translucent paper with a lit top edge. Glass falls back to `--pc-surfa
 | Shadows      | `--pc-shadow-{sm,md,lg,inset}`                                                                                                   |
 | Glass        | `--pc-glass`, `--pc-glass-strong`, `--pc-glass-card`, `--pc-glass-{line,edge,sheen,shadow}`, `--pc-backdrop-{1,2}`               |
 | Syringe      | `--pc-syringe-{barrel,ink,fill,fill-deep,glint,plunger}`                                                                         |
-| Chart        | `--pc-chart-{logged,preview,grid,axis,now}`                                                                                      |
+| Chart        | `--pc-chart-{logged,preview,grid,axis,now,on-dose}`, `--pc-chart-dose-1` to `--pc-chart-dose-8`                                  |
 
 Theme-independent: `--pc-font`, `--pc-font-display`, `--pc-font-mono`, `--pc-radius-*`, `--pc-glass-blur`,
 `--pc-dur-*`, `--pc-focus-ring`, `--pc-shadow-focus`, `--pc-touch`.
@@ -52,7 +52,9 @@ Theme-independent: `--pc-font`, `--pc-font-display`, `--pc-font-mono`, `--pc-rad
 
 1. Add the token to both `.v-theme--light` and `.v-theme--dark` in `tokens.css`.
 2. If it is text, add the pair to `scripts/check-contrast.mjs`. The checker reads only solid
-   hex tokens; glass fills stay at 72% opacity or more so text keeps its contrast on them. The
+   hex tokens, verifies each `--pc-chart-dose-1` to `--pc-chart-dose-8` passes 3:1 against
+   `--pc-surface`, and verifies `--pc-chart-on-dose` passes 4.5:1 against each dose slot; glass
+   fills stay at 72% opacity or more so text keeps its contrast on them. The
    backdrop tint lowers light-mode contrast at the top left: `--pc-text-3` drops to about
    4.1:1 there, so faint text belongs inside cards, never on the bare page.
 3. Write `-webkit-backdrop-filter` before `backdrop-filter`: the CSS minifier merges the pair

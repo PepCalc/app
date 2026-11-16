@@ -12,7 +12,7 @@ src/
                  schedule (when a protocol is next due), inventory, blend, listing (paging,
                  ordering), vials (numbering, keys), vial age, body (measurements, length
                  units, BMI, WHO bands), glucose, symptoms, photos, collage and crop (photo
-                 collage), doseLanes and levelStrip (doses and levels under a trend), report
+                 collage), doseBands (dose bands and callout pills on a trend), report
                  (periods, windows, axis ticks), drawTotals (totals by unit), vitals (blood
                  pressure and heart rate), healthSync (what to import and export, matching),
                  catalog types
@@ -24,9 +24,9 @@ src/
                  peptides a chart shows), settings, healthSync (Health apps choices), notify,
                  confirm
   composables/   useCalculator, useDiluentAdvisor, useBodyMetrics, useCameraAccess,
-                 useChartColors, useInstallPrompt, useStoragePersistence, useNow, usePaging,
-                 usePeptidePanels, usePhotoPins, useVialAge, useHideOnScroll, useReportExport,
-                 useHealthAutoSync
+                 useChartColors, useDoseBands, useInstallPrompt, useStoragePersistence, useNow,
+                 usePaging, usePhotoPins, useVialAge, useHideOnScroll, useReportExport,
+                 useHealthAutoSync, useWeightSummary
   services/      time.ts (the only clock and date formatter), locale.ts (device region and
                  measurement system), fileTransfer.ts (share/download),
                  nativeFileTransfer.ts (the same through the apps' share sheet), platform.ts
