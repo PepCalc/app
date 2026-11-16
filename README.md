@@ -30,7 +30,7 @@ account, server or tracking.
 - Presets with sources: vial sizes, water volumes and doses for each peptide, each marked as
   coming from a prescribing label, a clinical trial or community reports.
 - Blends: KLOW, GLOW and custom mixes split each dose into its components.
-- Shelf: save mixed vials, log draws and see what's left.
+- Stack: save mixed vials, log draws and see what's left.
 - Level charts: an estimate of the amount remaining in the body, based on a simple model from
   published human data (semaglutide, tirzepatide, retatrutide, cagrilintide, tesamorelin). For
   other peptides you can enter your own half-life, and the chart is marked user-supplied.

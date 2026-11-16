@@ -6,10 +6,23 @@ async function openTab(page: Page, name: string) {
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
 }
 
+async function openToday(page: Page) {
+  await page.getByRole('link', { name: 'Today', exact: true }).first().click()
+  await expect(page.locator('.pc-eyebrow', { hasText: 'Today' })).toBeVisible()
+}
+
+async function openLogDialog(page: Page, kind: string, dialogTitle: string) {
+  await page.getByRole('button', { name: 'Log', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Log' })
+    .getByRole('button', { name: kind, exact: true })
+    .click()
+  return page.getByRole('dialog', { name: dialogTitle })
+}
+
 /** `when` is a datetime-local value; the default, now, is to the minute, so two quick logs tie. */
 async function logWeight(page: Page, value: string, when?: string) {
-  await page.getByRole('button', { name: 'Log weight' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Weigh-in' })
+  const dialog = await openLogDialog(page, 'Weight', 'Weigh-in')
   await dialog.getByLabel('Weight').fill(value)
   if (when) await dialog.getByLabel('When').fill(when)
   await dialog.getByRole('button', { name: 'Save' }).click()
@@ -62,10 +75,10 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('logs weight, derives BMI from the profile height, and converts units', async ({ page }) => {
-  await openTab(page, 'Journal')
   await chooseUnits(page, { weight: 'kg', height: 'cm' })
   await logWeight(page, '81.3', '2026-10-01T08:00')
-  await expect(page.getByText('Add your height in Settings to see your BMI.')).toBeVisible()
+  await openTab(page, 'Progress')
+  await expect(page.getByText('Add your height in Settings to track BMI.')).toBeVisible()
 
   await openTab(page, 'Settings')
   await page.getByRole('spinbutton', { name: 'Height' }).fill('175')
@@ -73,58 +86,57 @@ test('logs weight, derives BMI from the profile height, and converts units', asy
   await expect(page.getByText('Profile saved', { exact: true })).toBeVisible()
   await choose(page, 'Weight unit', 'Pounds')
 
-  await openTab(page, 'Journal')
-  await expect(page.getByTestId('journal-weight')).toHaveText('179.2 lb')
+  await openToday(page)
+  const weightTile = page.locator('.stat-tile', { hasText: 'Weight' })
+  const bmiTile = page.locator('.stat-tile', { hasText: 'BMI' })
+  await expect(weightTile).toContainText('179.2 lb')
   // 81.3 / 1.75² = 26.5, whatever unit the weight is shown in.
-  await expect(page.getByTestId('journal-bmi')).toContainText('26.5')
-  await expect(page.getByTestId('journal-bmi')).toContainText('Above the healthy range')
+  await expect(bmiTile).toContainText('26.5')
+  await expect(bmiTile).toContainText('Above the healthy range')
 
   await logWeight(page, '177', '2026-10-08T08:00')
-  await expect(page.getByText(/−2\.2 lb/)).toBeVisible()
+  await openTab(page, 'Progress')
+  await expect(page.locator('.stat-tile', { hasText: 'Total change' })).toContainText('−2.2 lb')
+  await page.getByRole('link', { name: /^All entries/ }).click()
   await page.getByRole('button', { name: /^Weight / }).click()
   await expect(page.getByRole('listitem').filter({ hasText: '177 lb' })).toBeVisible()
 
   await openTab(page, 'Settings')
   await choose(page, 'Weight unit', 'Kilograms')
-  await openTab(page, 'Journal')
+  await openTab(page, 'Progress')
+  await page.getByRole('link', { name: /^All entries/ }).click()
   await page.getByRole('button', { name: /^Weight / }).click()
   await expect(page.getByRole('listitem').filter({ hasText: '81.3 kg' })).toBeVisible()
 })
 
 test('logs side effects and blood sugar, in the units chosen in Settings', async ({ page }) => {
-  await openTab(page, 'Journal')
-  await page.getByRole('button', { name: 'Log side effect' }).click()
-  const effects = page.getByRole('dialog', { name: 'Side effects' })
+  const effects = await openLogDialog(page, 'Side effect', 'Side effects')
   await effects.getByRole('button', { name: 'Joint pain' }).click()
   await effects.getByRole('button', { name: 'Nausea' }).click()
   await choose(effects, 'How strong', 'Moderate')
   await effects.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Side effects logged')).toBeVisible()
-  await expect(page.getByRole('list', { name: 'Side effects this week' })).toContainText(
-    'Joint pain',
-  )
+  await expect(page.locator('.stat-tile', { hasText: 'Side effects' })).toContainText('2')
 
-  await page.getByRole('button', { name: 'Log blood sugar' }).click()
-  const sugar = page.getByRole('dialog', { name: 'Blood sugar' })
+  const sugar = await openLogDialog(page, 'Blood sugar', 'Blood sugar')
   await sugar.getByLabel('HbA1c').fill('7.2')
   await sugar.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Reading logged')).toBeVisible()
-  await expect(page.getByText('HbA1c 7.2%').first()).toBeVisible()
+  await expect(page.locator('.stat-tile', { hasText: 'HbA1c' })).toContainText('7.2%')
 
   await openTab(page, 'Settings')
   await choose(page, 'HbA1c unit', 'mmol/mol')
-  await openTab(page, 'Journal')
-  await expect(page.getByText('HbA1c 55 mmol/mol').first()).toBeVisible()
+  await openToday(page)
+  await expect(page.locator('.stat-tile', { hasText: 'HbA1c' })).toContainText('55 mmol/mol')
 
+  await openTab(page, 'Progress')
+  await page.getByRole('link', { name: /^All entries/ }).click()
   await page.getByRole('button', { name: /^Side effects / }).click()
-  // The entry's title alone; the week's badge reads "Joint pain × 1".
   await expect(page.getByText('Joint pain', { exact: true })).toBeVisible()
 })
 
 test('logs blood pressure and heart rate, charts them and lists them', async ({ page }) => {
-  await openTab(page, 'Journal')
-  await page.getByRole('button', { name: 'Log vitals' }).click()
-  const vitals = page.getByRole('dialog', { name: 'Vitals' })
+  const vitals = await openLogDialog(page, 'Vitals', 'Vitals')
   await vitals.getByLabel('Systolic').fill('82')
   await vitals.getByLabel('Diastolic').fill('90')
   await expect(vitals.getByText('Lower than systolic')).toBeVisible()
@@ -135,27 +147,29 @@ test('logs blood pressure and heart rate, charts them and lists them', async ({ 
   await expect(page.getByText('Reading logged')).toBeVisible()
   await expect(page.getByText('128/82 mmHg', { exact: true }).first()).toBeVisible()
 
-  await page.getByRole('button', { name: 'Log vitals' }).click()
+  await openLogDialog(page, 'Vitals', 'Vitals')
   await choose(vitals, 'Reading', 'Heart rate')
   await vitals.getByLabel('Resting heart rate').fill('64')
   await vitals.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Reading logged')).toBeVisible()
 
+  await openTab(page, 'Progress')
   await choose(page, 'Measure', 'Blood pressure')
   await expect(page.getByRole('img', { name: /^Systolic from 128 mmHg/ })).toBeVisible()
   await page.getByRole('button', { name: 'Share blood pressure as an image' }).click()
   await expect(page.getByRole('dialog', { name: 'Share as an image' })).toBeVisible()
   await page.keyboard.press('Escape')
 
+  await page.getByRole('link', { name: /^All entries/ }).click()
   await page.getByRole('button', { name: /^Vitals / }).click()
   await expect(page.getByRole('listitem').filter({ hasText: '128/82 mmHg' })).toBeVisible()
   await expect(page.getByRole('listitem').filter({ hasText: '64 bpm' })).toBeVisible()
 })
 
 test('shares a weight trend as an image without revealing the weight', async ({ page }) => {
-  await openTab(page, 'Journal')
   await logWeight(page, '100', '2026-10-01T08:00')
   await logWeight(page, '98', '2026-10-08T08:00')
+  await openTab(page, 'Progress')
 
   await page.getByRole('button', { name: 'Share weight as an image' }).click()
   const share = page.getByRole('dialog', { name: 'Share as an image' })
@@ -169,8 +183,8 @@ test('shares a weight trend as an image without revealing the weight', async ({ 
 test('saves photos, pins them to the weight line, shares a collage, and backs them up', async ({
   page,
 }) => {
-  await openTab(page, 'Journal')
   await logWeight(page, '100')
+  await openTab(page, 'Progress')
   const png = await makePng(page)
   for (const name of ['one.png', 'two.png', 'three.png']) await addPhoto(page, png, name)
   await expect(page.getByRole('button', { name: /^Front photo from / })).toHaveCount(3)
@@ -207,7 +221,7 @@ test('saves photos, pins them to the weight line, shares a collage, and backs th
   expect(backup.suggestedFilename()).toMatch(/^pepcalc-backup-\d{4}-\d{2}-\d{2}\.zip$/)
 
   // Change the data, then restore: the backup's three photos and weigh-in come back.
-  await openTab(page, 'Journal')
+  await openTab(page, 'Progress')
   await page
     .getByRole('button', { name: /^Front photo from / })
     .first()
@@ -221,21 +235,21 @@ test('saves photos, pins them to the weight line, shares a collage, and backs th
   await page.getByLabel('Backup file').setInputFiles((await backup.path())!)
   await page.getByRole('dialog').getByRole('button', { name: 'Restore backup' }).click()
   await expect(page.getByText('Backup restored')).toBeVisible()
-  await openTab(page, 'Journal')
+  await openTab(page, 'Progress')
   await expect(page.getByRole('button', { name: /^Front photo from / })).toHaveCount(3)
-  await expect(page.getByTestId('journal-weight')).toHaveText('100 lb')
+  await openToday(page)
+  await expect(page.locator('.stat-tile', { hasText: 'Weight' })).toContainText('100 lb')
 })
 
 test('exports the journal as a PDF with only the chosen parts', async ({ page }) => {
-  await openTab(page, 'Journal')
   await logWeight(page, '92', '2026-10-01T08:00')
   await logWeight(page, '90.5', '2026-10-08T08:00')
-  await page.getByRole('button', { name: 'Log side effect' }).click()
-  const effects = page.getByRole('dialog', { name: 'Side effects' })
+  const effects = await openLogDialog(page, 'Side effect', 'Side effects')
   await effects.getByRole('button', { name: 'Nausea' }).click()
   await effects.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByRole('list', { name: 'Side effects this week' })).toContainText('Nausea')
+  await expect(page.locator('.stat-tile', { hasText: 'Side effects' })).toContainText('1')
 
+  await openTab(page, 'Progress')
   await page.getByRole('button', { name: 'Export PDF' }).click()
   const report = page.getByRole('dialog', { name: 'Export report' })
   await choose(report, 'Period', 'All')
@@ -256,7 +270,7 @@ test('exports the journal as a PDF with only the chosen parts', async ({ page })
 })
 
 test('two photos in different poses still make a collage', async ({ page }) => {
-  await openTab(page, 'Journal')
+  await openTab(page, 'Progress')
   const png = await makePng(page)
   await addPhoto(page, png, 'front.png')
   await page
@@ -294,7 +308,7 @@ test('two photos in different poses still make a collage', async ({ page }) => {
 })
 
 test('crops a new photo before saving it', async ({ page }) => {
-  await openTab(page, 'Journal')
+  await openTab(page, 'Progress')
   const png = await makePng(page)
   await page
     .locator('input[type="file"][aria-label="Choose a photo"]')

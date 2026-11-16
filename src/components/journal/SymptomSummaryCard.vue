@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
+import { brand } from '@/brand'
 import {
   SEVERITIES,
   SEVERITY_LABELS,
@@ -9,18 +10,16 @@ import {
 } from '@/domain/symptoms'
 import { roundTo } from '@/domain/units'
 import { useJournalStore } from '@/stores/journal'
-import { useShelfStore } from '@/stores/shelf'
 import { formatDate, toEpochMs } from '@/services/time'
 import SourceList from '@/components/common/SourceList.vue'
 
 /**
  * Side effects over a chosen period: how often each came, how strong, when last, and how many
- * days after a draw (of any peptide) it usually arrived.
+ * days after a dose or draw it usually arrived.
  */
-const props = defineProps<{ now: number }>()
+const props = defineProps<{ now: number; doseTimes: readonly number[] }>()
 
 const journal = useJournalStore()
-const shelf = useShelfStore()
 const periodLabelId = useId()
 
 const PERIODS = [
@@ -34,7 +33,7 @@ const since = computed(() => (period.value ? props.now - period.value * 86_400_0
 const summary = computed(() =>
   summarizeSymptoms(
     journal.symptoms.map((s) => ({ ...s, at: toEpochMs(s.occurredAt) })),
-    shelf.draws.map((d) => toEpochMs(d.takenAt)),
+    props.doseTimes,
     since.value,
   ),
 )
@@ -46,9 +45,11 @@ function severityText(s: SymptomSummary): string {
 }
 
 function timingText(s: SymptomSummary): string {
-  if (s.medianDaysAfterDose === null) return 'Before any draw'
+  if (s.medianDaysAfterDose === null) return `Before any ${brand.doseNoun}`
   const days = roundTo(s.medianDaysAfterDose, 1)
-  return days < 1 ? 'Same day as a draw' : `About ${days} day${days === 1 ? '' : 's'} after a draw`
+  return days < 1
+    ? `Same day as a ${brand.doseNoun}`
+    : `About ${days} day${days === 1 ? '' : 's'} after a ${brand.doseNoun}`
 }
 </script>
 
@@ -94,10 +95,7 @@ function timingText(s: SymptomSummary): string {
         </tbody>
       </v-table>
       <p v-else class="pc-muted">Nothing logged in this period.</p>
-      <SourceList
-        :sources="SYMPTOM_SOURCES"
-        note="From the approved peptides’ label trials. Timing is from the last draw of any peptide."
-      />
+      <SourceList :sources="SYMPTOM_SOURCES" :note="brand.symptomSourceNote" />
     </v-card-text>
   </v-card>
 </template>

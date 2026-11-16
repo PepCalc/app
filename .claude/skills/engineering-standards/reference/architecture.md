@@ -12,7 +12,8 @@ src/
                  schedule (when a protocol is next due), inventory, blend, listing (paging,
                  ordering), vials (numbering, keys), vial age, body (measurements, length
                  units, BMI, WHO bands), glucose, symptoms, photos, collage and crop (photo
-                 collage), doseBands (dose bands and callout pills on a trend), report
+                 collage), doseBands (dose bands and callout pills on a trend), progressStats
+                 (headline weight change and weekly rate), range (chart window ranges), report
                  (periods, windows, axis ticks), drawTotals (totals by unit), vitals (blood
                  pressure and heart rate), healthSync (what to import and export, matching),
                  entries, entryText, due (due-card sorting), catalog types
@@ -37,7 +38,7 @@ src/
                  loaded only in the apps; runSync, the sync loop)
   components/    calculator/, charts/, common/, journal/, photos/, protocols/, report/,
                  share/, shelf/, today/ (DueCard, SystemList)
-  views/         one per route: Today, Stack, Peptide, Levels, Vial, Calculator, Journal, Settings, Health
+  views/         one per route: Today, Stack, Peptide, Levels, Vial, Calculator, Progress, Entries, Settings, Health
                  (apps only)
   plugins/       vuetify.ts (themes, defaults), icons.ts (inline SVG icons), fonts.ts
   styles/        tokens.css (design tokens), theme.css (global and Vuetify overrides)
@@ -146,7 +147,8 @@ measurement system. iOS is built and uploaded only by `.github/workflows/ios.yml
 - Base path comes from `PEPCALC_BASE` (default `/app/`): the app is the `PepCalc/app`
   repository, served by Pages at `/app/` beside the website at the root. The router uses hash history so
   every URL resolves to `index.html` on GitHub Pages and offline. `/` opens `Today` (redirecting `/?vial=` and `/?peptide=` to `/calculator`), and `/calculator` opens the calculator. Legacy routes (`/shelf`,
-  `/shelf/:id`, `/protocols`, `/history`) redirect permanently to `/stack` and `/stack/vial/:id`.
+  `/shelf/:id`, `/protocols`, `/history`) redirect permanently to `/stack` and `/stack/vial/:id`;
+  `/journal` redirects permanently to `/progress`, and `/progress/entries` holds the entries timeline.
 - A production-only meta CSP (`default-src 'self'`) is injected by `vite.config.ts`, because
   GitHub Pages cannot set headers. Styles need `'unsafe-inline'` for Vuetify's theme tag.
 

@@ -90,19 +90,25 @@ const option = computed(() =>
   ),
 )
 
+function inWindow<T extends { at: number }>(list: readonly T[]): T[] {
+  const w = window.value
+  return w ? list.filter((item) => item.at >= w.start && item.at <= w.end) : [...list]
+}
+
 const ariaSummary = computed(() => {
-  const pts = props.points
+  const pts = inWindow(props.points)
   if (!pts.length) return `${props.measure}: no entries yet.`
   const first = pts[0]!
   const last = pts[pts.length - 1]!
-  const second = props.secondary?.joined ? props.secondary.points : []
+  const second = props.secondary?.joined ? inWindow(props.secondary.points) : []
   const secondary = second.length
     ? ` ${props.secondary!.name} from ${fmt(second[0]!.value)} to ${fmt(second[second.length - 1]!.value)}.`
     : ''
-  const photos = props.photos?.length
-    ? ` ${props.photos.length} progress photo${props.photos.length === 1 ? '' : 's'} pinned to the line.`
+  const visiblePhotos = inWindow(props.photos ?? [])
+  const photos = visiblePhotos.length
+    ? ` ${visiblePhotos.length} progress photo${visiblePhotos.length === 1 ? '' : 's'} pinned to the line.`
     : ''
-  const changed = props.doses?.shots.filter((s) => s.changed) ?? []
+  const changed = inWindow(props.doses?.shots ?? []).filter((s) => s.changed)
   const doses = changed.length
     ? ` Doses by date: ${changed
         .map(

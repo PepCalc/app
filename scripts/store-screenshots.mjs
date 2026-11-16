@@ -121,8 +121,8 @@ const SHOTS = [
   {
     scheme: 'dark',
     show: async (page) => {
-      await openTab(page, 'Journal')
-      await page.getByText('Weight', { exact: true }).first().waitFor()
+      await openTab(page, 'Progress')
+      await page.getByText('Total change').waitFor()
     },
   },
 ]

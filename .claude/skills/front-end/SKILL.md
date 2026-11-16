@@ -60,4 +60,10 @@ One-line rules; detail lives in `reference/`. Read a reference when its trigger 
 
 Every chart, list and action has one home; other screens link to it. The estimated-level chart lives on the medicine's page. A preview inside an editor may repeat a chart only to show a value that is not saved yet, and stays folded until asked for.
 
-- **Today:** Doses due with a countdown and one-tap log, "In your system", latest readings, recent entries.
+| Screen     | Holds                                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
+| Today      | Doses due with a countdown and one-tap log, "In your system", latest readings, recent entries                 |
+| Stack      | One row per medicine. Its page: schedule, reminder, the level chart, its doses, its vials                     |
+| Calculator | Mix, draw, save a vial                                                                                        |
+| Progress   | One trend chart with range chips and dose callouts, stat tiles, photos, side effects, All entries, Export PDF |
+| Settings   | Profile, units, health apps, backup, install, about                                                           |

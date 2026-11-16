@@ -21,8 +21,8 @@ import {
   mdiBookshelf,
   mdiCalculatorVariantOutline,
   mdiCellphoneArrowDown,
+  mdiChartLine,
   mdiCogOutline,
-  mdiNotebookOutline,
   mdiWaves,
 } from '@/plugins/icons'
 
@@ -43,18 +43,19 @@ const NAV = [
   { name: 'today', title: 'Today', icon: mdiWaves },
   { name: 'stack', title: 'Stack', icon: mdiBookshelf },
   { name: 'calculator', title: 'Calculator', icon: mdiCalculatorVariantOutline },
-  { name: 'journal', title: 'Journal', icon: mdiNotebookOutline },
+  { name: 'progress', title: 'Progress', icon: mdiChartLine },
   { name: 'settings', title: 'Settings', icon: mdiCogOutline },
 ] as const
 
 // Phones get bottom navigation within thumb reach; tablets and desktops a side rail.
 const wide = computed(() => display.mdAndUp.value)
 
-// A page under a tab keeps that tab lit: vials, peptides and compare levels under Stack, Health apps under Settings.
+// A page under a tab keeps that tab lit: vials, peptides and compare levels under Stack, entries under Progress, Health apps under Settings.
 const UNDER: Record<string, string> = {
   vial: 'stack',
   peptide: 'stack',
   levels: 'stack',
+  entries: 'progress',
   health: 'settings',
 }
 const activeNav = computed(() => {

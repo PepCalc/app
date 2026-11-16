@@ -48,4 +48,15 @@ describe('router redirects and resolution', () => {
     await router.push('/calculator')
     expect(router.currentRoute.value.name).toBe('calculator')
   })
+
+  it('redirects /journal to progress and resolves /progress/entries to entries', async () => {
+    const router = createAppRouter(createMemoryHistory())
+
+    await router.push('/journal')
+    expect(router.currentRoute.value.name).toBe('progress')
+    expect(router.currentRoute.value.fullPath).toBe('/progress')
+
+    await router.push('/progress/entries')
+    expect(router.currentRoute.value.name).toBe('entries')
+  })
 })

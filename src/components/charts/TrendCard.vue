@@ -11,10 +11,12 @@ import {
 } from '@/domain/glucose'
 import { fromKg } from '@/domain/bodyUnits'
 import { spreadEvenly, valueAt } from '@/domain/photos'
+import { rangeWindow, usefulRanges, type Range } from '@/domain/range'
 import { useJournalStore } from '@/stores/journal'
 import { usePhotosStore } from '@/stores/photos'
 import { useChartColors } from '@/composables/useChartColors'
 import { useDoseBands } from '@/composables/useDoseBands'
+import { useNow } from '@/composables/useNow'
 import { usePhotoPins } from '@/composables/usePhotoPins'
 import { useWeightSummary } from '@/composables/useWeightSummary'
 import { useLogStore } from '@/stores/log'
@@ -41,8 +43,10 @@ type TrendMeasure = 'weight' | 'bmi' | 'a1c' | 'glucose' | 'cgm' | 'bp' | 'hr'
 const journal = useJournalStore()
 const settings = useSettingsStore()
 const body = useBodyMetrics()
+const now = useNow()
 const { goalKg } = useWeightSummary()
 const labelId = useId()
+const rangeLabelId = useId()
 const pickId = useId()
 const shareOpen = ref(false)
 
@@ -264,6 +268,55 @@ const convertedUnits = computed(
 const hasMore = computed(
   () => !!chartDoses.value || mode.value === 'bmi' || mode.value === 'cgm' || convertedUnits.value,
 )
+
+const range = ref<Range | null>('All')
+const chartWindow = ref<{ start: number; end: number } | null>(null)
+
+const firstAt = computed(() => {
+  const a = chart.value.points[0]?.at
+  const b = chart.value.secondary?.points[0]?.at
+  if (a !== undefined && b !== undefined) return Math.min(a, b)
+  return a ?? b ?? null
+})
+const ranges = computed(() => usefulRanges(firstAt.value, now.value))
+
+watch(mode, () => {
+  range.value = 'All'
+  chartWindow.value = null
+})
+
+watch(now, (t) => {
+  if (range.value) chartWindow.value = rangeWindow(range.value, t)
+})
+
+function selectRange(next: Range | null | undefined) {
+  if (!next) return
+  range.value = next
+  chartWindow.value = rangeWindow(next, now.value)
+}
+
+function onWindowUpdate(next: { start: number; end: number } | null) {
+  chartWindow.value = next
+  if (range.value === null) return
+  const current = rangeWindow(range.value, now.value)
+  const same =
+    next === null && current === null
+      ? true
+      : next !== null &&
+        current !== null &&
+        next.start === current.start &&
+        next.end === current.end
+  if (!same) range.value = null
+}
+
+const nothingInRange = computed(() => {
+  const w = chartWindow.value
+  if (!w) return false
+  const inRange = (p: { at: number }) => p.at >= w.start && p.at <= w.end
+  return (
+    !chart.value.points.some(inRange) && !(chart.value.secondary?.points.some(inRange) ?? false)
+  )
+})
 </script>
 
 <template>
@@ -281,10 +334,9 @@ const hasMore = computed(
       </template>
     </v-card-item>
     <v-card-text class="pc-stack">
-      <div v-if="MEASURES.length > 1 || canPin || canDoses" class="trend-controls">
+      <div v-if="MEASURES.length > 1" class="trend-controls">
         <p :id="labelId" class="d-sr-only">Measure</p>
         <v-btn-toggle
-          v-if="MEASURES.length > 1"
           v-model="mode"
           role="group"
           mandatory
@@ -294,24 +346,44 @@ const hasMore = computed(
         >
           <v-btn v-for="m in MEASURES" :key="m.value" :value="m.value">{{ m.label }}</v-btn>
         </v-btn-toggle>
-        <v-btn
-          v-if="canPin"
-          :prepend-icon="mdiImageOutline"
-          :variant="showPhotos ? 'tonal' : 'outlined'"
-          :aria-pressed="showPhotos"
-          @click="showPhotos = !showPhotos"
-        >
-          Photos
-        </v-btn>
-        <v-btn
-          v-if="canDoses"
-          :prepend-icon="mdiNeedle"
-          :variant="showDoses ? 'tonal' : 'outlined'"
-          :aria-pressed="showDoses"
-          @click="showDoses = !showDoses"
-        >
-          Doses
-        </v-btn>
+      </div>
+      <div v-if="ranges.length > 1 || canPin || canDoses" class="trend-controls trend-range-row">
+        <div v-if="ranges.length > 1" class="trend-range">
+          <p :id="rangeLabelId" class="d-sr-only">Range</p>
+          <v-btn-toggle
+            :model-value="range"
+            role="group"
+            mandatory
+            density="comfortable"
+            :aria-labelledby="rangeLabelId"
+            class="pc-toggle-wrap"
+            @update:model-value="selectRange"
+          >
+            <v-btn v-for="r in ranges" :key="r" :value="r" :aria-pressed="range === r">
+              {{ r }}
+            </v-btn>
+          </v-btn-toggle>
+        </div>
+        <div v-if="canPin || canDoses" class="trend-toggles">
+          <v-btn
+            v-if="canPin"
+            :prepend-icon="mdiImageOutline"
+            :variant="showPhotos ? 'tonal' : 'outlined'"
+            :aria-pressed="showPhotos"
+            @click="showPhotos = !showPhotos"
+          >
+            Photos
+          </v-btn>
+          <v-btn
+            v-if="canDoses"
+            :prepend-icon="mdiNeedle"
+            :variant="showDoses ? 'tonal' : 'outlined'"
+            :aria-pressed="showDoses"
+            @click="showDoses = !showDoses"
+          >
+            Doses
+          </v-btn>
+        </div>
       </div>
       <div v-if="isDoseMeasure && showDoses && pick">
         <p :id="pickId" class="pc-label">Doses of</p>
@@ -338,6 +410,8 @@ const hasMore = computed(
         :guides="chart.guides"
         :photos="chartPhotos"
         :doses="chartDoses"
+        :window="chartWindow"
+        @update:window="onWindowUpdate"
         @photo="openPhoto"
       />
       <DoseLegend
@@ -345,6 +419,7 @@ const hasMore = computed(
         :legend="chartDoses.legend"
         :named="chartDoses.named"
       />
+      <p v-if="nothingInRange" class="text-body-small pc-muted">Nothing in this range.</p>
       <p v-if="chartPhotos.length" class="text-body-small pc-muted">Tap a photo to open it.</p>
       <p v-if="mode === 'glucose' && !chart.points.length" class="text-body-small pc-muted">
         No fasting readings yet; readings from other times of day show as points.
@@ -379,5 +454,17 @@ const hasMore = computed(
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
+}
+
+.trend-range-row {
+  justify-content: space-between;
+}
+
+.trend-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-inline-start: auto;
 }
 </style>

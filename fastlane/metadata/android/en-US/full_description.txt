@@ -6,9 +6,9 @@ PepCalc is a private, offline calculator for reconstituting peptide vials and re
 <li>Mixing advisor: enter the doses you plan to draw and your vial size, and PepCalc ranks water volumes so every dose fits one syringe and lands on a mark.</li>
 <li>Presets with sources: vial sizes, water volumes and doses for each peptide, each marked as coming from a prescribing label, a clinical trial or community reports.</li>
 <li>Blends: KLOW, GLOW and custom mixes split each dose into its components.</li>
-<li>Shelf: save mixed vials, log draws and see what is left.</li>
+<li>Stack: save mixed vials, log draws and see what is left.</li>
 <li>Level charts: an estimate of the amount remaining in the body from a simple model of published human data, or from a half-life you enter yourself, clearly marked as yours.</li>
-<li>Journal: weight and body measurements, side effects, blood sugar, blood pressure, resting heart rate and progress photos that only you can see.</li>
+<li>Progress: weight, BMI, side effects, blood sugar, blood pressure, resting heart rate and progress photos that only you can see.</li>
 <li>Share a level chart as an image, or export a PDF report, both made on the device.</li>
 <li>Turn on Health Connect sync for weight, glucose, blood pressure and heart rate.</li>
 </ul>

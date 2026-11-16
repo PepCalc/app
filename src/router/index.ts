@@ -53,11 +53,18 @@ const routes: RouteRecordRaw[] = [
   { path: '/protocols', redirect: '/stack' },
   { path: '/history', redirect: '/stack' },
   {
-    path: '/journal',
-    name: 'journal',
-    component: () => import('@/views/JournalView.vue'),
-    meta: { title: 'Journal' },
+    path: '/progress',
+    name: 'progress',
+    component: () => import('@/views/ProgressView.vue'),
+    meta: { title: 'Progress' },
   },
+  {
+    path: '/progress/entries',
+    name: 'entries',
+    component: () => import('@/views/EntriesView.vue'),
+    meta: { title: 'All entries' },
+  },
+  { path: '/journal', redirect: { name: 'progress' } },
   {
     path: '/settings',
     name: 'settings',

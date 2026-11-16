@@ -97,7 +97,7 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
   await page.getByRole('button', { name: 'Oldest first' }).click()
   await expect(page.getByText('1–10 of 11 entries')).toBeVisible()
 
-  await page.goto('./#/journal')
+  await page.goto('./#/progress/entries')
   await expect(page.getByText('1–10 of 11 entries')).toBeVisible()
   await expect(page.getByText('0.25 mg Semaglutide #2')).toHaveCount(10)
 })
@@ -140,7 +140,7 @@ test('sets a protocol, counts down to the next dose, and filters draws by peptid
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Due in 12 hours')).toBeVisible()
 
-  await page.goto('./#/journal')
+  await page.goto('./#/progress/entries')
   await page.getByRole('button', { name: /^Draws / }).click()
   await expect(page.getByText('0.25 mg Semaglutide')).toBeVisible()
   await expect(page.getByText('250 mcg BPC-157')).toBeVisible()
@@ -292,13 +292,17 @@ test("marks one peptide's doses on the weight line and switches peptide", async 
   await tirzDraw.getByRole('button', { name: 'Log draw' }).click()
   await expect(tirzDraw).toBeHidden()
 
-  await page.goto('./#/journal')
+  await page.goto('./#/progress')
   for (const [when, weight] of [
     ['2026-06-01T08:00', '92'],
     ['2026-06-22T08:00', '88'],
   ] as const) {
-    await page.getByRole('button', { name: 'Log weight' }).first().click()
-    const dialog = page.getByRole('dialog')
+    await page.getByRole('button', { name: 'Log', exact: true }).click()
+    await page
+      .getByRole('dialog', { name: 'Log' })
+      .getByRole('button', { name: 'Weight', exact: true })
+      .click()
+    const dialog = page.getByRole('dialog', { name: 'Weigh-in' })
     await dialog.getByLabel('Weight').fill(weight)
     await dialog.getByLabel('When').fill(when)
     await dialog.getByRole('button', { name: 'Save' }).click()
@@ -472,7 +476,7 @@ test('the top bar scrolls away when reading and returns on scrolling up', async 
 })
 
 test('in a browser, Take a photo opens the file chooser from the tap itself', async ({ page }) => {
-  await page.goto('./#/journal')
+  await page.goto('./#/progress')
   await acceptDisclaimer(page)
   const chooser = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Take a photo' }).click()
@@ -622,7 +626,7 @@ test('exports draws and estimated levels as a PDF, offline', async ({
 
   // The PDF writer is a lazily loaded chunk; it must come from the precache.
   await context.setOffline(true)
-  await page.getByRole('link', { name: 'Journal', exact: true }).first().click()
+  await page.getByRole('link', { name: 'Progress', exact: true }).first().click()
   await page.getByRole('button', { name: 'Export PDF' }).click()
   await page.getByRole('group', { name: 'Period' }).getByRole('button', { name: '30 days' }).click()
   const download = page.waitForEvent('download')

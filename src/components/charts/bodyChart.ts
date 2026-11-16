@@ -157,7 +157,9 @@ export function bodyChartOption(
       {
         type: 'inside',
         filterMode: 'none',
-        ...(props.window ? { startValue: props.window.start, endValue: props.window.end } : {}),
+        ...(props.window
+          ? { startValue: props.window.start, endValue: props.window.end }
+          : { start: 0, end: 100 }),
       },
     ],
     ...(bands.length

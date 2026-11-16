@@ -53,6 +53,11 @@ export function formatWeightChange(deltaKg: number, unit: WeightUnit): string {
   return signed(fromKg(deltaKg, unit), (size) => `${size} ${unit}`, `0 ${unit}`)
 }
 
+/** A signed weekly rate in the active weight unit; the tile label supplies "weekly". */
+export function formatWeeklyChange(kgPerWeek: number, unit: WeightUnit): string {
+  return formatWeightChange(kgPerWeek, unit)
+}
+
 function signed(value: number, format: (size: number) => string, zero: string): string {
   const size = roundTo(Math.abs(value), 1)
   if (size === 0) return zero

@@ -20,3 +20,9 @@ The e2e suite covers only the web build. Run these checks on a phone before a re
 4. iPhone, region United Kingdom, new install: kg, ft in, mmol/L.
 5. Update over an existing install in any region: units unchanged.
 6. Airplane mode, new install: units still follow the region.
+
+## Navigation
+
+1. Every tab opens: Today, Stack, Calculator, Progress, Settings.
+2. On Android, pressing the system back button from a peptide page returns to Stack, and from All entries returns to Progress.
+3. The floating Log button clears the Android gesture bar cleanly at the bottom of every tab.

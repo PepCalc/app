@@ -17,9 +17,10 @@ test.describe('en-US default units', () => {
     await openUnitsScreen(page)
     await expect(page.getByText('Units: lb, ft in.')).toBeVisible()
 
+    await page.getByRole('button', { name: 'Log', exact: true }).click()
     await page
-      .getByRole('button', { name: /^Log (a )?weight$/ })
-      .first()
+      .getByRole('dialog', { name: 'Log' })
+      .getByRole('button', { name: 'Weight', exact: true })
       .click()
     const weighIn = page.getByRole('dialog', { name: 'Weigh-in' })
     await expect(weighIn.getByText('lb', { exact: true })).toBeVisible()

@@ -2,11 +2,17 @@ import { expect, type Page } from '@playwright/test'
 
 export const DISCLAIMER_TITLE = 'For research and education only'
 export const UNITS_CARD_TITLE = 'Units'
-export const TIMELINE_HASH = 'journal'
+export const TIMELINE_HASH = 'progress/entries'
+export const LEGACY_PROGRESS_ROUTE = { hash: 'journal', heading: 'Progress' } as const
+export const EXPORT_DIALOG = {
+  title: 'Export report',
+  submit: 'Export PDF',
+  filePrefix: 'pepcalc-report-',
+} as const
 export const EMPTY_TODAY_TITLE = 'Mix your first vial'
 export const TODAY_LOG_BUTTON = 'Log a draw'
 export const SYSTEM_LABEL = 'Semaglutide'
-export const TILE_TARGET = { heading: 'Journal', url: /#\/journal/ } as const
+export const TILE_TARGET = { heading: 'Progress', url: /#\/progress/ } as const
 
 export const DOSE_KIND = {
   row: 'Draw',
@@ -16,9 +22,7 @@ export const DOSE_KIND = {
 } as const
 
 /** Opens the screen whose empty state shows the active body-unit summary. */
-export async function openUnitsScreen(page: Page) {
-  await page.getByRole('link', { name: 'Journal', exact: true }).first().click()
-}
+export async function openUnitsScreen(_page: Page) {}
 
 /** Ensures a vial exists so Log -> Draw can be logged from the first screen. */
 export async function prepareDoseTarget(page: Page) {

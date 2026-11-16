@@ -86,7 +86,7 @@ const latestTiles: ComputedRef<TileItem[]> = computed(() => {
         journal.weights.length > 1 && change
           ? formatWeightChange(change.changeKg, settings.weightUnit)
           : formatDate(w.measuredAt),
-      to: { name: 'journal' },
+      to: { name: 'progress' },
     })
   }
   if (body.currentBmi.value !== null) {
@@ -95,7 +95,7 @@ const latestTiles: ComputedRef<TileItem[]> = computed(() => {
       label: 'BMI',
       value: String(roundTo(body.currentBmi.value, 1)),
       note: body.band.value?.label,
-      to: { name: 'journal' },
+      to: { name: 'progress' },
     })
   }
   const latestA1c = journal.glucose.find((g) => g.kind === 'a1c')
@@ -105,7 +105,7 @@ const latestTiles: ComputedRef<TileItem[]> = computed(() => {
       label: 'HbA1c',
       value: formatA1c(latestA1c.value, settings.a1cUnit),
       note: formatDate(latestA1c.measuredAt),
-      to: { name: 'journal' },
+      to: { name: 'progress' },
     })
   }
   const latestGlucose = journal.glucose.find((g) => g.kind === 'glucose' || g.kind === 'daily')
@@ -118,7 +118,7 @@ const latestTiles: ComputedRef<TileItem[]> = computed(() => {
         latestGlucose.kind === 'glucose'
           ? GLUCOSE_CONTEXT_LABELS[latestGlucose.context]
           : formatDate(latestGlucose.measuredAt),
-      to: { name: 'journal' },
+      to: { name: 'progress' },
     })
   }
   const latestBp = journal.vitals.find((v) => v.kind === 'bp')
@@ -128,7 +128,7 @@ const latestTiles: ComputedRef<TileItem[]> = computed(() => {
       label: 'BP',
       value: formatBloodPressure(latestBp.systolic, latestBp.diastolic),
       note: formatDate(latestBp.measuredAt),
-      to: { name: 'journal' },
+      to: { name: 'progress' },
     })
   }
   const latestHr = journal.vitals.find((v) => v.kind === 'hr')
@@ -138,7 +138,7 @@ const latestTiles: ComputedRef<TileItem[]> = computed(() => {
       label: 'Heart rate',
       value: formatHeartRate(latestHr.bpm),
       note: formatDate(latestHr.measuredAt),
-      to: { name: 'journal' },
+      to: { name: 'progress' },
     })
   }
   const recentSymptoms = summarizeSymptoms(
@@ -153,7 +153,7 @@ const latestTiles: ComputedRef<TileItem[]> = computed(() => {
       label: 'Side effects',
       value: String(symptomTotal),
       note: `${recentSymptoms[0].name} · 7 d`,
-      to: { name: 'journal', hash: '#effects-heading' },
+      to: { name: 'progress', hash: '#side-effects' },
     })
   }
   return tiles
@@ -301,11 +301,7 @@ const hasSections = computed(
           <v-card-text class="pc-stack pc-stack--tight">
             <EntriesTimeline :entries="entries" compact :limit="5" />
             <div>
-              <v-btn
-                variant="text"
-                :to="{ name: 'journal', hash: '#entries-heading' }"
-                :append-icon="mdiChevronRight"
-              >
+              <v-btn variant="text" :to="{ name: 'entries' }" :append-icon="mdiChevronRight">
                 All entries
               </v-btn>
             </div>

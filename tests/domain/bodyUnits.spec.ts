@@ -4,6 +4,7 @@ import {
   feetInchesToCm,
   formatHeight,
   formatPercentChange,
+  formatWeeklyChange,
   formatWeight,
   formatWeightChange,
   fromKg,
@@ -24,6 +25,9 @@ describe('weight units', () => {
     expect(formatWeightChange(0.4, 'kg')).toBe('+0.4 kg')
     expect(formatWeightChange(0.01, 'kg')).toBe('0 kg')
     expect(formatPercentChange(-14.94)).toBe('−14.9%')
+    expect(formatWeeklyChange(-0.6, 'kg')).toBe('−0.6 kg')
+    expect(formatWeeklyChange(-1, 'lb')).toBe('−2.2 lb')
+    expect(formatWeeklyChange(0, 'kg')).toBe('0 kg')
   })
 })
 
