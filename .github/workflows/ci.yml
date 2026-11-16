@@ -47,6 +47,23 @@ jobs:
         with:
           repository: Gliplog/app
           path: glpcalc/app
+      - name: Match sibling branch when present
+        working-directory: glpcalc/app
+        env:
+          CANDIDATES: |
+            ${{ github.head_ref }}
+            ${{ github.base_ref }}
+            ${{ github.event_name != 'pull_request' && github.ref_name || '' }}
+        run: |
+          while IFS= read -r ref; do
+            [ -n "$ref" ] || continue
+            if git ls-remote --exit-code origin "refs/heads/$ref" >/dev/null 2>&1; then
+              git fetch --no-tags --depth=1 origin "refs/heads/$ref"
+              git checkout -B "$ref" FETCH_HEAD
+              echo "Checked out sibling branch: $ref"
+              break
+            fi
+          done <<< "$CANDIDATES"
       - uses: actions/setup-node@v7
         with:
           node-version-file: pepcalc/app/.nvmrc

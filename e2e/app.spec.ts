@@ -533,10 +533,22 @@ async function flingThenTapTab(page: Page, title: string) {
   const touch = (
     type: 'touchStart' | 'touchMove' | 'touchEnd',
     points: { x: number; y: number }[],
-  ) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points })
-  await touch('touchStart', [{ x: 200, y: 600 }])
-  for (let y = 560; y >= 200; y -= 40) await touch('touchMove', [{ x: 200, y }])
-  await touch('touchEnd', [])
+    timestamp?: number,
+  ) =>
+    cdp.send('Input.dispatchTouchEvent', {
+      type,
+      touchPoints: points,
+      ...(timestamp !== undefined && { timestamp }),
+    })
+  // Explicit timestamps keep the velocity tracker consistent even when CI stalls between IPC calls.
+  let t = Date.now() / 1000
+  const swipe = [touch('touchStart', [{ x: 200, y: 600 }], t)]
+  for (let y = 560; y >= 280; y -= 40) {
+    t += 0.008
+    swipe.push(touch('touchMove', [{ x: 200, y }], t))
+  }
+  swipe.push(touch('touchEnd', [], t + 0.008))
+  await Promise.all(swipe)
   const before = await page.evaluate(() => window.scrollY)
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(before)
 
