@@ -37,7 +37,7 @@ src/
                  loaded only in the apps; runSync, the sync loop)
   components/    calculator/, charts/, common/, journal/, photos/, protocols/, report/,
                  share/, shelf/
-  views/         one per route: Calculator, Shelf, Vial, Journal, Protocols, Settings, Health
+  views/         one per route: Calculator, Stack, Peptide, Levels, Vial, Journal, Settings, Health
                  (apps only)
   plugins/       vuetify.ts (themes, defaults), icons.ts (inline SVG icons), fonts.ts
   styles/        tokens.css (design tokens), theme.css (global and Vuetify overrides)
@@ -145,7 +145,8 @@ measurement system. iOS is built and uploaded only by `.github/workflows/ios.yml
   fonts. `registerType: 'prompt'`: an update waits until the user reloads (`UpdatePrompt.vue`).
 - Base path comes from `PEPCALC_BASE` (default `/app/`): the app is the `PepCalc/app`
   repository, served by Pages at `/app/` beside the website at the root. The router uses hash history so
-  every URL resolves to `index.html` on GitHub Pages and offline.
+  every URL resolves to `index.html` on GitHub Pages and offline. Legacy routes (`/shelf`,
+  `/shelf/:id`, `/protocols`, `/history`) redirect permanently to `/stack` and `/stack/vial/:id`.
 - A production-only meta CSP (`default-src 'self'`) is injected by `vite.config.ts`, because
   GitHub Pages cannot set headers. Styles need `'unsafe-inline'` for Vuetify's theme tag.
 

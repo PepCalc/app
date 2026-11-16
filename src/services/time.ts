@@ -40,13 +40,7 @@ export function formatShort(epochMs: number): string {
   return shortFormat.format(new Date(epochMs))
 }
 
-const weekdayFormat = new Intl.DateTimeFormat(undefined, { weekday: 'long' })
 const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
-
-/** The local day of the week: "Monday". */
-export function formatWeekday(epochMs: number): string {
-  return weekdayFormat.format(new Date(epochMs))
-}
 
 /** The local time of day: "8:30 PM". */
 export function formatTime(epochMs: number): string {

@@ -66,6 +66,22 @@ export function intervalText(hours: number): string {
   return `every ${hours} hours`
 }
 
+/** Plain-language summary of a due state: "Due in 3 days", "Due now", "2 days late". */
+export function dueText(state: DueState): string {
+  switch (state.kind) {
+    case 'later':
+      return `Due in ${state.days} day${state.days === 1 ? '' : 's'}`
+    case 'soon':
+      return `Due in ${state.hours} hour${state.hours === 1 ? '' : 's'}`
+    case 'minutes':
+      return `Due in ${state.minutes} minutes`
+    case 'due':
+      return 'Due now'
+    case 'late':
+      return `${state.days} day${state.days === 1 ? '' : 's'} late`
+  }
+}
+
 /**
  * Which protocol, if any, follows a vial that was renamed (or relinked) from one product to
  * another. It follows only when the vial was the last of its old product, so a protocol is never

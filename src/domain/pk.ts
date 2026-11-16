@@ -4,7 +4,7 @@
  * both a published half-life and a published time-to-peak. The output is an estimated amount
  * of drug in the body expressed in the dose's own unit, NOT a blood concentration: volume of
  * distribution and bioavailability are deliberately left out because they are unknown or
- * uncertain for most of these peptides.
+ * uncertain for these products.
  */
 
 export interface PkParameters {
@@ -163,7 +163,7 @@ export function anyDoseInEffect(
 }
 
 /**
- * Hours of history a chart shows: three days for short-acting peptides (half-life under a day),
+ * Hours of history a chart shows: three days for short-acting products (half-life under a day),
  * whose daily doses would otherwise draw as a comb of unreadable spikes; undefined (every dose
  * still in effect) for long-acting ones. The in-app chart and the report both follow it.
  */
@@ -220,7 +220,7 @@ function addIfInside(times: Set<number>, at: number, window: SimulationWindow): 
 /**
  * Pick a chart window: back far enough to include the doses that still matter and forward far
  * enough to show the decay with no further doses (five half-lives, or longer when absorption is
- * the slow step). `lookbackHours` caps history for frequently dosed peptides.
+ * the slow step). `lookbackHours` caps history for frequently dosed products.
  */
 export function chartWindow(
   doses: readonly DoseEvent[],

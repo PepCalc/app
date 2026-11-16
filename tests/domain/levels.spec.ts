@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   groupLevelsByPeptide,
   levelKey,
+  levelsCaption,
   pooledDoses,
   startingDose,
   type LevelVial,
@@ -174,5 +175,29 @@ describe('startingDose', () => {
     const custom = target({ id: 'c', peptideId: null })
     const vials = [...shelf, { id: 'd', peptideId: null }]
     expect(startingDose(custom, vials, [draw('d', H, 1, 'mg')])).toBeNull()
+  })
+})
+
+describe('levelsCaption', () => {
+  it('formats one dose from one vial, several from two, and excluded draws', () => {
+    expect(levelsCaption({ doses: [{ at: 0, amount: 1 }], vialCount: 1, excluded: 0 }, 'mg')).toBe(
+      '1 logged dose from 1 vial.',
+    )
+    expect(
+      levelsCaption(
+        {
+          doses: [
+            { at: 0, amount: 1 },
+            { at: H, amount: 2 },
+          ],
+          vialCount: 2,
+          excluded: 0,
+        },
+        'mg',
+      ),
+    ).toBe('2 logged doses from 2 vials.')
+    expect(levelsCaption({ doses: [{ at: 0, amount: 2 }], vialCount: 1, excluded: 1 }, 'IU')).toBe(
+      "1 logged dose from 1 vial. Excludes 1 draw that can't be converted to IU.",
+    )
   })
 })

@@ -33,16 +33,3 @@ export function outlookStat(
       }
   }
 }
-
-/** The outlook in a few words, for the line on a card. */
-export function outlookShort(outlook: SteadyOutlook): string {
-  switch (outlook.kind) {
-    case 'now':
-    case 'immediate':
-      return 'Steady'
-    case 'by':
-      return `Steady by ${formatMonthDay(outlook.at)}`
-    case 'cut-off':
-      return outlook.rising ? 'Still rising' : 'Still falling'
-  }
-}

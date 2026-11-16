@@ -94,23 +94,28 @@ const SHOTS = [
   {
     scheme: 'light',
     show: async (page) => {
-      await openTab(page, 'Shelf')
+      await openTab(page, 'Stack')
       await page.getByText('BPC-157').first().waitFor()
     },
   },
   {
     scheme: 'light',
     show: async (page) => {
-      await openTab(page, 'Shelf')
+      await openTab(page, 'Stack')
       await page.getByText('Semaglutide').first().click()
-      await page.getByText('Remaining').waitFor()
+      await page.getByText('Estimated levels').first().waitFor()
     },
   },
   {
     scheme: 'light',
     show: async (page) => {
-      await openTab(page, 'Protocols')
-      await page.getByText('Estimated levels').first().waitFor()
+      await openTab(page, 'Stack')
+      await page.getByText('Semaglutide').first().click()
+      await page
+        .getByRole('link', { name: /Semaglutide #1/ })
+        .first()
+        .click()
+      await page.getByText('Remaining').waitFor()
     },
   },
   {

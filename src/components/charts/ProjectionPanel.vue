@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CatalogPeptide } from '@/domain/catalog'
+import type { SourceRef } from '@/domain/catalog'
 import type { DoseEvent, PkParameters } from '@/domain/pk'
 import { formatAmount } from '@/domain/units'
 import { useNow } from '@/composables/useNow'
@@ -9,26 +9,33 @@ import MoreInfo from '@/components/common/MoreInfo.vue'
 import SourceList from '@/components/common/SourceList.vue'
 import ProjectionChart from './ProjectionChart.vue'
 
+interface PkSource {
+  name: string
+  pk: (PkParameters & { notes: string; sources: SourceRef[] }) | null
+  pkUnavailableReason?: string
+}
+
 /**
- * Projected levels inside the protocol form, updating as the schedule changes. The form holds no
+ * Projected levels inside a schedule form, updating as the schedule changes. The form holds no
  * dose, so the chart repeats the given one, or reads in percent without it.
  */
 const props = defineProps<{
-  peptide: CatalogPeptide | undefined
-  /** User-supplied parameters from a shelf vial; take precedence over the catalog. */
+  /** Catalog entry reduced to `{ name, pk, pkUnavailableReason }`, or undefined outside it. */
+  source: PkSource | undefined
+  /** User-supplied parameters; take precedence over the catalog. */
   override: PkParameters | null
   intervalHours: number
   intervalLabel: string
-  /** The last draw, else the vial's usual dose; null when neither exists. */
+  /** Repeated dose in `unitLabel`, or null before any is known. */
   amount: number | null
-  /** Logged doses of this peptide in `unitLabel`, oldest first. */
+  /** Logged doses in `unitLabel`, oldest first. */
   history: DoseEvent[]
   unitLabel: string
 }>()
 
 const now = useNow()
 
-const params = computed<PkParameters | null>(() => props.override ?? props.peptide?.pk ?? null)
+const params = computed<PkParameters | null>(() => props.override ?? props.source?.pk ?? null)
 const userSupplied = computed(() => props.override !== null)
 </script>
 
@@ -40,16 +47,16 @@ const userSupplied = computed(() => props.override !== null)
         <template v-if="amount !== null">
           At {{ formatAmount(amount, unitLabel) }} {{ intervalLabel }}.
         </template>
-        <template v-else>Percent of steady peak. Log a draw to see amounts.</template>
+        <template v-else>Percent of steady peak. Log a dose to see amounts.</template>
       </p>
     </div>
     <div class="d-flex flex-wrap ga-2 align-center">
       <span class="pc-badge pc-badge--brand pc-num"
-        >t½ {{ formatHours(params.halfLifeHours) }}</span
+        >half-life {{ formatHours(params.halfLifeHours) }}</span
       >
       <span class="pc-badge pc-badge--brand pc-num">peak {{ formatHours(params.tmaxHours) }}</span>
       <span v-if="userSupplied" class="pc-badge pc-badge--notice">
-        <span class="pc-badge__dot" />User-supplied values
+        <span class="pc-badge__dot" />Your own values
       </span>
     </div>
     <ProjectionChart
@@ -63,15 +70,15 @@ const userSupplied = computed(() => props.override !== null)
     <MoreInfo>
       <p class="text-body-small pc-muted">Estimate from the half-life and time to peak.</p>
       <SourceList
-        v-if="!userSupplied && peptide?.pk"
+        v-if="!userSupplied && source?.pk"
         flat
-        :sources="peptide.pk.sources"
-        :note="peptide.pk.notes"
+        :sources="source.pk.sources"
+        :note="source.pk.notes"
       />
     </MoreInfo>
   </section>
-  <p v-else class="text-body-small pc-muted">
-    {{ peptide?.pkUnavailableReason ?? 'No data for this peptide. Add a half-life on the vial.' }}
+  <p v-else-if="source?.pkUnavailableReason" class="text-body-small pc-muted">
+    {{ source.pkUnavailableReason }}
   </p>
 </template>
 

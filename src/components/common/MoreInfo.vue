@@ -3,6 +3,10 @@ import { ref, useId } from 'vue'
 import { mdiChevronDown, mdiChevronUp } from '@/plugins/icons'
 
 /** A chart's notes and sources, folded away so the chart stands on its own. */
+const props = withDefaults(defineProps<{ label?: string; lazy?: boolean }>(), {
+  label: 'More information',
+  lazy: false,
+})
 const open = ref(false)
 const panelId = useId()
 </script>
@@ -17,10 +21,10 @@ const panelId = useId()
       :aria-controls="panelId"
       @click="open = !open"
     >
-      More information
+      {{ props.label }}
     </v-btn>
     <v-expand-transition>
-      <div v-show="open" :id="panelId">
+      <div v-if="!props.lazy || open" v-show="open" :id="panelId">
         <div class="pc-stack pc-stack--tight pt-2"><slot /></div>
       </div>
     </v-expand-transition>

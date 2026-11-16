@@ -19,7 +19,6 @@ import DisclaimerDialog from '@/components/common/DisclaimerDialog.vue'
 import LogHost from '@/components/journal/LogHost.vue'
 import {
   mdiBookshelf,
-  mdiCalendarClockOutline,
   mdiCalculatorVariantOutline,
   mdiCellphoneArrowDown,
   mdiCogOutline,
@@ -41,17 +40,21 @@ const install = useInstallPrompt()
 
 const NAV = [
   { name: 'calculator', title: 'Calculator', icon: mdiCalculatorVariantOutline },
-  { name: 'shelf', title: 'Shelf', icon: mdiBookshelf },
+  { name: 'stack', title: 'Stack', icon: mdiBookshelf },
   { name: 'journal', title: 'Journal', icon: mdiNotebookOutline },
-  { name: 'protocols', title: 'Protocols', icon: mdiCalendarClockOutline },
   { name: 'settings', title: 'Settings', icon: mdiCogOutline },
 ] as const
 
 // Phones get bottom navigation within thumb reach; tablets and desktops a side rail.
 const wide = computed(() => display.mdAndUp.value)
 
-// A page under a tab keeps that tab lit: a vial under Shelf, Health apps under Settings.
-const UNDER: Record<string, string> = { vial: 'shelf', health: 'settings' }
+// A page under a tab keeps that tab lit: vials, peptides and compare levels under Stack, Health apps under Settings.
+const UNDER: Record<string, string> = {
+  vial: 'stack',
+  peptide: 'stack',
+  levels: 'stack',
+  health: 'settings',
+}
 const activeNav = computed(() => {
   const name = String(route.name ?? '')
   return UNDER[name] ?? name

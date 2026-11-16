@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { catalog } from '@/data'
+import { catalog, findPeptide } from '@/data'
 import { CUSTOM_PEPTIDE, useCalculator } from '@/composables/useCalculator'
 import { useNow } from '@/composables/useNow'
 import { useSettingsStore } from '@/stores/settings'
@@ -11,6 +11,7 @@ import { sameProductKey } from '@/domain/vials'
 import { formatQuantity, unitLabel } from '@/domain/units'
 import type { DoseEvent } from '@/domain/pk'
 import { nowIso } from '@/services/time'
+import MoreInfo from '@/components/common/MoreInfo.vue'
 import PresetPicker from '@/components/common/PresetPicker.vue'
 import SourceBadge from '@/components/common/SourceBadge.vue'
 import DrawResult from '@/components/calculator/DrawResult.vue'
@@ -67,6 +68,17 @@ watch(
       doseUnit: dose?.unit ?? state.doseUnit,
       syringeId: syringeId ?? state.syringeId,
     })
+  },
+  { immediate: true },
+)
+
+watch(
+  () => [route.query.peptide, shelfVial.value?.id] as const,
+  ([id, vialId]) => {
+    if (vialId || typeof id !== 'string') return
+    if (id === CUSTOM_PEPTIDE || findPeptide(id)) {
+      calc.actions.selectPeptide(id)
+    }
   },
   { immediate: true },
 )
@@ -410,16 +422,17 @@ function useVial(id: string) {
           </v-btn>
         </div>
 
-        <PkPanel
-          v-if="calc.dose.value"
-          :peptide="calc.peptide.value"
-          :override="shelfVial?.pkOverride ?? null"
-          :doses="pooled.doses"
-          :preview="previewDose"
-          :unit-label="unitLabel(state.doseUnit)"
-          :now="now"
-          :caption="pooledCaption"
-        />
+        <MoreInfo v-if="calc.dose.value" label="Preview levels" lazy>
+          <PkPanel
+            :source="calc.peptide.value"
+            :override="shelfVial?.pkOverride ?? null"
+            :doses="pooled.doses"
+            :preview="previewDose"
+            :unit-label="unitLabel(state.doseUnit)"
+            :now="now"
+            :caption="pooledCaption"
+          />
+        </MoreInfo>
       </section>
     </div>
 

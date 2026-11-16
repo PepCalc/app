@@ -1,33 +1,30 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { useShelfStore } from '@/stores/shelf'
 import { useProtocolsStore } from '@/stores/protocols'
 import { useNotifyStore } from '@/stores/notify'
 import { useConfirmStore } from '@/stores/confirm'
+import { useEntries } from '@/composables/useEntries'
 import { useNow } from '@/composables/useNow'
-import { usePaging } from '@/composables/usePaging'
 import { findPeptide } from '@/data'
-import type { DrawRow } from '@/db/database'
 import type { NewVial } from '@/db/repository'
-import { sortByTime, type SortDirection } from '@/domain/listing'
 import { concentrationOf } from '@/domain/reconstitution'
 import { roundTo, unitLabel } from '@/domain/units'
-import { daysBetween, formatDateTime, formatRelativeDays, toEpochMs } from '@/services/time'
+import { sameProductKey } from '@/domain/vials'
+import { daysBetween, formatRelativeDays } from '@/services/time'
 import { useLogStore } from '@/stores/log'
-import PkPanel from '@/components/charts/PkPanel.vue'
-import DrawList from '@/components/shelf/DrawList.vue'
+import EntriesTimeline from '@/components/journal/EntriesTimeline.vue'
 import VialFormDialog from '@/components/shelf/VialFormDialog.vue'
 import VialAgePanel from '@/components/shelf/VialAgePanel.vue'
 import VialAgeBadge from '@/components/shelf/VialAgeBadge.vue'
 import { useVialAge } from '@/composables/useVialAge'
-import ListPager from '@/components/common/ListPager.vue'
-import SortToggle from '@/components/common/SortToggle.vue'
 import {
   mdiArchiveArrowDownOutline,
   mdiArchiveArrowUpOutline,
   mdiCalculatorVariantOutline,
+  mdiChevronLeft,
   mdiDeleteOutline,
   mdiNeedle,
   mdiPencilOutline,
@@ -41,6 +38,7 @@ const log = useLogStore()
 const notify = useNotifyStore()
 const confirm = useConfirmStore()
 const now = useNow()
+const { entries } = useEntries()
 
 const editing = ref(false)
 
@@ -82,29 +80,18 @@ const manageActions = computed(() => {
 })
 
 const vial = computed(() => shelf.vialById(props.id))
-const peptide = computed(() => findPeptide(vial.value?.peptideId))
+const peptideKey = computed(() => (vial.value ? sameProductKey(vial.value) : null))
+const peptideName = computed(() =>
+  vial.value ? (findPeptide(vial.value.peptideId)?.name ?? vial.value.name) : '',
+)
 const draws = computed(() => (vial.value ? shelf.drawsFor(vial.value.id) : []))
 const balance = computed(() => (vial.value ? shelf.balanceOf(vial.value) : null))
 /* The age panel sits low on the page, so a vial nearing or past its limit also says so up top. */
 const { age } = useVialAge(vial, now)
 
-const direction = ref<SortDirection>('desc')
-const sortedDraws = computed(() =>
-  sortByTime(draws.value, (d) => toEpochMs(d.takenAt), direction.value),
-)
-const { state: paging, current: drawPage, reset } = usePaging(sortedDraws)
-watch(direction, reset)
-
-/** Chart unit: the usual dose unit, else the unit of the latest draw, else the vial's unit. */
-const chartUnit = computed(
-  () => vial.value?.typicalDose?.unit ?? draws.value[0]?.dose.unit ?? vial.value?.unit ?? 'mg',
-)
-/** Doses of this peptide from every vial, so the curve matches the Protocols tab. */
-const pooled = computed(() =>
-  vial.value ? shelf.pooledDosesFor(vial.value, chartUnit.value) : { doses: [], vialCount: 0 },
-)
-const pooledCaption = computed(() =>
-  pooled.value.vialCount > 1 ? `Includes doses from ${pooled.value.vialCount} vials.` : undefined,
+const drawIds = computed(() => new Set(draws.value.map((d) => d.id)))
+const drawEntries = computed(() =>
+  entries.value.filter((e) => e.kind === 'dose' && drawIds.value.has(e.id)),
 )
 
 const concentrationText = computed(() => {
@@ -124,18 +111,6 @@ async function saveVial(changes: Partial<NewVial>) {
   notify.show('Vial updated', 'success')
 }
 
-async function deleteDraw(draw: DrawRow) {
-  const ok = await confirm.ask({
-    title: 'Delete this draw?',
-    text: `${roundTo(draw.dose.value, 4)} ${unitLabel(draw.dose.unit)} on ${formatDateTime(draw.takenAt)} will be added back to the vial.`,
-    confirmText: 'Delete',
-    destructive: true,
-  })
-  if (!ok) return
-  await shelf.deleteDraw(draw.id)
-  notify.show('Draw deleted')
-}
-
 async function toggleArchive() {
   if (!vial.value) return
   const archived = vial.value.status === 'archived'
@@ -145,6 +120,8 @@ async function toggleArchive() {
 
 async function deleteVial() {
   if (!vial.value) return
+  const key = sameProductKey(vial.value)
+  const hasOthers = shelf.vialsOf(key).some((v) => v.id !== vial.value!.id)
   const ok = await confirm.ask({
     title: `Delete ${shelf.displayName(vial.value)}?`,
     text: `This permanently deletes the vial and its ${draws.value.length} logged draws. To keep them, archive it instead.`,
@@ -154,7 +131,7 @@ async function deleteVial() {
   if (!ok) return
   await shelf.deleteVial(vial.value.id)
   notify.show('Vial deleted')
-  await router.replace({ name: 'shelf' })
+  await router.replace(hasOthers ? { name: 'peptide', params: { key } } : { name: 'stack' })
 }
 </script>
 
@@ -162,6 +139,15 @@ async function deleteVial() {
   <div class="pc-page">
     <template v-if="vial && balance">
       <header class="mb-4">
+        <v-btn
+          v-if="peptideKey"
+          :to="{ name: 'peptide', params: { key: peptideKey } }"
+          variant="text"
+          :prepend-icon="mdiChevronLeft"
+          class="mb-2"
+        >
+          {{ peptideName }}
+        </v-btn>
         <p class="pc-eyebrow">{{ vial.status === 'archived' ? 'Archived vial' : 'Vial' }}</p>
         <div class="vial-title-row">
           <h1 class="vial-title pc-display text-headline-large">{{ shelf.displayName(vial) }}</h1>
@@ -196,6 +182,11 @@ async function deleteVial() {
             </template>
           </p>
           <div v-if="age && age.tier !== 'fresh'" class="mt-2"><VialAgeBadge :age="age" /></div>
+          <p v-if="peptideKey" class="text-body-small pc-muted mt-2">
+            <router-link :to="{ name: 'peptide', params: { key: peptideKey } }">
+              Levels are on the peptide's page.
+            </router-link>
+          </p>
         </div>
       </header>
 
@@ -255,34 +246,15 @@ async function deleteVial() {
             </v-card-actions>
           </v-card>
 
-          <v-card>
-            <v-card-item>
-              <p class="pc-eyebrow">History</p>
-              <v-card-title
-                >{{ draws.length }} draw{{ draws.length === 1 ? '' : 's' }}</v-card-title
-              >
-            </v-card-item>
-            <v-card-text class="pc-stack">
-              <p v-if="!draws.length" class="pc-muted">No draws logged yet.</p>
-              <template v-else>
-                <SortToggle v-if="draws.length > 1" v-model="direction" label="Order of draws" />
-                <DrawList :draws="drawPage.items" @delete="deleteDraw" />
-                <ListPager v-model="paging.page" :current="drawPage" noun="draws" />
-              </template>
-            </v-card-text>
-          </v-card>
+          <section class="pc-stack pc-stack--tight">
+            <h2 class="pc-display text-title-large">
+              {{ draws.length }} draw{{ draws.length === 1 ? '' : 's' }}
+            </h2>
+            <EntriesTimeline :entries="drawEntries" :kinds="['dose']" />
+          </section>
         </div>
 
         <div class="d-flex flex-column ga-4">
-          <PkPanel
-            :peptide="peptide"
-            :override="vial.pkOverride"
-            :doses="pooled.doses"
-            :preview="null"
-            :unit-label="unitLabel(chartUnit)"
-            :now="now"
-            :caption="pooledCaption"
-          />
           <VialAgePanel :vial="vial" :now="now" @edit="editing = true" />
         </div>
       </div>
@@ -293,7 +265,7 @@ async function deleteVial() {
     <v-card v-else-if="shelf.loaded" variant="tonal">
       <v-card-text>
         This vial is not on this device.
-        <v-btn :to="{ name: 'shelf' }" variant="text">Back to shelf</v-btn>
+        <v-btn :to="{ name: 'stack' }" variant="text">Back to stack</v-btn>
       </v-card-text>
     </v-card>
   </div>

@@ -21,9 +21,9 @@ Part of the `front-end` skill.
 | `charts/PkChart.vue`                                                                           | ECharts curve: logged doses (solid) and the previewed draw (dashed), "Now" marker                                                                                                |
 | `charts/levelsChart.ts`                                                                        | The curve's model and ECharts option, shared by `PkChart` and the share card so both draw the same thing                                                                         |
 | `charts/ShareLevelsDialog.vue`                                                                 | Previews the levels card (`levelsShareCard.ts`, a 1080x1350 PNG drawn on device) and shares it; name and amounts optional                                                        |
-| `report/ExportReportDialog.vue`                                                                | Period and section choice, then PDF export (`useReportExport`); opened from Protocols and Journal                                                                                |
-| `shelf/VialCard.vue`, `DrawList.vue`                                                           | Shelf list and draw history                                                                                                                                                      |
-| `protocols/ProtocolCard.vue`, `ProtocolDialog.vue`, `DoseCountdown.vue`                        | A peptide's protocol with a countdown ring to the next dose; add or edit one (`domain/schedule.ts`)                                                                              |
+| `report/ExportReportDialog.vue`                                                                | Period and section choice, then PDF export (`useReportExport`); opened from Journal                                                                                              |
+| `shelf/VialCard.vue`                                                                           | Vial summary card on the peptide page                                                                                                                                            |
+| `protocols/ProtocolDialog.vue`, `DoseCountdown.vue`                                            | Add or edit a peptide's schedule; countdown ring to the next dose (`domain/schedule.ts`)                                                                                         |
 | `shelf/VialAgeBadge.vue`, `VialAgePanel.vue`                                                   | Days since mixing against the use window (text, not colour alone); the window's source and storage advice                                                                        |
 | `shelf/VialFormDialog.vue`, `LogDrawDialog.vue`                                                | Edit a vial (composition, PK override); log, edit or delete a draw                                                                                                               |
 | `journal/LogHost.vue`                                                                          | Mounted once in `App.vue`: the Log button, the sheet, and every log dialog                                                                                                       |
@@ -31,6 +31,10 @@ Part of the `front-end` skill.
 | `journal/EntriesTimeline.vue`                                                                  | Every logged thing by day, with kind filters; a row opens its dialog through the log store                                                                                       |
 | `charts/TrendCard.vue`, `charts/BodyChart.vue`, `charts/DoseLegend.vue`, `charts/bodyChart.ts` | A body measure over time. On weight and BMI the line takes the colour of the dose in use and a pill marks each change (`domain/doseBands.ts`); `DoseLegend` lists the strengths. |
 | `share/ShareTrendDialog.vue`                                                                   | Trend image; numbers, photos and doses each opt-in                                                                                                                               |
+
+## Views
+
+- `views/CalculatorView.vue`, `views/StackView.vue`, `views/PeptideView.vue`, `views/LevelsView.vue`, `views/VialView.vue`, `views/JournalView.vue`, `views/SettingsView.vue`, `views/HealthView.vue` (apps only).
 
 ## Patterns
 
@@ -40,9 +44,7 @@ Part of the `front-end` skill.
 - A view that edits data calls a store action, then `notify.show()`.
 - Every number with a source shows a `SourceBadge`; community-reported values never look like
   clinical ones.
-- Level curves pool every draw of a peptide across its vials (`shelf.pooledDosesFor`,
-  `shelf.levelGroups`), so the calculator, vial page and Protocols agree. Protocols shows one
-  `PkPanel` per peptide (small multiples), never several peptides on one axis.
+- One-home rule: the full estimated-level chart (`PkPanel`) lives on the peptide's page (`PeptideView`), pooling every draw of that peptide across its vials (`shelf.pooledDosesFor`, `shelf.levelGroups`). The vial page links to the peptide's page instead of repeating `PkPanel`; the calculator keeps its draft dose preview folded under `Preview levels` (`MoreInfo`); the multi-peptide overlay lives on its own comparison page (`LevelsView` at `/stack/levels`).
 - A trend chart is one grid with one value axis. Do not add a second panel under it.
 - Share dialogs render their privacy switches compact through `ShareImageDialog`'s slot.
 - A protocol belongs to a peptide, not a vial (`sameProductKey`, as vial numbering uses): its

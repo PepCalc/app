@@ -191,3 +191,16 @@ export function levelsModel(input: LevelsInput): LevelsModel {
     summary: summarizeLevels(preview ? projected : logged, allDoses, params, now),
   }
 }
+
+/** Summarizes how many logged doses and vials make up a peptide's level curve. */
+export function levelsCaption(
+  group: Pick<PeptideLevels, 'doses' | 'vialCount' | 'excluded'>,
+  unitLabel: string,
+): string {
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+  let text = `${plural(group.doses.length, 'logged dose')} from ${plural(group.vialCount, 'vial')}.`
+  if (group.excluded) {
+    text += ` Excludes ${plural(group.excluded, 'draw')} that can't be converted to ${unitLabel}.`
+  }
+  return text
+}

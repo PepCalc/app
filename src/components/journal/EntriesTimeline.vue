@@ -81,6 +81,7 @@ const groups = computed(() =>
       <template v-else>
         <template v-if="!compact">
           <v-chip-group
+            v-if="offeredKinds.length > 1"
             :model-value="chipValue"
             multiple
             column

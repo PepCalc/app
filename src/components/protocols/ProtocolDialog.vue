@@ -126,7 +126,7 @@ function save() {
           <v-expand-transition>
             <ProjectionPanel
               v-if="levels && intervalHours !== null"
-              :peptide="levels.peptide"
+              :source="levels.peptide"
               :override="levels.pk?.userSupplied ? levels.pk.params : null"
               :interval-hours="intervalHours"
               :interval-label="intervalText(intervalHours)"

@@ -54,7 +54,7 @@ test('saves a vial, logs a draw and tracks the balance', async ({ page }) => {
   await page.getByRole('link', { name: 'Open vial' }).click()
   await expect(page.getByText('4.5', { exact: false }).first()).toBeVisible()
   await expect(page.getByText('1 draw')).toBeVisible()
-  await expect(page.locator('.pk-chart canvas')).toBeVisible()
+  await expect(page.getByText("Levels are on the peptide's page.")).toBeVisible()
 
   // The next draw starts from the last one, not the vial's typical 0.25 mg.
   await page.getByRole('button', { name: 'Log a draw' }).click()
@@ -80,19 +80,20 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
   }
 
   await page.goto('./#/shelf')
+  await page.getByRole('link', { name: /^Semaglutide/ }).click()
   await expect(page.getByRole('link', { name: /^Semaglutide #1/ })).toBeVisible()
   await expect(page.getByRole('link', { name: /^Semaglutide #2/ })).toBeVisible()
   await expect(page.getByText('Day 0 of 28')).toHaveCount(2)
 
   await page.getByRole('link', { name: /^Semaglutide #2/ }).click()
-  await expect(page.getByText('1–10 of 11 draws')).toBeVisible()
+  await expect(page.getByText('1–10 of 11 entries')).toBeVisible()
   await page
-    .getByRole('navigation', { name: 'draws pages' })
+    .getByRole('navigation', { name: 'entries pages' })
     .getByRole('button', { name: /2/ })
     .click()
-  await expect(page.getByText('11–11 of 11 draws')).toBeVisible()
+  await expect(page.getByText('11–11 of 11 entries')).toBeVisible()
   await page.getByRole('button', { name: 'Oldest first' }).click()
-  await expect(page.getByText('1–10 of 11 draws')).toBeVisible()
+  await expect(page.getByText('1–10 of 11 entries')).toBeVisible()
 
   await page.goto('./#/journal')
   await expect(page.getByText('1–10 of 11 entries')).toBeVisible()
@@ -118,27 +119,25 @@ test('sets a protocol, counts down to the next dose, and filters draws by peptid
   await page.getByRole('button', { name: 'Log this draw now' }).click()
   await expect(page.getByText(/Logged 250 mcg of BPC-157/)).toBeVisible()
 
-  // The old History tab's address still opens the tab that replaced it.
+  // The old History tab's address still opens the Stack tab that replaced it.
   await page.goto('./#/history')
-  await expect(page).toHaveURL(/#\/protocols$/)
-  await expect(page.getByText('No protocols yet.')).toBeVisible()
+  await expect(page).toHaveURL(/#\/stack$/)
+  await page.getByRole('link', { name: /^Semaglutide/ }).click()
 
-  await page.getByRole('button', { name: 'Add a protocol' }).click()
+  await page.getByRole('button', { name: 'Add a schedule' }).click()
   const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
-  await dialog.locator('.v-select').filter({ hasText: 'Peptide' }).click()
-  await page.getByRole('option', { name: 'Semaglutide' }).click()
   await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
   await page.getByRole('option', { name: 'Weekly' }).click()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
-  await expect(page.getByText(/^Next dose .+, in 7 days$/)).toBeVisible()
+  await expect(page.getByText('Due in 7 days')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Edit protocol for Semaglutide' }).click()
+  await page.getByRole('button', { name: 'Edit schedule' }).click()
   const edit = page.getByRole('dialog').filter({ hasText: 'Protocol for Semaglutide' })
   await edit.locator('.v-select').filter({ hasText: 'How often' }).click()
   await page.getByRole('option', { name: 'Twice daily' }).click()
   await edit.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByText(/^Next dose at .+, in about 12 hours$/)).toBeVisible()
+  await expect(page.getByText('Due in 12 hours')).toBeVisible()
 
   await page.goto('./#/journal')
   await page.getByRole('button', { name: /^Draws / }).click()
@@ -146,17 +145,7 @@ test('sets a protocol, counts down to the next dose, and filters draws by peptid
   await expect(page.getByText('250 mcg BPC-157')).toBeVisible()
 })
 
-/** The pulse is infinite, so merely shortening it, as the app's global rule does, would strobe. */
-async function expectStillDotWithReducedMotion(page: Page) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  const pulse = await page
-    .locator('.level-backdrop__dot--live')
-    .first()
-    .evaluate((dot) => getComputedStyle(dot, '::after').animationName)
-  expect(pulse).toBe('none')
-}
-
-test('projects levels while setting a protocol, then draws them on its card', async ({ page }) => {
+test('projects levels while setting a protocol, then draws them on its page', async ({ page }) => {
   await page.goto('./')
   await acceptDisclaimer(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
@@ -168,22 +157,21 @@ test('projects levels while setting a protocol, then draws them on its card', as
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
 
-  await page.goto('./#/protocols')
-  await page.getByRole('button', { name: 'Add a protocol' }).click()
-  const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
-  const panel = dialog.getByRole('region', { name: 'Projected levels' })
-  const pick = async (peptide: string) => {
-    await dialog.locator('.v-select').filter({ hasText: 'Peptide' }).click()
-    await page.getByRole('option', { name: peptide }).click()
-  }
-
   // No human data: the form says why rather than drawing a curve.
-  await pick('BPC-157')
-  await expect(dialog.getByText('No human pharmacokinetic data', { exact: false })).toBeVisible()
-  await expect(panel).toBeHidden()
+  await page.goto('./#/stack')
+  await page.getByRole('link', { name: /^BPC-157/ }).click()
+  await page.getByRole('button', { name: 'Add a schedule' }).click()
+  const bpcDialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
+  await expect(bpcDialog.getByText('No human pharmacokinetic data', { exact: false })).toBeVisible()
+  await expect(bpcDialog.getByRole('region', { name: 'Projected levels' })).toBeHidden()
+  await bpcDialog.getByRole('button', { name: 'Cancel' }).click()
 
   // The vial's usual dose is the user's own, so the projection reads in it.
-  await pick('Semaglutide')
+  await page.goto('./#/stack')
+  await page.getByRole('link', { name: /^Semaglutide/ }).click()
+  await page.getByRole('button', { name: 'Add a schedule' }).click()
+  const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
+  const panel = dialog.getByRole('region', { name: 'Projected levels' })
   await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
   await page.getByRole('option', { name: 'Weekly' }).click()
   await expect(panel.getByText('At 0.25 mg weekly.')).toBeVisible()
@@ -194,20 +182,16 @@ test('projects levels while setting a protocol, then draws them on its card', as
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
 
-  // Nothing has been drawn, so the card has no level to show.
-  await expect(page.locator('.level-backdrop')).toHaveCount(0)
-  await page.goto('./#/shelf')
-  await page
-    .getByRole('link', { name: /Semaglutide/ })
-    .first()
-    .click()
+  // Nothing has been drawn, so the chart has no peak yet; after a draw, it shows the peak.
+  await expect(
+    page.getByRole('img', { name: 'Estimated amount in the body now: 0 mg.' }),
+  ).toBeVisible()
   await page.getByRole('button', { name: 'Log a draw' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Log draw' }).click()
   await expect(page.getByRole('dialog')).toBeHidden()
-  await page.goto('./#/protocols')
-  await expect(page.locator('.level-backdrop svg')).toBeVisible()
-  await expect(page.getByText(/^Est\. .+ now · Steady by /)).toBeVisible()
-  await expectStillDotWithReducedMotion(page)
+  await expect(
+    page.getByRole('img', { name: /Estimated amount in the body now: .*Peak 0\.19/ }),
+  ).toBeVisible()
 })
 
 test('calculates a draw from a protocol, then switches vial', async ({ page }) => {
@@ -226,15 +210,16 @@ test('calculates a draw from a protocol, then switches vial', async ({ page }) =
   await page.getByRole('button', { name: 'Log this draw now' }).click()
   await expect(page.getByText(/^Logged /)).toBeVisible()
 
-  await page.goto('./#/protocols')
-  await page.getByRole('button', { name: 'Add a protocol' }).click()
+  await page.goto('./#/stack')
+  await page.getByRole('link', { name: /^Semaglutide/ }).click()
+  await page.getByRole('button', { name: 'Add a schedule' }).click()
   const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
   await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
   await page.getByRole('option', { name: 'Weekly' }).click()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(dialog).toBeHidden()
 
-  await page.getByRole('link', { name: 'Calculate draw' }).click()
+  await page.getByRole('link', { name: 'Calculate', exact: true }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
   await expect(page.getByText('5 mg in 2 mL')).toBeVisible()
   await expect(page.getByTestId('draw-headline')).toHaveText('10')
@@ -262,9 +247,8 @@ test('overlays the levels of several peptides on one chart', async ({ page }) =>
   await page.getByRole('button', { name: 'Log this draw now' }).click()
   await expect(page.getByText(/Logged .+ of Tirzepatide/)).toBeVisible()
 
-  await page.goto('./#/protocols')
-  await expect(page.getByRole('img', { name: /Estimated amount in the body now/ })).toHaveCount(2)
-  await page.getByRole('button', { name: 'Overlay' }).click()
+  await page.goto('./#/stack')
+  await page.getByRole('link', { name: 'Compare levels' }).click()
   const chart = page.getByRole('img', { name: /each scaled to its own peak/ })
   await expect(chart).toHaveAttribute(
     'aria-label',
@@ -367,7 +351,7 @@ test('works offline after the first visit, including stored data', async ({
   await context.setOffline(true)
   await page.goto('./#/shelf')
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Vials' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Stack' })).toBeVisible()
   await expect(page.getByText('Semaglutide').first()).toBeVisible()
 
   // The calculator chunk (with the chart library) must also come from the precache.
@@ -558,12 +542,12 @@ test('a tab tapped while the page is still coasting from a fling opens', async (
   await page.goto('./')
   await acceptDisclaimer(page)
   const tab = (title: string) => page.locator('.v-bottom-navigation .v-btn', { hasText: title })
-  test.skip((await tab('Shelf').count()) === 0, 'phones only: wide layouts have a rail')
+  test.skip((await tab('Stack').count()) === 0, 'phones only: wide layouts have a rail')
 
-  await flingThenTapTab(page, 'Shelf')
-  await expect(page.getByRole('heading', { level: 1, name: 'Vials' })).toBeVisible()
+  await flingThenTapTab(page, 'Stack')
+  await expect(page.getByRole('heading', { level: 1, name: 'Stack' })).toBeVisible()
 
-  // Back on the first tab, the Shelf tab no longer looks pressed (no ripple left behind).
+  // Back on the first tab, the Stack tab no longer looks pressed (no ripple left behind).
   await tab('Calculator').tap()
   await expect(page.getByRole('heading', { level: 1, name: 'How much to draw' })).toBeVisible()
   await expect(page.locator('.v-bottom-navigation .v-ripple__container')).toHaveCount(0)
@@ -574,17 +558,17 @@ test('a tab tapped while the page is still coasting from a fling opens', async (
    * fling does not move it, so the tab left behind can stay hovered. Emulation moves hover on
    * every touch, so the stale hover is placed directly. A touch screen shows no hover tint.
    */
-  const shelf = await tab('Shelf').boundingBox()
-  if (!shelf) throw new Error('Shelf tab has no box')
+  const stack = await tab('Stack').boundingBox()
+  if (!stack) throw new Error('Stack tab has no box')
   const cdp = await page.context().newCDPSession(page)
   await cdp.send('Input.dispatchMouseEvent', {
     type: 'mouseMoved',
-    x: shelf.x + shelf.width / 2,
-    y: shelf.y + shelf.height / 2,
+    x: stack.x + stack.width / 2,
+    y: stack.y + stack.height / 2,
   })
   expect(await page.evaluate(() => matchMedia('(hover: none)').matches)).toBe(true)
-  expect(await tab('Shelf').evaluate((el) => el.matches(':hover'))).toBe(true)
-  await expect(tab('Shelf').locator('.v-btn__overlay')).toHaveCSS('opacity', '0')
+  expect(await tab('Stack').evaluate((el) => el.matches(':hover'))).toBe(true)
+  await expect(tab('Stack').locator('.v-btn__overlay')).toHaveCSS('opacity', '0')
 })
 
 test('estimated levels can be previewed as a shareable image', async ({ page }) => {
@@ -595,6 +579,7 @@ test('estimated levels can be previewed as a shareable image', async ({ page }) 
   await choose(page, 'Peptide in vial', '5 mg')
   await choose(page, 'Bacteriostatic water added', '2 mL')
   await choose(page, 'Dose', '0.5 mg')
+  await page.getByRole('button', { name: 'Preview levels' }).click()
   await page.getByRole('button', { name: 'Share as an image' }).click()
   const preview = page.getByAltText('Preview of the image to share')
   await expect(preview).toBeVisible()
@@ -646,7 +631,7 @@ test('exports draws and estimated levels as a PDF, offline', async ({
 
   // The PDF writer is a lazily loaded chunk; it must come from the precache.
   await context.setOffline(true)
-  await page.getByRole('link', { name: 'Protocols' }).first().click()
+  await page.getByRole('link', { name: 'Journal', exact: true }).first().click()
   await page.getByRole('button', { name: 'Export PDF' }).click()
   await page.getByRole('group', { name: 'Period' }).getByRole('button', { name: '30 days' }).click()
   const download = page.waitForEvent('download')

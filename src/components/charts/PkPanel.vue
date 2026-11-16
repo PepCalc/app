@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { SOURCE_KIND_LABELS, type CatalogPeptide } from '@/domain/catalog'
+import { SOURCE_KIND_LABELS, type SourceRef } from '@/domain/catalog'
 import { lookbackHoursFor, type DoseEvent, type PkParameters } from '@/domain/pk'
 import { formatHours } from '@/services/time'
 import { mdiShareVariantOutline } from '@/plugins/icons'
@@ -9,8 +9,14 @@ import SourceList from '@/components/common/SourceList.vue'
 import PkChart from './PkChart.vue'
 import ShareLevelsDialog from './ShareLevelsDialog.vue'
 
+interface PkSource {
+  name: string
+  pk: (PkParameters & { notes: string; sources: SourceRef[] }) | null
+  pkUnavailableReason?: string
+}
+
 const props = defineProps<{
-  peptide: CatalogPeptide | undefined
+  source: PkSource | undefined
   /** User-supplied parameters from a shelf vial; take precedence over the catalog. */
   override: PkParameters | null
   doses: DoseEvent[]
@@ -23,19 +29,19 @@ const props = defineProps<{
   caption?: string
 }>()
 
-const params = computed<PkParameters | null>(() => props.override ?? props.peptide?.pk ?? null)
+const params = computed<PkParameters | null>(() => props.override ?? props.source?.pk ?? null)
 const userSupplied = computed(() => props.override !== null)
 
 const lookbackHours = computed(() => (params.value ? lookbackHoursFor(params.value) : undefined))
 
 const sharing = ref(false)
-const shareName = computed(() => props.title ?? props.peptide?.name ?? 'Estimated levels')
+const shareName = computed(() => props.title ?? props.source?.name ?? 'Estimated levels')
 
 /** The strongest source behind the curve, so the shared image says where its numbers came from. */
 const shareSource = computed(() => {
   if (userSupplied.value) return { text: 'User-supplied values', tone: 'notice' as const }
   // The catalog schema requires a label or trial source for every built-in curve.
-  const kinds = props.peptide?.pk?.sources.map((s) => s.kind) ?? []
+  const kinds = props.source?.pk?.sources.map((s) => s.kind) ?? []
   const best = kinds.includes('label') ? 'label' : 'trial'
   return {
     text: `Source: ${SOURCE_KIND_LABELS[best]}`,
@@ -62,13 +68,13 @@ const shareSource = computed(() => {
       <template v-if="params">
         <div class="d-flex flex-wrap ga-2 align-center">
           <span class="pc-badge pc-badge--brand pc-num"
-            >t½ {{ formatHours(params.halfLifeHours) }}</span
+            >half-life {{ formatHours(params.halfLifeHours) }}</span
           >
           <span class="pc-badge pc-badge--brand pc-num"
             >peak {{ formatHours(params.tmaxHours) }}</span
           >
           <span v-if="userSupplied" class="pc-badge pc-badge--notice">
-            <span class="pc-badge__dot" />User-supplied values
+            <span class="pc-badge__dot" />Your own values
           </span>
         </div>
         <p v-if="caption" class="text-body-small pc-muted">{{ caption }}</p>
@@ -85,10 +91,10 @@ const shareSource = computed(() => {
             Estimated amount in your body, from the half-life and time to peak.
           </p>
           <SourceList
-            v-if="!userSupplied && peptide?.pk"
+            v-if="!userSupplied && source?.pk"
             flat
-            :sources="peptide.pk.sources"
-            :note="peptide.pk.notes"
+            :sources="source.pk.sources"
+            :note="source.pk.notes"
           />
         </MoreInfo>
         <ShareLevelsDialog
@@ -103,7 +109,7 @@ const shareSource = computed(() => {
       <template v-else>
         <v-alert type="info" variant="tonal" density="comfortable">
           {{
-            peptide?.pkUnavailableReason ??
+            source?.pkUnavailableReason ??
             'No data for a custom peptide. To see a curve, save the vial and add a half-life.'
           }}
         </v-alert>

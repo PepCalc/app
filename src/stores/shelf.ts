@@ -6,7 +6,7 @@ import type { NewDraw, NewVial } from '@/db/repository'
 import { vialBalance, type VialBalance } from '@/domain/inventory'
 import { findPeptide, syringeCatalog } from '@/data'
 import { sortByTime } from '@/domain/listing'
-import { vialNumbers } from '@/domain/vials'
+import { sameProductKey, vialNumbers } from '@/domain/vials'
 import {
   dosesFromVials,
   groupLevelsByPeptide,
@@ -19,7 +19,14 @@ import {
   type StartingDose,
 } from '@/domain/levels'
 import type { PkParameters } from '@/domain/pk'
-import { roundTo, unitLabel, type AmountUnit, type Quantity } from '@/domain/units'
+import {
+  areCompatible,
+  convert,
+  roundTo,
+  unitLabel,
+  type AmountUnit,
+  type Quantity,
+} from '@/domain/units'
 import { daysBetween, formatRelativeDays, toEpochMs } from '@/services/time'
 
 /**
@@ -85,6 +92,30 @@ export const useShelfStore = defineStore('shelf', () => {
 
   function balanceOf(vial: VialRow): VialBalance {
     return vialBalance(vial, drawsFor(vial.id), vial.typicalDose ?? undefined)
+  }
+
+  /** All vials matching `key`, active first, each ordered most recently used first. */
+  function vialsOf(key: string): VialRow[] {
+    const matching = byLastUsed.value.filter((v) => sameProductKey(v) === key)
+    return [
+      ...matching.filter((v) => v.status === 'active'),
+      ...matching.filter((v) => v.status === 'archived'),
+    ]
+  }
+
+  /** Sum of remaining amounts across active vials of `key` in the primary active vial's unit. */
+  function remainingOf(
+    key: string,
+  ): { amount: number; unit: AmountUnit; vialCount: number } | null {
+    const active = activeVials.value.filter((v) => sameProductKey(v) === key)
+    if (!active.length) return null
+    const unit = active[0]!.unit
+    let amount = 0
+    for (const v of active) {
+      if (!areCompatible(v.unit, unit)) continue
+      amount += convert({ value: balanceOf(v).remainingAmount, unit: v.unit }, unit).value
+    }
+    return { amount, unit, vialCount: active.length }
   }
 
   /** PK parameters for a vial: the user's override wins, then the catalog's human data. */
@@ -201,6 +232,8 @@ export const useShelfStore = defineStore('shelf', () => {
     archivedVials,
     load,
     vialById,
+    vialsOf,
+    remainingOf,
     displayName,
     vialNumber,
     drawsFor,

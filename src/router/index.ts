@@ -1,4 +1,9 @@
-import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
+import {
+  createRouter,
+  createWebHashHistory,
+  type RouterHistory,
+  type RouteRecordRaw,
+} from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -8,32 +13,45 @@ const routes: RouteRecordRaw[] = [
     meta: { title: 'Calculator' },
   },
   {
-    path: '/shelf',
-    name: 'shelf',
-    component: () => import('@/views/ShelfView.vue'),
-    meta: { title: 'Shelf' },
+    path: '/stack',
+    name: 'stack',
+    component: () => import('@/views/StackView.vue'),
+    meta: { title: 'Stack' },
   },
   {
-    path: '/shelf/:id',
+    path: '/stack/levels',
+    name: 'levels',
+    component: () => import('@/views/LevelsView.vue'),
+    meta: { title: 'Compare levels' },
+  },
+  {
+    path: '/stack/vial/:id',
     name: 'vial',
     component: () => import('@/views/VialView.vue'),
     props: true,
     meta: { title: 'Vial' },
   },
   {
+    path: '/stack/:key',
+    name: 'peptide',
+    component: () => import('@/views/PeptideView.vue'),
+    props: (route) => ({ peptideKey: String(route.params.key) }),
+    meta: { title: 'Peptide' },
+  },
+  // Old paths redirect permanently so installed shortcuts and bookmarks keep working.
+  { path: '/shelf', redirect: '/stack' },
+  {
+    path: '/shelf/:id',
+    redirect: (to) => ({ name: 'vial', params: { id: to.params.id } }),
+  },
+  { path: '/protocols', redirect: '/stack' },
+  { path: '/history', redirect: '/stack' },
+  {
     path: '/journal',
     name: 'journal',
     component: () => import('@/views/JournalView.vue'),
     meta: { title: 'Journal' },
   },
-  {
-    path: '/protocols',
-    name: 'protocols',
-    component: () => import('@/views/ProtocolsView.vue'),
-    meta: { title: 'Protocols' },
-  },
-  // History became Protocols; bookmarks and installed apps opened on the old tab land here.
-  { path: '/history', redirect: { name: 'protocols' } },
   {
     path: '/settings',
     name: 'settings',
@@ -60,9 +78,9 @@ function appBarHeight(): number {
  * Hash history: GitHub Pages has no SPA rewrite, so a path URL reloaded offline or opened from
  * a bookmark would 404. With a hash every URL resolves to index.html.
  */
-export function createAppRouter() {
+export function createAppRouter(history: RouterHistory = createWebHashHistory()) {
   return createRouter({
-    history: createWebHashHistory(),
+    history,
     routes,
     // A section link lands below the app bar and any status bar inset above it.
     scrollBehavior: (to) =>

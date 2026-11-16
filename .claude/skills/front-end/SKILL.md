@@ -55,3 +55,7 @@ One-line rules; detail lives in `reference/`. Read a reference when its trigger 
     it.
 15. Body measures are stated plainly: no shame or judgement about weight, gains and losses
     as signed numbers and never as colours, every profile field optional.
+
+## Screens
+
+Every chart, list and action has one home; other screens link to it. The estimated-level chart lives on the medicine's page. A preview inside an editor may repeat a chart only to show a value that is not saved yet, and stays folded until asked for.
