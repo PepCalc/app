@@ -38,9 +38,13 @@ const wide = computed(() => display.mdAndUp.value)
   top: calc(
     var(--v-layout-top, 48px) + var(--safe-area-inset-top, env(safe-area-inset-top)) + 16px
   );
-  inset-inline-start: 4px;
-  width: 88px;
+  inset-inline-start: 0;
+  width: 104px;
   display: flex;
   justify-content: center;
+}
+
+.log-button--rail :deep(.v-fab) {
+  flex: 0 0 auto;
 }
 </style>

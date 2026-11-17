@@ -26,11 +26,13 @@ test('sets chosen days with course and planned dose, advances twice-daily on log
   await page.getByRole('link', { name: 'Stack', exact: true }).first().click()
   await page.getByRole('link', { name: /^BPC-157/ }).click()
 
-  // 1, 3, 4: Mon, Wed, Fri at 08:00, planned dose 250 mcg, course 8 weeks.
+  // 1, 3, 4: Defaults to Weekly/Select Days; pick Mon, Wed, Fri at 08:00, planned dose 250 mcg, course 8 weeks, and Glute, left rotating.
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
-  await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
-  await page.getByRole('option', { name: 'Chosen days', exact: true }).click()
+  await expect(dialog.locator('.v-select').filter({ hasText: 'How often' })).toContainText(
+    'Weekly/Select Days',
+  )
+  await expect(dialog.getByText(/Your own plan/)).toHaveCount(0)
   const daysGroup = dialog.getByRole('group', { name: 'Days' })
   await daysGroup.getByRole('button', { name: 'Monday' }).click()
   await daysGroup.getByRole('button', { name: 'Wednesday' }).click()
@@ -42,11 +44,13 @@ test('sets chosen days with course and planned dose, advances twice-daily on log
     .click()
   await dialog.getByLabel('Planned dose (optional)').fill('250')
   await dialog.getByLabel('Course length in weeks (optional)').fill('8')
+  await dialog.getByRole('button', { name: 'Glute, left' }).click()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(dialog).toBeHidden()
 
   await expect(page.getByText(/Mon, Wed, Fri at (8:00\s*AM|08:00)/)).toBeVisible()
   await expect(page.getByText('Planned: 250 mcg · Week 1 of 8')).toBeVisible()
+  await expect(page.getByText('Next site: Glute, left (rotating)')).toBeVisible()
   await expect(page.getByText('Due in 1 hour')).toBeVisible()
 
   await page.getByRole('link', { name: 'Stack', exact: true }).first().click()
@@ -56,13 +60,17 @@ test('sets chosen days with course and planned dose, advances twice-daily on log
   await expect(page.getByText('Due in 1 hour')).toBeVisible()
   await expect(page.getByText('Planned: 250 mcg')).toBeVisible()
 
-  // 3: Next draw dialog starts from planned dose (250 mcg).
+  // 3: Next draw dialog starts from planned dose (250 mcg) and pre-selects Glute, left.
   await page.getByRole('button', { name: 'Log a draw' }).click()
   const drawDialog = page.getByRole('dialog', { name: 'Log a draw' })
   await expect(drawDialog.getByLabel('Dose', { exact: true })).toHaveValue('250')
+  await expect(drawDialog.getByRole('button', { name: 'Glute, left' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
   await drawDialog.getByRole('button', { name: 'Cancel' }).click()
 
-  // 2: Switch to Daily at 08:00 and 20:00, log a draw from Today's due card -> moves to 20:00 (~13 hours).
+  // 2: Switch to Daily at 08:00 and 20:00, log a draw from Today's due card -> moves to 20:00 (~13 hours) and rotates site.
   await page.getByRole('link', { name: 'BPC-157' }).click()
   await page.getByRole('button', { name: 'Edit schedule' }).click()
   const edit = page.getByRole('dialog').filter({ hasText: 'Protocol for BPC-157' })
@@ -86,10 +94,11 @@ test('sets chosen days with course and planned dose, advances twice-daily on log
 
   // 5: As needed shows no countdown, and last draw still shows.
   await page.getByRole('link', { name: 'BPC-157' }).click()
+  await expect(page.getByText('Next site: Glute, right (rotating)')).toBeVisible()
   await page.getByRole('button', { name: 'Edit schedule' }).click()
   const asNeededEdit = page.getByRole('dialog').filter({ hasText: 'Protocol for BPC-157' })
   await asNeededEdit.locator('.v-select').filter({ hasText: 'How often' }).click()
-  await page.getByRole('option', { name: 'As needed', exact: true }).click()
+  await page.getByRole('option', { name: 'As Needed', exact: true }).click()
   await asNeededEdit.getByRole('button', { name: 'Save' }).click()
   await expect(asNeededEdit).toBeHidden()
   await expect(page.getByText('As needed')).toBeVisible()

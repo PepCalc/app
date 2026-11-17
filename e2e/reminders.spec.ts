@@ -22,6 +22,7 @@ test('Add reminder shows Notify me disabled on the web and calendar invite enabl
   await page.getByRole('link', { name: /^BPC-157/ }).click()
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const proto = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
+  await proto.getByRole('group', { name: 'Days' }).getByRole('button', { name: 'Monday' }).click()
   await proto.getByRole('button', { name: 'Save' }).click()
   await expect(proto).toBeHidden()
 
@@ -44,7 +45,7 @@ test('weekly schedule downloads an .ics with BYDAY', async ({ page }) => {
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const proto = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
   await proto.locator('.v-select').filter({ hasText: 'How often' }).click()
-  await page.getByRole('option', { name: 'Chosen days', exact: true }).click()
+  await page.getByRole('option', { name: 'Weekly/Select Days', exact: true }).click()
   const days = proto.getByRole('group', { name: 'Days' })
   await days.getByRole('button', { name: 'Monday' }).click()
   await days.getByRole('button', { name: 'Wednesday' }).click()
@@ -73,7 +74,7 @@ test('cycle schedule offers the .ics file without Google or Outlook links', asyn
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const proto = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
   await proto.locator('.v-select').filter({ hasText: 'How often' }).click()
-  await page.getByRole('option', { name: 'Days on, days off', exact: true }).click()
+  await page.getByRole('option', { name: 'Days on, Days off', exact: true }).click()
   await proto.getByRole('button', { name: 'Save' }).click()
   await expect(proto).toBeHidden()
 
@@ -120,6 +121,7 @@ test('a reminder link opens Log a draw for its peptide once, and reload does not
   await page.getByRole('link', { name: /^BPC-157/ }).click()
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const proto = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
+  await proto.getByRole('group', { name: 'Days' }).getByRole('button', { name: 'Monday' }).click()
   await proto.getByRole('button', { name: 'Save' }).click()
   await expect(proto).toBeHidden()
 

@@ -11,11 +11,11 @@ import { fileDate, firstDayOfWeek, systemClock, weekdayName } from '@/services/t
 import { mdiDeleteOutline, mdiPlus } from '@/plugins/icons'
 
 const KINDS = [
-  { title: 'Every N hours', value: 'interval' },
   { title: 'Daily', value: 'daily' },
-  { title: 'Chosen days', value: 'weekly' },
-  { title: 'Days on, days off', value: 'cycle' },
-  { title: 'As needed', value: 'asNeeded' },
+  { title: 'Weekly/Select Days', value: 'weekly' },
+  { title: 'Days on, Days off', value: 'cycle' },
+  { title: 'Every N hours', value: 'interval' },
+  { title: 'As Needed', value: 'asNeeded' },
 ] as const
 
 const FALLBACK_TIMES = ['20:00', '12:00', '08:00', '16:00', '06:00', '22:00']
@@ -35,7 +35,7 @@ const state = reactive<{
   offDays: string
   anchor: string
 }>({
-  kind: 'interval',
+  kind: 'weekly',
   every: '1',
   unit: 'days',
   times: ['08:00'],

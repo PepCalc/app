@@ -119,6 +119,8 @@ describe('database migration v4 -> v5', () => {
         schedule: { kind: 'interval', everyHours: 12 },
         plannedDose: null,
         course: null,
+        site: null,
+        siteMode: null,
         notes: 'twice daily note',
         createdAt: '2026-10-01T08:00:00.000Z',
         updatedAt: '2026-10-03T08:00:00.000Z',
@@ -130,6 +132,8 @@ describe('database migration v4 -> v5', () => {
         schedule: { kind: 'interval', everyHours: 168 },
         plannedDose: null,
         course: null,
+        site: null,
+        siteMode: null,
         notes: 'weekly note',
         createdAt: '2026-10-01T09:00:00.000Z',
         updatedAt: '2026-10-04T09:00:00.000Z',
@@ -141,6 +145,8 @@ describe('database migration v4 -> v5', () => {
         schedule: { kind: 'asNeeded' },
         plannedDose: null,
         course: null,
+        site: null,
+        siteMode: null,
         notes: 'zero interval',
         createdAt: '2026-10-01T10:00:00.000Z',
         updatedAt: '2026-10-05T10:00:00.000Z',
@@ -150,6 +156,7 @@ describe('database migration v4 -> v5', () => {
     expect(await current.vials.toArray()).toHaveLength(1)
     expect((await current.vials.get('v1'))?.notes).toBe('vial note')
     expect((await current.draws.get('d1'))?.notes).toBe('draw note')
+    expect((await current.draws.get('d1'))?.site).toBeNull()
     expect((await current.measurements.get('m1'))?.value).toBe(82.5)
     current.close()
   })

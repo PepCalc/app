@@ -50,6 +50,7 @@ function draw(
     dose: { value, unit },
     volumeMl: 0.1,
     syringeId: 'u100-1ml',
+    site: null,
     notes,
     createdAt: iso,
   }

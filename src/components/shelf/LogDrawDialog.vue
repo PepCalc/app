@@ -3,8 +3,10 @@ import { computed, reactive, ref, useId, watch } from 'vue'
 import type { DrawRow } from '@/db/database'
 import { findSyringe, syringeCatalog } from '@/data'
 import { concentrationOf, drawVolumeMl } from '@/domain/reconstitution'
+import { INJECTION_SITES, SITE_LABELS, type InjectionSite } from '@/domain/sites'
 import { readSyringe } from '@/domain/syringe'
 import { doseUnitsFor, formatQuantity, roundTo, unitLabel, type AmountUnit } from '@/domain/units'
+import { sameProductKey } from '@/domain/vials'
 import {
   formatDateTime,
   fromLocalInputValue,
@@ -15,6 +17,7 @@ import {
 } from '@/services/time'
 import { useConfirmStore } from '@/stores/confirm'
 import { useNotifyStore } from '@/stores/notify'
+import { useProtocolsStore } from '@/stores/protocols'
 import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
 
@@ -29,6 +32,7 @@ const props = defineProps<{
 const open = defineModel<boolean>({ required: true })
 
 const shelf = useShelfStore()
+const protocols = useProtocolsStore()
 const settings = useSettingsStore()
 const notify = useNotifyStore()
 const confirm = useConfirmStore()
@@ -42,6 +46,7 @@ const form = reactive({
   unit: 'mg' as AmountUnit,
   syringeId: '',
   takenAt: '',
+  site: null as InjectionSite | null,
   notes: '',
 })
 
@@ -57,6 +62,12 @@ const lastDrawn = computed(() =>
   !props.draw && vial.value ? shelf.startingDoseHint(vial.value, openedAt.value) : null,
 )
 
+const siteSuggestion = computed(() =>
+  vial.value
+    ? protocols.nextSiteFor(sameProductKey(vial.value))
+    : { prefill: null, nextInRotation: null },
+)
+
 function applyVialDefaults(targetVialId: string) {
   const chosen = shelf.vialById(targetVialId)
   if (!chosen) return
@@ -64,6 +75,7 @@ function applyVialDefaults(targetVialId: string) {
   form.dose = dose ? String(dose.value) : ''
   form.unit = dose?.unit ?? doseUnitsFor(chosen.unit)[0]!
   form.syringeId = syringeId ?? settings.defaultSyringeId
+  form.site = protocols.nextSiteFor(sameProductKey(chosen)).prefill
 }
 
 // Reset from props each time the dialog opens, so an abandoned edit never leaks into the next.
@@ -77,6 +89,7 @@ watch(open, (isOpen) => {
     form.unit = d.dose.unit
     form.syringeId = d.syringeId
     form.takenAt = toLocalInputValue(d.takenAt)
+    form.site = d.site ?? null
     form.notes = d.notes
     return
   }
@@ -85,6 +98,7 @@ watch(open, (isOpen) => {
   form.dose = ''
   form.unit = 'mg'
   form.syringeId = settings.defaultSyringeId
+  form.site = null
   applyVialDefaults(initialVialId)
   form.takenAt = toLocalInputValue(props.startAt !== undefined ? toIso(props.startAt) : nowIso())
   form.notes = ''
@@ -123,6 +137,7 @@ async function save() {
     dose: { value: doseValue.value, unit: form.unit },
     volumeMl: volumeMl.value,
     syringeId: form.syringeId,
+    site: form.site,
     notes: form.notes.trim(),
   }
   try {
@@ -191,7 +206,31 @@ async function remove() {
             label="Syringe"
           />
           <v-text-field v-model="form.takenAt" label="Taken at" type="datetime-local" />
-          <v-textarea v-model="form.notes" label="Notes (site, observations)" />
+          <fieldset class="log-draw__sites">
+            <legend class="pc-label">Where (optional)</legend>
+            <v-chip-group
+              :model-value="form.site ?? undefined"
+              column
+              color="primary"
+              @update:model-value="form.site = ($event as InjectionSite | undefined) ?? null"
+            >
+              <v-chip
+                v-for="site in INJECTION_SITES"
+                :key="site"
+                :value="site"
+                :aria-pressed="form.site === site"
+                tag="button"
+                type="button"
+                filter
+              >
+                {{ SITE_LABELS[site] }}
+              </v-chip>
+            </v-chip-group>
+            <p v-if="siteSuggestion.nextInRotation && !draw" class="text-body-small pc-faint">
+              Next in rotation: {{ SITE_LABELS[siteSuggestion.nextInRotation] }}
+            </p>
+          </fieldset>
+          <v-textarea v-model="form.notes" label="Notes (optional)" />
           <div v-if="reading" class="pc-inset pa-3 pc-num" data-testid="log-draw-reading">
             Draw <strong>{{ roundTo(reading.scaleValue, 2) }} {{ reading.scaleUnit }}</strong> ({{
               roundTo(reading.volumeMl, 3)
@@ -226,5 +265,12 @@ async function remove() {
 <style scoped>
 .log-draw__unit {
   max-width: 120px;
+}
+
+.log-draw__sites {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 </style>

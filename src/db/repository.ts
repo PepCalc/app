@@ -13,11 +13,20 @@ import type {
 import type { WeightUnit } from '@/domain/bodyUnits'
 import { sameProductKey } from '@/domain/vials'
 import { protocolFollowingRename } from '@/domain/schedule'
+import type { InjectionSite, SiteMode } from '@/domain/sites'
 import { nowIso, systemClock, type Clock } from '@/services/time'
 
 export type NewVial = Omit<VialRow, 'id' | 'createdAt' | 'updatedAt'>
-export type NewDraw = Omit<DrawRow, 'id' | 'createdAt'>
-export type NewProtocol = Omit<ProtocolRow, 'id' | 'createdAt' | 'updatedAt'>
+export type NewDraw = Omit<DrawRow, 'id' | 'createdAt' | 'site'> & {
+  site?: InjectionSite | null
+}
+export type NewProtocol = Omit<
+  ProtocolRow,
+  'id' | 'createdAt' | 'updatedAt' | 'site' | 'siteMode'
+> & {
+  site?: InjectionSite | null
+  siteMode?: SiteMode | null
+}
 export type NewMeasurement = Omit<MeasurementRow, 'id' | 'createdAt'>
 export interface NewWeight {
   measuredAt: string
@@ -102,7 +111,12 @@ export function createRepository(db: PepcalcDb, clock: Clock = systemClock) {
     },
 
     async addDraw(input: NewDraw): Promise<DrawRow> {
-      const row: DrawRow = { ...input, id: crypto.randomUUID(), createdAt: nowIso(clock) }
+      const row: DrawRow = {
+        ...input,
+        site: input.site ?? null,
+        id: crypto.randomUUID(),
+        createdAt: nowIso(clock),
+      }
       await db.draws.add(row)
       return row
     },
@@ -121,7 +135,15 @@ export function createRepository(db: PepcalcDb, clock: Clock = systemClock) {
 
     async addProtocol(input: NewProtocol): Promise<ProtocolRow> {
       const now = nowIso(clock)
-      const row: ProtocolRow = { ...input, id: crypto.randomUUID(), createdAt: now, updatedAt: now }
+      const site = input.site ?? null
+      const row: ProtocolRow = {
+        ...input,
+        site,
+        siteMode: site ? (input.siteMode ?? 'rotate') : null,
+        id: crypto.randomUUID(),
+        createdAt: now,
+        updatedAt: now,
+      }
       await db.protocols.add(row)
       return row
     },

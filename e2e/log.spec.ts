@@ -148,3 +148,18 @@ test('logs a weight offline and keeps it in the timeline after reload', async ({
   await expect(page.locator('.entries-timeline').getByText('80.5 kg')).toBeVisible()
   await context.setOffline(false)
 })
+
+test('centers the Log button on the desktop rail with the navigation items', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'tablet', 'Rail is only shown on wide screens')
+  await page.goto('./')
+  await acceptDisclaimer(page)
+  const logBox = await page.getByRole('button', { name: 'Log', exact: true }).boundingBox()
+  const navBox = await page.locator('.rail-item').first().boundingBox()
+  expect(logBox).not.toBeNull()
+  expect(navBox).not.toBeNull()
+  const logCenter = logBox!.x + logBox!.width / 2
+  const navCenter = navBox!.x + navBox!.width / 2
+  expect(Math.abs(logCenter - navCenter)).toBeLessThanOrEqual(2)
+})

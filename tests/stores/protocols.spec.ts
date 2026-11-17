@@ -39,6 +39,8 @@ const protocol = (key: string, overrides: Partial<ProtocolRow> = {}): ProtocolRo
   schedule: { kind: 'interval', everyHours: 24 },
   plannedDose: null,
   course: null,
+  site: null,
+  siteMode: null,
   notes: '',
   createdAt: iso(NOW - 1000),
   updatedAt: iso(NOW - 1000),

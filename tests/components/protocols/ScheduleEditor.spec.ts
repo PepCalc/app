@@ -124,7 +124,7 @@ describe('ScheduleEditor', () => {
     expect(validEvents[validEvents.length - 1]).toEqual([false])
   })
 
-  it('5: switching from Daily to Chosen days keeps the entered times', async () => {
+  it('5: switching from Daily to Weekly/Select Days keeps the entered times', async () => {
     const wrapper = mountEditor({
       kind: 'daily',
       times: [
@@ -136,6 +136,9 @@ describe('ScheduleEditor', () => {
     expect(vm).toBeTruthy()
     // Simulate changing kind via the select's model update
     const select = wrapper.findComponent({ name: 'VSelect' })
+    expect(
+      (select.props('items') as readonly { title: string; value: string }[]).map((i) => i.title),
+    ).toEqual(['Daily', 'Weekly/Select Days', 'Days on, Days off', 'Every N hours', 'As Needed'])
     await select.vm.$emit('update:modelValue', 'weekly')
     await flushPromises()
     const timeValues = wrapper
@@ -146,7 +149,7 @@ describe('ScheduleEditor', () => {
 })
 
 describe('ProtocolDialog', () => {
-  it('6: starts planned dose empty even for a catalog peptide with dose presets', async () => {
+  it('6: starts planned dose empty without dose suggestion copy and defaults to Weekly/Select Days', async () => {
     const pinia = setActivePinia(createPinia())
     const shelf = useShelfStore(pinia)
     const protocols = useProtocolsStore(pinia)
@@ -177,6 +180,12 @@ describe('ProtocolDialog', () => {
     mounted.push(wrapper)
     await flushPromises()
 
+    expect(document.body.textContent).not.toContain('Your own plan')
+    expect(document.body.textContent).not.toContain("doesn't suggest doses")
+    expect(document.body.querySelector('[role="group"][aria-labelledby]')?.textContent).toBeTruthy()
+    expect(document.body.textContent).toContain('Glute, left')
+    expect(document.body.textContent).toContain('Glute, right')
+
     const labels = [...document.body.querySelectorAll('label')]
     const plannedLabel = labels.find(
       (l) => l.getAttribute('for') && l.textContent?.includes('Planned dose'),
@@ -187,7 +196,7 @@ describe('ProtocolDialog', () => {
     expect(input.value).toBe('')
   })
 
-  it('7: edits a reactive ProtocolRow without throwing DataCloneError', async () => {
+  it('7: edits a reactive ProtocolRow without throwing DataCloneError and saves site mode', async () => {
     const pinia = setActivePinia(createPinia())
     const shelf = useShelfStore(pinia)
     const protocols = useProtocolsStore(pinia)
@@ -203,6 +212,8 @@ describe('ProtocolDialog', () => {
       },
       plannedDose: { value: 250, unit: 'mcg' as const },
       course: { startOn: '2026-11-16', weeks: 8 },
+      site: 'glute-left' as const,
+      siteMode: 'rotate' as const,
       notes: 'test',
       createdAt: '2026-11-16T08:00:00.000Z',
       updatedAt: '2026-11-16T08:00:00.000Z',
@@ -224,5 +235,12 @@ describe('ProtocolDialog', () => {
       b.textContent?.includes('Save'),
     )!
     expect(saveBtn.disabled).toBe(false)
+    saveBtn.click()
+    await flushPromises()
+
+    expect(wrapper.emitted('save')?.[0]?.[0]).toMatchObject({
+      site: 'glute-left',
+      siteMode: 'rotate',
+    })
   })
 })

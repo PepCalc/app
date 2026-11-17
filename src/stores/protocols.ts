@@ -9,6 +9,7 @@ import { sameProductKey } from '@/domain/vials'
 import type { DoseEvent, PkParameters } from '@/domain/pk'
 import { projectLevels, type LevelProjection } from '@/domain/projection'
 import { gapHours, lastDrawFor, nextDue, projectedDoseTimes } from '@/domain/schedule'
+import { suggestedSiteFor, type InjectionSite, type SiteSuggestion } from '@/domain/sites'
 import { areCompatible, convert, type AmountUnit } from '@/domain/units'
 import { localCalendar, toEpochMs } from '@/services/time'
 import { useShelfStore } from './shelf'
@@ -162,6 +163,22 @@ export const useProtocolsStore = defineStore('protocols', () => {
     }
   }
 
+  /** Suggests the next injection site for a peptide from its protocol and most recent draw site. */
+  function nextSiteFor(key: string): SiteSuggestion {
+    const vialIds = new Set(shelf.vials.filter((v) => sameProductKey(v) === key).map((v) => v.id))
+    let lastSite: InjectionSite | null = null
+    let latestMs = -Infinity
+    for (const d of shelf.draws) {
+      if (!vialIds.has(d.vialId) || !d.site) continue
+      const ms = toEpochMs(d.takenAt)
+      if (ms >= latestMs) {
+        latestMs = ms
+        lastSite = d.site
+      }
+    }
+    return suggestedSiteFor(protocolFor(key), lastSite)
+  }
+
   async function addProtocol(input: NewProtocol): Promise<ProtocolRow> {
     const row = await repository.addProtocol(input)
     await load()
@@ -193,6 +210,7 @@ export const useProtocolsStore = defineStore('protocols', () => {
     drawVialOf,
     levelsOf,
     projectionOf,
+    nextSiteFor,
     addProtocol,
     updateProtocol,
     deleteProtocol,

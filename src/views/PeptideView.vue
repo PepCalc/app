@@ -16,6 +16,7 @@ import {
   scheduleText,
   slots,
 } from '@/domain/schedule'
+import { SITE_LABELS } from '@/domain/sites'
 import { formatQuantity, roundTo, unitLabel } from '@/domain/units'
 import { CUSTOM_PEPTIDE } from '@/composables/useCalculator'
 import { useEntries } from '@/composables/useEntries'
@@ -119,6 +120,14 @@ const courseLabel = computed(() =>
 const plannedLabel = computed(() =>
   protocol.value?.plannedDose ? `Planned: ${formatQuantity(protocol.value.plannedDose)}` : null,
 )
+
+const siteLabel = computed(() => {
+  const p = protocol.value
+  if (!p?.site) return null
+  if (p.siteMode === 'fixed') return `Site: ${SITE_LABELS[p.site]} (fixed)`
+  const next = protocols.nextSiteFor(p.key).nextInRotation ?? p.site
+  return `Next site: ${SITE_LABELS[next]} (rotating)`
+})
 
 const lastText = computed(() => {
   const d = lastDraw.value
@@ -316,6 +325,8 @@ async function saveProtocol(input: NewProtocol) {
       schedule: input.schedule,
       plannedDose: input.plannedDose,
       course: input.course,
+      site: input.site,
+      siteMode: input.siteMode,
       notes: input.notes,
     })
     notify.show('Protocol saved')
@@ -372,6 +383,7 @@ async function deleteProtocol(p: ProtocolRow) {
                 <p v-if="plannedLabel || courseLabel" class="pc-muted pc-num">
                   {{ [plannedLabel, courseLabel].filter(Boolean).join(' · ') }}
                 </p>
+                <p v-if="siteLabel" class="pc-muted">{{ siteLabel }}</p>
                 <p v-if="lastText" class="pc-muted">
                   Last: <span class="pc-num">{{ lastText }}</span>
                 </p>

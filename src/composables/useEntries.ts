@@ -5,6 +5,7 @@ import type { Entry } from '@/domain/entries'
 import { glucoseEntry, photoEntry, symptomEntry, vitalEntry, weightEntry } from '@/domain/entryText'
 import { sortByTime } from '@/domain/listing'
 import { readSyringe } from '@/domain/syringe'
+import { SITE_LABELS } from '@/domain/sites'
 import { formatQuantity, roundTo } from '@/domain/units'
 import { toEpochMs } from '@/services/time'
 import { useJournalStore } from '@/stores/journal'
@@ -14,9 +15,9 @@ import { useShelfStore } from '@/stores/shelf'
 
 function drawDetail(d: DrawRow): string {
   const r = readSyringe(d.volumeMl, findSyringe(d.syringeId))
-  return r.scaleUnit === 'units'
-    ? `${roundTo(r.scaleValue, 2)} units`
-    : `${roundTo(r.scaleValue, 3)} mL`
+  const syringe =
+    r.scaleUnit === 'units' ? `${roundTo(r.scaleValue, 2)} units` : `${roundTo(r.scaleValue, 3)} mL`
+  return d.site ? `${syringe} · ${SITE_LABELS[d.site]}` : syringe
 }
 
 /** Every logged thing as timeline entries, newest first, formatted in the active display units. */

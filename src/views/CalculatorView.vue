@@ -7,6 +7,7 @@ import { useNow } from '@/composables/useNow'
 import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
 import { useNotifyStore } from '@/stores/notify'
+import { useProtocolsStore } from '@/stores/protocols'
 import { sameProductKey } from '@/domain/vials'
 import { formatQuantity, unitLabel } from '@/domain/units'
 import type { DoseEvent } from '@/domain/pk'
@@ -25,6 +26,7 @@ const route = useRoute()
 const router = useRouter()
 const settings = useSettingsStore()
 const shelf = useShelfStore()
+const protocols = useProtocolsStore()
 const notify = useNotifyStore()
 const now = useNow()
 
@@ -160,6 +162,7 @@ async function logDraw() {
     dose,
     volumeMl: calc.plan.value.volumeMl,
     syringeId: state.syringeId,
+    site: protocols.nextSiteFor(sameProductKey(vial)).prefill,
     notes: '',
   })
   notify.show(`Logged ${formatQuantity(dose)} of ${shelf.displayName(vial)}`, 'success')

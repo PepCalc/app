@@ -92,7 +92,7 @@ export async function verifyScheduledCalendar(page: Page) {
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
   await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
-  await page.getByRole('option', { name: 'Chosen days', exact: true }).click()
+  await page.getByRole('option', { name: 'Weekly/Select Days', exact: true }).click()
   await dialog.getByRole('button', { name: 'Wednesday', exact: true }).click()
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()

@@ -436,7 +436,7 @@ describe('journal', () => {
   it('round-trips everything through a backup file', async () => {
     await seed()
     const parsed = parseBackup(JSON.stringify(await exportBackup(db, fixedClock)))
-    expect(parsed.version).toBe(7)
+    expect(parsed.version).toBe(8)
     expect(parsed.measurements).toHaveLength(1)
     expect(parsed.symptoms).toHaveLength(1)
     expect(parsed.glucose).toHaveLength(2)

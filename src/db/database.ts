@@ -7,6 +7,7 @@ import type { PhotoPose } from '@/domain/photos'
 import type { PkParameters } from '@/domain/pk'
 import type { Severity, Symptom } from '@/domain/symptoms'
 import type { Course, Schedule } from '@/domain/schedule'
+import type { InjectionSite, SiteMode } from '@/domain/sites'
 import type { AmountUnit, Quantity } from '@/domain/units'
 
 /** A reconstituted (or still dry) vial on the user's shelf. Timestamps are UTC ISO-8601. */
@@ -37,6 +38,8 @@ export interface DrawRow {
   dose: Quantity
   volumeMl: number
   syringeId: string
+  /** Where an injection went, for rotation; null when not recorded. */
+  site: InjectionSite | null
   notes: string
   createdAt: string
 }
@@ -55,6 +58,10 @@ export interface ProtocolRow {
   /** What the user plans to take each time; null when they have not said. Never from the catalog. */
   plannedDose: Quantity | null
   course: Course | null
+  /** Preferred injection site (or starting site when rotating); null when not set. */
+  site: InjectionSite | null
+  /** Whether to rotate through sites or stay fixed on `site`; null when `site` is null. */
+  siteMode: SiteMode | null
   notes: string
   createdAt: string
   updatedAt: string
@@ -214,6 +221,22 @@ export function createDatabase(name = DB_NAME): PepcalcDb {
         delete row.intervalHours
       }),
   )
+  // Protocols and draws gain optional injection site tracking. No index changes.
+  db.version(6).upgrade(async (tx) => {
+    await tx
+      .table('protocols')
+      .toCollection()
+      .modify((row) => {
+        row.site ??= null
+        row.siteMode ??= null
+      })
+    await tx
+      .table('draws')
+      .toCollection()
+      .modify((row) => {
+        row.site ??= null
+      })
+  })
   /*
    * Rows reach IndexedDB as plain data. Stores hold reactive state, and a reactive proxy passed
    * to a write would fail the whole write with DataCloneError; copying here covers every table

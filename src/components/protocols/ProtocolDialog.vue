@@ -13,6 +13,7 @@ import {
   type Course,
   type Schedule,
 } from '@/domain/schedule'
+import { INJECTION_SITES, SITE_LABELS, type InjectionSite, type SiteMode } from '@/domain/sites'
 import {
   areCompatible,
   convert,
@@ -55,16 +56,20 @@ interface Form {
   plannedDoseUnit: AmountUnit
   courseWeeks: string
   courseStartOn: string
+  site: InjectionSite | null
+  siteMode: SiteMode
   notes: string
 }
 
 const form = reactive<Form>({
   key: null,
-  schedule: { kind: 'interval', everyHours: 24 },
+  schedule: { kind: 'weekly', days: [], times: [{ hour: 8, minute: 0 }] },
   plannedDose: '',
   plannedDoseUnit: 'mg',
   courseWeeks: '',
   courseStartOn: '',
+  site: null,
+  siteMode: 'rotate',
   notes: '',
 })
 
@@ -94,11 +99,15 @@ watch(
         : 'mg')
     Object.assign(form, {
       key,
-      schedule: p ? toPlain(p.schedule) : { kind: 'interval', everyHours: 24 },
+      schedule: p
+        ? toPlain(p.schedule)
+        : { kind: 'weekly', days: [], times: [{ hour: 8, minute: 0 }] },
       plannedDose: p?.plannedDose ? String(p.plannedDose.value) : '',
       plannedDoseUnit: defaultUnit,
       courseWeeks: p?.course ? String(p.course.weeks) : '',
       courseStartOn: p?.course?.startOn ?? fileDate(now.value),
+      site: p?.site ?? null,
+      siteMode: p?.siteMode ?? 'rotate',
       notes: p?.notes ?? '',
     } satisfies Form)
   },
@@ -178,6 +187,8 @@ function save() {
     schedule: form.schedule,
     plannedDose: parsedPlannedDose.value.dose,
     course: parsedCourse.value.course,
+    site: form.site,
+    siteMode: form.site ? form.siteMode : null,
     notes: form.notes.trim(),
   })
 }
@@ -210,8 +221,6 @@ function save() {
                 type="number"
                 inputmode="decimal"
                 :suffix="doseUnits.length === 1 ? unitLabel(form.plannedDoseUnit) : undefined"
-                hint="Your own plan. PepCalc doesn't suggest doses."
-                persistent-hint
                 :error-messages="parsedPlannedDose.error"
               />
               <v-btn-toggle
@@ -245,6 +254,48 @@ function save() {
             />
           </div>
 
+          <fieldset class="protocol-dialog__sites">
+            <legend class="pc-label">Injection site (optional)</legend>
+            <v-chip-group
+              :model-value="form.site ?? undefined"
+              column
+              color="primary"
+              @update:model-value="form.site = ($event as InjectionSite | undefined) ?? null"
+            >
+              <v-chip
+                v-for="site in INJECTION_SITES"
+                :key="site"
+                :value="site"
+                :aria-pressed="form.site === site"
+                tag="button"
+                type="button"
+                filter
+              >
+                {{ SITE_LABELS[site] }}
+              </v-chip>
+            </v-chip-group>
+            <div class="d-flex flex-column ga-1 mt-1">
+              <v-btn-toggle
+                v-model="form.siteMode"
+                mandatory
+                density="comfortable"
+                role="group"
+                aria-label="Injection site mode"
+                :disabled="!form.site"
+              >
+                <v-btn value="rotate">Rotate</v-btn>
+                <v-btn value="fixed">Fixed</v-btn>
+              </v-btn-toggle>
+              <p v-if="form.site" class="text-body-small pc-muted">
+                {{
+                  form.siteMode === 'rotate'
+                    ? 'Moves to the next site after each draw.'
+                    : 'Uses this site for each draw.'
+                }}
+              </p>
+            </div>
+          </fieldset>
+
           <v-expand-transition>
             <ProjectionPanel
               v-if="levels"
@@ -275,5 +326,12 @@ function save() {
 <style scoped>
 .protocol-dialog__units {
   margin-top: var(--pc-field-label-band);
+}
+
+.protocol-dialog__sites {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
 }
 </style>
