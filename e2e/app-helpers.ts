@@ -11,7 +11,6 @@ export const EXPORT_DIALOG = {
 } as const
 export const EMPTY_TODAY_TITLE = 'Mix your first vial'
 export const TODAY_LOG_BUTTON = 'Log a draw'
-export const SYSTEM_LABEL = 'Semaglutide'
 export const TILE_TARGET = { heading: 'Progress', url: /#\/progress/ } as const
 
 export const DOSE_KIND = {

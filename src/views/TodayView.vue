@@ -2,10 +2,8 @@
 import { computed, watch, type ComputedRef } from 'vue'
 import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import { formatWeight, formatWeightChange, unitsSummary } from '@/domain/bodyUnits'
-import type { SourceRef } from '@/domain/catalog'
 import { formatA1c, formatGlucose, GLUCOSE_CONTEXT_LABELS } from '@/domain/glucose'
-import { shelfNotices } from '@/domain/inventory'
-import { dueState, dueText, remainingFraction } from '@/domain/schedule'
+import { dueState, remainingFraction } from '@/domain/schedule'
 import { summarizeSymptoms } from '@/domain/symptoms'
 import { roundTo } from '@/domain/units'
 import { formatBloodPressure, formatHeartRate } from '@/domain/vitals'
@@ -13,20 +11,16 @@ import { useBodyMetrics } from '@/composables/useBodyMetrics'
 import { useDueItems } from '@/composables/useDueItems'
 import { useEntries } from '@/composables/useEntries'
 import { useNow } from '@/composables/useNow'
-import { useSystemRows } from '@/composables/useSystemRows'
-import { vialAgeFor, type VialAge } from '@/composables/useVialAge'
 import { formatDate, formatTodayDate, toEpochMs } from '@/services/time'
 import { useJournalStore } from '@/stores/journal'
 import { useLogStore } from '@/stores/log'
 import { useProtocolsStore } from '@/stores/protocols'
 import { useSettingsStore } from '@/stores/settings'
 import { useShelfStore } from '@/stores/shelf'
-import SourceList from '@/components/common/SourceList.vue'
 import StatTile from '@/components/common/StatTile.vue'
 import EntriesTimeline from '@/components/journal/EntriesTimeline.vue'
 import DoseCountdown from '@/components/protocols/DoseCountdown.vue'
 import DueCard from '@/components/today/DueCard.vue'
-import SystemList from '@/components/today/SystemList.vue'
 import { mdiCalculatorVariantOutline, mdiChevronRight } from '@/plugins/icons'
 
 interface TileItem {
@@ -45,7 +39,6 @@ const settings = useSettingsStore()
 const now = useNow()
 const body = useBodyMetrics()
 const { items: dueItems } = useDueItems(now)
-const { rows: systemRows } = useSystemRows(now)
 const { entries } = useEntries()
 
 /*
@@ -70,30 +63,6 @@ watch(
 )
 
 const isEmpty = computed(() => shelf.loaded && !shelf.vials.length)
-
-const shelfAlertData = computed(() => {
-  const balances = new Map(shelf.vials.map((v) => [v.id, shelf.balanceOf(v)]))
-  const ages = new Map<string, VialAge | null>(
-    shelf.vials.map((v) => [v.id, vialAgeFor(v, now.value, settings)]),
-  )
-  const vials = shelf.vials.map((v) => ({
-    id: v.id,
-    name: shelf.displayName(v),
-    status: v.status,
-  }))
-  const notices = shelfNotices(vials, balances, ages)
-  const sourcesByCitation = new Map<string, SourceRef>()
-  for (const notice of notices) {
-    if (notice.kind !== 'age') continue
-    const age = ages.get(notice.vialId)
-    if (age && !age.custom) {
-      for (const s of age.window.limit.sources) {
-        sourcesByCitation.set(s.citation, s)
-      }
-    }
-  }
-  return { notices, ageSources: [...sourcesByCitation.values()] }
-})
 
 const RECENT_DAYS = 7
 const DAY_MS = 86_400_000
@@ -184,13 +153,12 @@ const latestTiles: ComputedRef<TileItem[]> = computed(() => {
   return tiles
 })
 
+const dueHeading = computed(() =>
+  dueItems.value.some((i) => i.scheduled) ? 'Due' : 'In your system',
+)
+
 const hasSections = computed(
-  () =>
-    dueItems.value.length > 0 ||
-    shelfAlertData.value.notices.length > 0 ||
-    systemRows.value.length > 0 ||
-    latestTiles.value.length > 0 ||
-    entries.value.length > 0,
+  () => dueItems.value.length > 0 || latestTiles.value.length > 0 || entries.value.length > 0,
 )
 </script>
 
@@ -233,26 +201,27 @@ const hasSections = computed(
       </v-card-text>
     </v-card>
 
-    <div v-if="hasSections" class="today-sections">
+    <div
+      v-if="hasSections"
+      :class="['today-sections', { 'today-sections--with-due': dueItems.length > 0 }]"
+    >
       <section
         v-if="dueItems.length"
         class="pc-stack pc-stack--tight"
         aria-labelledby="due-heading"
       >
-        <h2 id="due-heading" class="pc-display text-title-large">Due</h2>
+        <h2 id="due-heading" class="pc-display text-title-large">{{ dueHeading }}</h2>
         <div class="pc-stack">
           <DueCard
             v-for="item in dueItems"
             :key="item.id"
             :title="item.title"
-            :due-label="
-              item.dueAt !== null
-                ? dueText(dueState(item.dueAt, item.gapHours, now))
-                : item.asNeeded
-                  ? 'As needed'
-                  : undefined
-            "
+            :due-label="item.dueLabel"
+            :due-tone="item.dueTone"
             :detail="item.detail"
+            :trace="item.trace"
+            :level="item.level"
+            :can-log="item.canLog"
             :to="item.to"
             @log="item.log()"
           >
@@ -263,7 +232,11 @@ const hasSections = computed(
               />
             </template>
             <template v-if="item.vialId" #actions>
-              <v-btn variant="text" :to="{ name: 'calculator', query: { vial: item.vialId } }">
+              <v-btn
+                variant="tonal"
+                :prepend-icon="mdiCalculatorVariantOutline"
+                :to="{ name: 'calculator', query: { vial: item.vialId } }"
+              >
                 Calculate
               </v-btn>
             </template>
@@ -271,70 +244,43 @@ const hasSections = computed(
         </div>
       </section>
 
-      <section
-        v-if="shelfAlertData.notices.length"
-        class="pc-stack pc-stack--tight"
-        aria-label="Shelf notices"
-      >
-        <p class="pc-eyebrow">Shelf</p>
-        <v-card>
-          <v-list density="comfortable" class="bg-transparent pa-0">
-            <v-list-item
-              v-for="notice in shelfAlertData.notices"
-              :key="notice.id"
-              :to="{ name: 'vial', params: { id: notice.vialId } }"
-            >
-              <v-list-item-title class="text-wrap">
-                <span :class="['pc-badge', `pc-badge--${notice.tone}`]">
-                  <span class="pc-badge__dot" />{{ notice.text }}
-                </span>
-              </v-list-item-title>
-              <template #append>
-                <v-icon :icon="mdiChevronRight" />
-              </template>
-            </v-list-item>
-          </v-list>
-        </v-card>
-        <SourceList v-if="shelfAlertData.ageSources.length" :sources="shelfAlertData.ageSources" />
-      </section>
+      <div v-if="latestTiles.length || entries.length" class="today-side">
+        <section
+          v-if="latestTiles.length"
+          class="pc-stack pc-stack--tight"
+          aria-labelledby="latest-heading"
+        >
+          <h2 id="latest-heading" class="pc-display text-title-large">Latest</h2>
+          <div class="tile-grid">
+            <StatTile
+              v-for="tile in latestTiles"
+              :key="tile.key"
+              :label="tile.label"
+              :value="tile.value"
+              :note="tile.note"
+              :to="tile.to"
+            />
+          </div>
+        </section>
 
-      <SystemList :rows="systemRows" />
-
-      <section
-        v-if="latestTiles.length"
-        class="pc-stack pc-stack--tight"
-        aria-labelledby="latest-heading"
-      >
-        <h2 id="latest-heading" class="pc-display text-title-large">Latest</h2>
-        <div class="tile-grid">
-          <StatTile
-            v-for="tile in latestTiles"
-            :key="tile.key"
-            :label="tile.label"
-            :value="tile.value"
-            :note="tile.note"
-            :to="tile.to"
-          />
-        </div>
-      </section>
-
-      <section
-        v-if="entries.length"
-        class="pc-stack pc-stack--tight"
-        aria-labelledby="recent-heading"
-      >
-        <h2 id="recent-heading" class="pc-display text-title-large">Recent</h2>
-        <v-card>
-          <v-card-text class="pc-stack pc-stack--tight">
-            <EntriesTimeline :entries="entries" compact :limit="5" />
-            <div>
-              <v-btn variant="text" :to="{ name: 'entries' }" :append-icon="mdiChevronRight">
-                All entries
-              </v-btn>
-            </div>
-          </v-card-text>
-        </v-card>
-      </section>
+        <section
+          v-if="entries.length"
+          class="pc-stack pc-stack--tight"
+          aria-labelledby="recent-heading"
+        >
+          <h2 id="recent-heading" class="pc-display text-title-large">Recent</h2>
+          <v-card>
+            <v-card-text class="pc-stack pc-stack--tight">
+              <EntriesTimeline :entries="entries" compact :limit="5" />
+              <div>
+                <v-btn variant="text" :to="{ name: 'entries' }" :append-icon="mdiChevronRight">
+                  All entries
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </section>
+      </div>
     </div>
   </div>
 </template>
@@ -347,9 +293,23 @@ const hasSections = computed(
   align-items: start;
 }
 
+.today-side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 @media (min-width: 840px) {
   .today-sections {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .today-sections--with-due {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+
+  .today-sections:not(.today-sections--with-due) .today-side {
+    display: contents;
   }
 }
 

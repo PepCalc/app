@@ -60,7 +60,7 @@ describe('TodayView', () => {
     expect(wrapper.text()).toMatch(/Units: .+\./)
   })
 
-  it('renders Due, In your system, Latest and Recent in heading order when seeded', async () => {
+  it('renders Due with level trace, Latest and Recent in heading order when seeded', async () => {
     const pre = setActivePinia(createPinia())
     const shelf = useShelfStore(pre)
     const protocols = useProtocolsStore(pre)
@@ -106,49 +106,18 @@ describe('TodayView', () => {
 
     const { wrapper } = await mountToday()
     const h2s = wrapper.findAll('h2').map((h) => h.text())
-    expect(h2s).toEqual(['Due', 'In your system', 'Latest', 'Recent'])
+    expect(h2s).toEqual(['Due', 'Latest', 'Recent'])
+    expect(wrapper.find('.level-backdrop').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Est. level')
+    expect(wrapper.text()).toContain('Of peak')
     expect(wrapper.text()).toContain('Semaglutide')
   })
 
-  it('hides In your system when there is no level data', async () => {
+  it('omits level telemetry when there is no level data and does not render a Shelf section', async () => {
     const pre = setActivePinia(createPinia())
     const shelf = useShelfStore(pre)
     const protocols = useProtocolsStore(pre)
     await Promise.all([shelf.load(), protocols.load()])
-
-    await shelf.addVial({
-      peptideId: 'bpc-157',
-      name: 'BPC-157',
-      kind: 'single',
-      unit: 'mcg',
-      amount: 5000,
-      diluentMl: 2,
-      components: null,
-      typicalDose: { value: 250, unit: 'mcg' },
-      pkOverride: null,
-      reconstitutedAt: null,
-      status: 'active',
-      notes: '',
-    })
-    await protocols.addProtocol({
-      key: 'bpc-157',
-      name: 'BPC-157',
-      schedule: { kind: 'interval', everyHours: 24 },
-      plannedDose: null,
-      course: null,
-      notes: '',
-    })
-
-    const { wrapper } = await mountToday()
-    const h2s = wrapper.findAll('h2').map((h) => h.text())
-    expect(h2s).toEqual(['Due'])
-    expect(wrapper.text()).not.toContain('In your system')
-  })
-
-  it('shows a shelf notice for a vial with two doses left', async () => {
-    const pre = setActivePinia(createPinia())
-    const shelf = useShelfStore(pre)
-    await shelf.load()
 
     const vial = await shelf.addVial({
       peptideId: 'bpc-157',
@@ -172,8 +141,20 @@ describe('TodayView', () => {
       syringeId: 'u100-1ml',
       notes: '',
     })
+    await protocols.addProtocol({
+      key: 'bpc-157',
+      name: 'BPC-157',
+      schedule: { kind: 'interval', everyHours: 24 },
+      plannedDose: null,
+      course: null,
+      notes: '',
+    })
 
     const { wrapper } = await mountToday()
-    expect(wrapper.text()).toContain('BPC-157: about 2 doses left.')
+    const h2s = wrapper.findAll('h2').map((h) => h.text())
+    expect(h2s).toEqual(['Due', 'Recent'])
+    expect(wrapper.find('.level-backdrop').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Est. level')
+    expect(wrapper.text()).not.toContain('about 2 doses left')
   })
 })

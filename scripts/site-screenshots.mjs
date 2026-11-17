@@ -1,11 +1,11 @@
 /*
- * Captures the phone screenshots for the website (pepcalc.github.io) from the production build:
- * the draw result, the Protocols tab and the shelf. Run `npm run screenshots:site` after a change
- * to any of them.
+ * Captures the phone screenshots for the website (pepcalc.github.io) from the production build.
+ * Run `npm run screenshots:site` after a visible change to any of the captured screens.
  *
- * The data is the made-up shelf in sample-backup.mjs, restored through Settings, so the shot
- * shows exactly what restored data renders as. The draw is entered in the calculator, as a user
- * would, so its numbers match the site's alt text: 0.25 mg from 2 mg in 3 mL is 37.5 units.
+ * The data is the made-up shelf in sample-backup.mjs, restored through Settings, so each shot
+ * shows exactly what restored data renders as. The calculator shots enter their doses directly so
+ * their numbers match the site's alt text (0.25 mg from 2 mg in 3 mL is 37.5 units; 0.5 mg from
+ * 5 mg in 3 mL is 30 units).
  *
  * Usage: node scripts/site-screenshots.mjs [output dir]
  * The default output is ../pepcalc.github.io/site/assets/screens, the site's sibling checkout.
@@ -31,6 +31,12 @@ const MARGIN = 8
 const choose = (page, group, value) =>
   page.getByRole('group', { name: group }).getByRole('button', { name: value, exact: true }).click()
 
+async function scrollTo(page, locator, margin = MARGIN) {
+  await locator.first().evaluate((el, offset) => {
+    window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - offset)
+  }, margin)
+}
+
 async function openTab(page, name) {
   await page.getByRole('link', { name, exact: true }).first().click()
   await page.evaluate(() => window.scrollTo(0, 0))
@@ -40,6 +46,7 @@ async function openTab(page, name) {
 const SHOTS = [
   {
     name: 'draw',
+    scheme: 'light',
     show: async (page) => {
       await openTab(page, 'Calculator')
       await choose(page, 'Peptide in vial', 'Custom')
@@ -48,30 +55,83 @@ const SHOTS = [
       await page.getByLabel('Bacteriostatic water added').last().fill('3')
       await choose(page, 'Dose', '0.25 mg')
       await page.getByTestId('draw-headline').filter({ hasText: '37.5' }).waitFor()
-      await page
-        .getByText('3 · Dose')
-        .first()
-        .evaluate((el, offset) => {
-          const card = el.closest('.v-card') ?? el
-          window.scrollTo(0, card.getBoundingClientRect().top + window.scrollY - offset)
-        }, MARGIN)
+      await scrollTo(page, page.getByText('3 · Dose').first().locator('..'))
+    },
+  },
+  {
+    name: 'dose',
+    scheme: 'light',
+    show: async (page) => {
+      await openTab(page, 'Calculator')
+      await choose(page, 'Dose', '0.5 mg')
+      await page.getByTestId('draw-headline').filter({ hasText: '30' }).waitFor()
+      await scrollTo(page, page.getByText('3 · Dose').first().locator('..'))
     },
   },
   {
     name: 'levels',
+    scheme: 'light',
     show: async (page) => {
-      await openTab(page, 'Protocols')
-      await page
-        .getByText(/^Next dose /)
-        .first()
-        .waitFor()
+      await openTab(page, 'Today')
+      const card = page.locator('.due-card:has(.level-backdrop)').first()
+      await card.waitFor()
+      await scrollTo(page, card, 16)
+    },
+  },
+  {
+    name: 'protocols',
+    scheme: 'light',
+    show: async (page) => {
+      await openTab(page, 'Today')
+      await page.getByRole('heading', { name: 'Due' }).waitFor()
     },
   },
   {
     name: 'shelf',
+    scheme: 'light',
     show: async (page) => {
-      await openTab(page, 'Shelf')
+      await openTab(page, 'Stack')
       await page.getByText('BPC-157').first().waitFor()
+    },
+  },
+  {
+    name: 'vials',
+    scheme: 'light',
+    show: async (page) => {
+      await openTab(page, 'Stack')
+      await page
+        .getByRole('link', { name: /^Semaglutide/ })
+        .first()
+        .click()
+      const vialsHeading = page.getByRole('heading', { name: 'Vials' })
+      await vialsHeading.waitFor()
+      await scrollTo(page, vialsHeading, 16)
+    },
+  },
+  {
+    name: 'levels-chart',
+    scheme: 'light',
+    show: async (page) => {
+      await openTab(page, 'Stack')
+      await page
+        .getByRole('link', { name: /^Semaglutide/ })
+        .first()
+        .click()
+      const chart = page.getByRole('img', { name: /^Estimated amount in the body now:/ })
+      await chart.waitFor()
+      await scrollTo(
+        page,
+        chart.locator('xpath=ancestor::*[contains(@class, "v-card")]').first(),
+        16,
+      )
+    },
+  },
+  {
+    name: 'journal-dark',
+    scheme: 'dark',
+    show: async (page) => {
+      await openTab(page, 'Progress')
+      await page.getByText('Total change').waitFor()
     },
   },
 ]
@@ -90,7 +150,7 @@ try {
       deviceScaleFactor: SCALE,
       isMobile: true,
       hasTouch: true,
-      colorScheme: 'light',
+      colorScheme: shot.scheme,
       locale: 'en-US',
       reducedMotion: 'reduce',
       // Lets the shot hide notifications with a style tag under the app's CSP.

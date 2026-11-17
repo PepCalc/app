@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { sortDue, type DueItem } from '@/domain/due'
+import { dueToneFor, sortDue, type DueItem } from '@/domain/due'
 
 const item = (id: string, title: string, dueAt: number | null): DueItem => ({
   id,
@@ -34,5 +34,15 @@ describe('sortDue', () => {
       item('third', 'Wegovy', 1_000),
     ])
     expect(sorted.map((i) => i.id)).toEqual(['first', 'second', 'third'])
+  })
+})
+
+describe('dueToneFor', () => {
+  it('maps schedule states to calm badge tones', () => {
+    expect(dueToneFor('late')).toBe('alert')
+    expect(dueToneFor('due')).toBe('notice')
+    expect(dueToneFor('soon')).toBe('brand')
+    expect(dueToneFor('minutes')).toBe('brand')
+    expect(dueToneFor('later')).toBe('muted')
   })
 })

@@ -15,17 +15,17 @@ describe('useDueItems', () => {
     await Promise.all(db.tables.map((t) => t.clear()))
   })
 
-  it('includes protocols with a vial, skips protocols without a vial, and logs from the active vial', async () => {
+  it('includes protocols with a vial, attaches level traces, skips protocols without a vial, and logs from the active vial', async () => {
     const nowMs = new Date(2026, 10, 16, 12, 0).getTime()
     const vial = await repository.addVial({
-      peptideId: 'bpc-157',
-      name: 'BPC-157',
+      peptideId: 'semaglutide',
+      name: 'Semaglutide',
       kind: 'single',
-      unit: 'mcg',
-      amount: 5000,
-      diluentMl: 2,
+      unit: 'mg',
+      amount: 5,
+      diluentMl: 3,
       components: null,
-      typicalDose: { value: 250, unit: 'mcg' },
+      typicalDose: { value: 0.25, unit: 'mg' },
       pkOverride: null,
       reconstitutedAt: new Date(nowMs - 48 * HOUR_MS).toISOString(),
       status: 'active',
@@ -33,24 +33,24 @@ describe('useDueItems', () => {
     })
     await repository.addDraw({
       vialId: vial.id,
-      takenAt: new Date(nowMs - 10 * HOUR_MS).toISOString(),
-      dose: { value: 250, unit: 'mcg' },
-      volumeMl: 0.1,
+      takenAt: new Date(nowMs - 24 * HOUR_MS).toISOString(),
+      dose: { value: 0.25, unit: 'mg' },
+      volumeMl: 0.15,
       syringeId: 'u100-1ml',
       notes: '',
     })
     await repository.addProtocol({
-      key: 'bpc-157',
-      name: 'BPC-157',
-      schedule: { kind: 'interval', everyHours: 24 },
-      plannedDose: { value: 250, unit: 'mcg' },
+      key: 'semaglutide',
+      name: 'Semaglutide',
+      schedule: { kind: 'interval', everyHours: 168 },
+      plannedDose: { value: 0.25, unit: 'mg' },
       course: null,
       notes: '',
     })
     // Protocol whose vial was deleted: should not appear.
     await repository.addProtocol({
-      key: 'semaglutide',
-      name: 'Semaglutide',
+      key: 'tirzepatide',
+      name: 'Tirzepatide',
       schedule: { kind: 'interval', everyHours: 168 },
       plannedDose: null,
       course: null,
@@ -63,16 +63,21 @@ describe('useDueItems', () => {
 
     const { items } = useDueItems(ref(nowMs))
     expect(items.value).toHaveLength(1)
-    expect(items.value[0]!.title).toBe('BPC-157')
-    expect(items.value[0]!.dueAt).toBe(nowMs + 14 * HOUR_MS)
-    expect(items.value[0]!.detail).toContain('Planned: 250 mcg')
+    expect(items.value[0]!.title).toBe('Semaglutide')
+    expect(items.value[0]!.dueAt).toBe(nowMs + 144 * HOUR_MS)
+    expect(items.value[0]!.dueLabel).toBe('Due in 6 days')
+    expect(items.value[0]!.detail).toContain('Planned: 0.25 mg')
     expect(items.value[0]!.vialId).toBe(vial.id)
+    expect(items.value[0]!.trace).not.toBeNull()
+    expect(items.value[0]!.level?.amountText).toMatch(/mg$/)
+    expect(items.value[0]!.level?.percentOfPeak).toBeGreaterThan(0)
+    expect(items.value[0]!.canLog).toBe(true)
 
     items.value[0]!.log()
     expect(startSpy).toHaveBeenCalledWith('dose', { vialId: vial.id })
   })
 
-  it('orders asNeeded protocols after dated items with no due time', async () => {
+  it('orders asNeeded protocols after dated items and includes unscheduled peptides still in effect', async () => {
     const nowMs = new Date(2026, 10, 16, 12, 0).getTime()
     await repository.addVial({
       peptideId: 'pt-141',
@@ -102,6 +107,28 @@ describe('useDueItems', () => {
       status: 'active',
       notes: '',
     })
+    const sema = await repository.addVial({
+      peptideId: 'semaglutide',
+      name: 'Semaglutide',
+      kind: 'single',
+      unit: 'mg',
+      amount: 5,
+      diluentMl: 3,
+      components: null,
+      typicalDose: null,
+      pkOverride: null,
+      reconstitutedAt: null,
+      status: 'active',
+      notes: '',
+    })
+    await repository.addDraw({
+      vialId: sema.id,
+      takenAt: new Date(nowMs - 24 * HOUR_MS).toISOString(),
+      dose: { value: 0.25, unit: 'mg' },
+      volumeMl: 0.15,
+      syringeId: 'u100-1ml',
+      notes: '',
+    })
     await repository.addProtocol({
       key: 'pt-141',
       name: 'PT-141',
@@ -121,8 +148,11 @@ describe('useDueItems', () => {
 
     await Promise.all([useShelfStore().load(), useProtocolsStore().load()])
     const { items } = useDueItems(ref(nowMs))
-    expect(items.value.map((i) => i.title)).toEqual(['BPC-157', 'PT-141'])
+    expect(items.value.map((i) => i.title)).toEqual(['BPC-157', 'PT-141', 'Semaglutide'])
     expect(items.value[1]!.dueAt).toBeNull()
     expect(items.value[1]!.asNeeded).toBe(true)
+    expect(items.value[2]!.dueLabel).toBe('In your system')
+    expect(items.value[2]!.scheduled).toBe(false)
+    expect(items.value[2]!.trace).not.toBeNull()
   })
 })

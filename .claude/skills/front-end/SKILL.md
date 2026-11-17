@@ -61,10 +61,10 @@ One-line rules; detail lives in `reference/`. Read a reference when its trigger 
 
 Every chart, list and action has one home; other screens link to it. The estimated-level chart lives on the medicine's page. A preview inside an editor may repeat a chart only to show a value that is not saved yet, and stays folded until asked for. All entries has a list and a calendar. The calendar is the only month view.
 
-| Screen     | Holds                                                                                                         |
-| ---------- | ------------------------------------------------------------------------------------------------------------- |
-| Today      | Doses due with a countdown and one-tap log, "In your system", latest readings, recent entries                 |
-| Stack      | One row per medicine. Its page: schedule, reminder, the level chart, its doses, its vials                     |
-| Calculator | Mix, draw, save a vial                                                                                        |
-| Progress   | One trend chart with range chips and dose callouts, stat tiles, photos, side effects, All entries, Export PDF |
-| Settings   | Profile, units, health apps, backup, install, about                                                           |
+| Screen     | Holds                                                                                                                                        |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Today      | Doses due and active levels on `DueCard` (countdown, backdrop curve, readings, Stack/Calculate/Log actions), latest readings, recent entries |
+| Stack      | Peptide cards with supply, age, schedule, in-system status and quick actions. Its page: schedule, reminder, level chart, draws, vials        |
+| Calculator | Mix, draw, save a vial                                                                                                                       |
+| Progress   | One trend chart with range chips and dose callouts, stat tiles, photos, side effects, All entries, Export PDF                                |
+| Settings   | Profile, units, health apps, backup, install, about                                                                                          |

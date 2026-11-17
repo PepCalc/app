@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test'
 import {
   EMPTY_TODAY_TITLE,
-  SYSTEM_LABEL,
   TILE_TARGET,
   TODAY_LOG_BUTTON,
   prepareTodaySchedule,
@@ -26,8 +25,9 @@ test('shows Today sections, repeats a dose, links tiles, and survives offline re
 
   await expect(page.getByRole('heading', { name: 'Due' })).toBeVisible()
   await expect(page.getByText('Due in 7 days')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'In your system' })).toBeVisible()
-  await expect(page.locator('.system-row', { hasText: SYSTEM_LABEL })).toBeVisible()
+  await expect(page.locator('.due-card .level-backdrop')).toBeVisible()
+  await expect(page.locator('.due-card').first()).toContainText('Est. level')
+  await expect(page.locator('.due-card').first()).toContainText('Of peak')
 
   // Repeat the last dose in one tap from the due card.
   await page.getByRole('button', { name: TODAY_LOG_BUTTON }).first().click()

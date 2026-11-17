@@ -31,7 +31,7 @@ src/
   composables/   useCalculator, useDiluentAdvisor, useBodyMetrics, useCameraAccess,
                  useChartColors, useDoseBands, useDueItems, useInstallPrompt, useStoragePersistence, useNow,
                  useEntries, usePaging, usePhotoPins, useReminderSync, useScheduledDays, useVialAge, useHideOnScroll, useReportExport,
-                 useSystemRows, useHealthAutoSync, useWeightSummary
+                 useHealthAutoSync, useWeightSummary
   services/      time.ts (the only clock and date formatter), locale.ts (device region and
                  measurement system), fileTransfer.ts (share/download),
                  nativeFileTransfer.ts (the same through the apps' share sheet), platform.ts
@@ -41,7 +41,7 @@ src/
                  health/ (Apple Health and Health Connect through @capgo/capacitor-health,
                  loaded only in the apps; runSync, the sync loop)
   components/    calculator/, charts/, common/, journal/, photos/, protocols/, reminders/, report/,
-                 share/, shelf/, today/ (DueCard, SystemList)
+                 share/, shelf/, today/ (DueCard)
   views/         one per route: Today, Stack, Peptide, Levels, Vial, Calculator, Progress, Entries, Settings, Health
                  (apps only)
   plugins/       vuetify.ts (themes, defaults), icons.ts (inline SVG icons), fonts.ts

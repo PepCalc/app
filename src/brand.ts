@@ -6,6 +6,8 @@ export const brand = {
   staysInApp: 'Draws, protocols, side effects, HbA1c and photos stay in PepCalc.',
   /** Primary action on a Today due card. */
   logDoseLabel: 'Log a draw',
+  /** Secondary navigation button on a Today due card. */
+  dueOpenLabel: 'Stack',
   /** Singular noun for a dose or draw in shared copy. */
   doseNoun: 'draw',
   /** Source note under the side-effects summary card. */

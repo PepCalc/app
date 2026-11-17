@@ -72,7 +72,7 @@ const SHOTS = [
     scheme: 'light',
     show: async (page) => {
       await openTab(page, 'Today')
-      await page.getByRole('heading', { name: 'In your system' }).waitFor()
+      await page.getByRole('heading', { name: 'Due' }).waitFor()
     },
   },
   {

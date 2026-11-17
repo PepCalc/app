@@ -9,6 +9,23 @@ export interface DueItem {
   dueAt: number | null
 }
 
+export type DueTone = 'brand' | 'notice' | 'alert' | 'muted'
+
+/** Maps a schedule's due state kind to the card badge's calm tone. */
+export function dueToneFor(kind: 'later' | 'soon' | 'minutes' | 'due' | 'late'): DueTone {
+  switch (kind) {
+    case 'late':
+      return 'alert'
+    case 'due':
+      return 'notice'
+    case 'soon':
+    case 'minutes':
+      return 'brand'
+    case 'later':
+      return 'muted'
+  }
+}
+
 /** Soonest first; items with no due time last, in title order. */
 export function sortDue<T extends DueItem>(items: readonly T[]): T[] {
   return [...items].sort((a, b) => {
