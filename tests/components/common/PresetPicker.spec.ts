@@ -49,4 +49,18 @@ describe('PresetPicker', () => {
     expect(pressed(wrapper)).toEqual(['Custom'])
     expect((wrapper.find('input').element as HTMLInputElement).value).toBe('333')
   })
+
+  it('shows the input directly when no presets exist and clears when model resets to null', async () => {
+    const wrapper = mountPicker(null, [])
+    await nextTick()
+    expect(wrapper.findAll('button')).toHaveLength(0)
+    expect(wrapper.find('input').exists()).toBe(true)
+
+    await wrapper.find('input').setValue('2.5')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual([2.5])
+
+    await wrapper.setProps({ modelValue: null })
+    await nextTick()
+    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('')
+  })
 })

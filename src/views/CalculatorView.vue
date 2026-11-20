@@ -104,8 +104,7 @@ watch(
       vialUnit: vial.unit,
       diluentMl: vial.diluentMl,
       components: vial.components?.map((c) => ({ ...c })) ?? [],
-      doseValue: dose?.value ?? state.doseValue,
-      doseUnit: dose?.unit ?? state.doseUnit,
+      ...(dose ? { doseBy: null, doseValue: dose.value, doseUnit: dose.unit } : {}),
       syringeId: syringeId ?? state.syringeId,
     })
   },
@@ -143,12 +142,39 @@ const mixContext = computed<MixContext>(() => ({
   syringe: calc.syringe.value,
 }))
 
+const doseLabel = computed(() => {
+  if (calc.doseComponent.value) {
+    const name = calc.doseComponent.value.name.trim()
+    return name ? `${name} dose` : 'Component dose'
+  }
+  return calc.isBlend.value ? 'Total blend dose' : 'Dose'
+})
+
+const activeDosePresets = computed(() => {
+  const source = calc.dosePresetSource.value
+  return source && source.unit === state.doseUnit ? source : null
+})
+
 const doseHint = computed(() => {
   const lastDrawn = shelfVial.value ? shelf.startingDoseHint(shelfVial.value, now.value) : null
   if (lastDrawn) return lastDrawn
-  const doses = calc.peptide.value?.doses
-  if (!doses) return 'No established dose. Enter your own.'
+  if (calc.doseComponent.value && calc.dose.value) {
+    return `Total blend draw: ${formatQuantity(calc.dose.value)}.`
+  }
+  if (!calc.dosePresetSource.value) return 'No established dose. Enter your own.'
   return undefined
+})
+
+const missingInputText = computed(() => {
+  const missing = calc.missingInputs.value
+  if (missing.length === 1) {
+    if (missing[0] === 'dose') return 'Enter a dose to see how much to draw.'
+    if (missing[0] === 'water') return 'Enter the bacteriostatic water added.'
+    return 'Enter the peptide amount in the vial.'
+  }
+  const labels = missing.map((m) => (m === 'vial' ? 'vial amount' : m))
+  if (labels.length === 2) return `Enter the ${labels[0]} and ${labels[1]}.`
+  return 'Enter the vial amount, water and dose.'
 })
 
 const balance = computed(() => (shelfVial.value ? shelf.balanceOf(shelfVial.value) : null))
@@ -156,7 +182,7 @@ const balance = computed(() => (shelfVial.value ? shelf.balanceOf(shelfVial.valu
 /** Logged doses of this peptide from every vial, in the dose unit being entered. */
 const pooled = computed(() =>
   shelfVial.value
-    ? shelf.pooledDosesFor(shelfVial.value, state.doseUnit)
+    ? shelf.pooledDosesFor(shelfVial.value, calc.dose.value?.unit ?? state.doseUnit)
     : { doses: [], vialCount: 0 },
 )
 const pooledCaption = computed(() =>
@@ -404,6 +430,25 @@ function useVial(id: string) {
             <p class="pc-eyebrow">{{ shelfVial ? 'Dose' : '3 · Dose' }}</p>
           </v-card-item>
           <v-card-text class="pc-stack">
+            <div v-if="calc.isBlend.value && state.components.length > 1">
+              <p class="pc-label">Dose by</p>
+              <v-btn-toggle
+                :model-value="state.doseBy === null ? 'total' : state.doseBy"
+                role="group"
+                mandatory
+                density="comfortable"
+                class="pc-toggle-wrap"
+                aria-label="Dose by"
+                @update:model-value="
+                  calc.actions.setDoseBy($event === 'total' ? null : ($event as number))
+                "
+              >
+                <v-btn value="total">Total blend</v-btn>
+                <v-btn v-for="(c, i) in state.components" :key="`${i}-${c.name}`" :value="i">
+                  {{ c.name || `Component ${i + 1}` }}
+                </v-btn>
+              </v-btn-toggle>
+            </div>
             <v-btn-toggle
               v-if="calc.doseUnits.value.length > 1"
               :model-value="state.doseUnit"
@@ -419,30 +464,23 @@ function useVial(id: string) {
             <PresetPicker
               v-model="state.doseValue"
               input-id="dose"
-              label="Dose"
-              :presets="
-                calc.peptide.value?.doses && calc.peptide.value.doses.unit === state.doseUnit
-                  ? calc.peptide.value.doses.values
-                  : []
-              "
+              :label="doseLabel"
+              :presets="activeDosePresets?.values ?? []"
               :unit-label="unitLabel(state.doseUnit)"
               :hint="doseHint"
             />
-            <div
-              v-if="calc.peptide.value?.doses && calc.peptide.value.doses.unit === state.doseUnit"
-              class="d-flex flex-wrap ga-2 align-center"
-            >
-              <SourceBadge :kind="calc.peptide.value.doses.source.kind" />
+            <div v-if="activeDosePresets" class="d-flex flex-wrap ga-2 align-center">
+              <SourceBadge :kind="activeDosePresets.source.kind" />
               <a
-                v-if="calc.peptide.value.doses.source.url"
-                :href="calc.peptide.value.doses.source.url"
+                v-if="activeDosePresets.source.url"
+                :href="activeDosePresets.source.url"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-body-small"
-                >{{ calc.peptide.value.doses.source.citation }}</a
+                >{{ activeDosePresets.source.citation }}</a
               >
               <span v-else class="text-body-small pc-muted">{{
-                calc.peptide.value.doses.source.citation
+                activeDosePresets.source.citation
               }}</span>
             </div>
           </v-card-text>
@@ -466,7 +504,7 @@ function useVial(id: string) {
         <v-card v-else variant="tonal">
           <v-card-text class="pc-muted">
             <template v-if="calc.error.value">{{ calc.error.value }}</template>
-            <template v-else>Enter the vial amount, water and dose.</template>
+            <template v-else>{{ missingInputText }}</template>
           </v-card-text>
         </v-card>
 

@@ -38,3 +38,19 @@ export function splitBlendDose(
     dose: convert({ value: (doseMg * c.amountMg) / total, unit: 'mg' }, outputUnit),
   }))
 }
+
+/**
+ * Total blend dose needed to deliver `componentDose` of one component (holding `componentAmountMg`
+ * in the vial), given the vial's fixed co-lyophilised ratio.
+ */
+export function blendDoseFromComponent(
+  componentDose: Quantity,
+  componentAmountMg: number,
+  components: readonly BlendComponent[],
+  outputUnit: MassUnit = 'mg',
+): Quantity | null {
+  const total = blendTotalMg(components)
+  if (!(total > 0) || !(componentAmountMg > 0) || !(componentDose.value > 0)) return null
+  const componentDoseMg = convert(componentDose, 'mg').value
+  return convert({ value: (componentDoseMg * total) / componentAmountMg, unit: 'mg' }, outputUnit)
+}

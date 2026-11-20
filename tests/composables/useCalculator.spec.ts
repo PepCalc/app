@@ -22,10 +22,42 @@ describe('useCalculator', () => {
     expect(calc.state.doseValue).toBe(250)
   })
 
+  it('computes a draw immediately for GLOW and converts when switching Dose by', () => {
+    const calc = useCalculator({ peptideId: 'glow' })
+    expect(calc.state.doseBy).toBe(0)
+    expect(calc.state.doseValue).toBe(1)
+    expect(calc.state.doseUnit).toBe('mg')
+    expect(calc.dose.value?.value).toBeCloseTo(1.4, 9)
+    expect(calc.reading.value?.scaleValue).toBeCloseTo(6, 9)
+    expect(calc.solutionColor.value).toBe('blue')
+    expect(calc.componentDoses.value.map((c) => Math.round(c.dose.value))).toEqual([1000, 200, 200])
+
+    calc.actions.setDoseBy(1)
+    expect(calc.state.doseUnit).toBe('mcg')
+    expect(calc.state.doseValue).toBeCloseTo(200, 9)
+    expect(calc.reading.value?.scaleValue).toBeCloseTo(6, 9)
+
+    calc.state.doseValue = 250
+    expect(calc.reading.value?.scaleValue).toBeCloseTo(7.5, 9)
+    expect(calc.componentDoses.value.map((c) => Math.round(c.dose.value))).toEqual([1250, 250, 250])
+  })
+
   it('splits a KLOW dose into its components', () => {
     const calc = useCalculator({ peptideId: 'klow' })
+    // Default KLOW doses by GHK-Cu 1 mg -> 1.6 mg total blend -> 6 units.
+    expect(calc.reading.value?.scaleValue).toBeCloseTo(6, 9)
+    calc.actions.setDoseBy(null)
     calc.state.doseValue = 8
     expect(calc.componentDoses.value.map((c) => c.dose.value)).toEqual([5000, 1000, 1000, 1000])
+  })
+
+  it('computes a draw immediately for Wolverine Blend by BPC-157', () => {
+    const calc = useCalculator({ peptideId: 'wolverine-blend' })
+    expect(calc.state.doseBy).toBe(0)
+    expect(calc.state.doseValue).toBe(250)
+    expect(calc.state.doseUnit).toBe('mcg')
+    expect(calc.reading.value?.scaleValue).toBeCloseTo(15, 9)
+    expect(calc.componentDoses.value.map((c) => Math.round(c.dose.value))).toEqual([250, 250])
   })
 
   it('reports an IU/mass mismatch instead of computing', () => {
@@ -90,8 +122,25 @@ describe('useCalculator', () => {
     expect(calc.state.vialAmount).toBe(60)
     expect(calc.state.diluentMl).toBe(5)
     expect(calc.solutionColor.value).toBe('blue')
+    // Starts with a live draw from GHK-Cu 1 mg -> 1.2 mg total blend -> 10 units on 5 mL.
+    expect(calc.reading.value?.scaleValue).toBeCloseTo(10, 9)
+    calc.actions.setDoseBy(null)
     calc.state.doseValue = 6
     expect(calc.componentDoses.value.map((c) => c.dose.value)).toEqual([5000, 1000])
+
+    // A custom blend with no catalog components reports only the dose as missing and supports dosing by component.
+    calc.actions.selectCustomBlend({
+      name: 'Custom Mix',
+      components: [
+        { name: 'Alpha', amountMg: 10, peptideId: null },
+        { name: 'Beta', amountMg: 10, peptideId: null },
+      ],
+    })
+    expect(calc.missingInputs.value).toEqual(['dose'])
+    calc.actions.setDoseBy(0)
+    calc.state.doseValue = 2
+    expect(calc.dose.value?.value).toBeCloseTo(4, 9)
+    expect(calc.reading.value?.scaleValue).toBeCloseTo(60, 9)
   })
 
   it('offers another syringe only when its marks are finer', () => {

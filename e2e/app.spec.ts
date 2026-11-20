@@ -40,9 +40,17 @@ test('shows the popular peptides alphabetically, then More / Custom with search 
     'More / Custom',
   ])
 
-  // Picking GHK-Cu switches the syringe liquid to blue.
-  await page.getByRole('option', { name: /GHK-Cu/ }).click()
+  // Picking GLOW immediately draws a blue syringe using GHK-Cu's sourced presets and supports switching Dose by.
+  await page.getByRole('option', { name: /GLOW/ }).click()
   await expect(page.locator('figure.syringe')).toHaveAttribute('data-solution', 'blue')
+  await expect(page.getByTestId('draw-headline')).toHaveText('6')
+  await expect(page.getByText('1000 mcg')).toBeVisible()
+  await page
+    .getByRole('group', { name: 'Dose by' })
+    .getByRole('button', { name: 'BPC-157' })
+    .click()
+  await choose(page, 'BPC-157 dose', '250 mcg')
+  await expect(page.getByTestId('draw-headline')).toHaveText('7.5')
 
   // Picking Eloralintide from More / Custom loads its trial doses and clear liquid.
   await pickFromMore(page, 'Eloralintide')
@@ -52,7 +60,7 @@ test('shows the popular peptides alphabetically, then More / Custom with search 
   await choose(page, 'Dose', '3 mg')
   await expect(page.getByTestId('draw-headline')).toHaveText('60')
 
-  // Creating a custom blend containing GHK-Cu tints the syringe blue and splits component doses.
+  // Creating a custom blend containing GHK-Cu immediately draws a blue syringe and splits component doses.
   await page.locator('.v-select').first().click()
   await page.getByRole('option', { name: /More \/ Custom/ }).click()
   const dialog = page.getByRole('dialog').filter({ hasText: 'More & Custom' })
@@ -65,11 +73,30 @@ test('shows the popular peptides alphabetically, then More / Custom with search 
   await dialog.getByRole('button', { name: 'Use custom blend' }).click()
   await expect(dialog).toBeHidden()
   await expect(page.getByText('Total: 60 mg')).toBeVisible()
-  await choose(page, 'Dose', 'Custom')
-  await page.locator('#dose').fill('6')
   await expect(page.locator('figure.syringe')).toHaveAttribute('data-solution', 'blue')
+  await expect(page.getByTestId('draw-headline')).toHaveText('10')
+  await page
+    .getByRole('group', { name: 'Dose by' })
+    .getByRole('button', { name: 'Total blend' })
+    .click()
+  await page.locator('#dose').fill('6')
   await expect(page.getByText('5000 mcg')).toBeVisible()
   await expect(page.getByText('1000 mcg')).toBeVisible()
+
+  // A custom blend with non-catalog components shows the dose field immediately and asks only for the dose.
+  await page.locator('.v-select').first().click()
+  await page.getByRole('option', { name: /More \/ Custom/ }).click()
+  await dialog.getByRole('button', { name: 'Custom blend', exact: true }).click()
+  await dialog.getByLabel('Blend name').fill('Alpha Beta')
+  await dialog.getByLabel('Component 1').fill('Alpha')
+  await dialog.getByLabel('Amount').nth(0).fill('10')
+  await dialog.getByLabel('Component 2').fill('Beta')
+  await dialog.getByLabel('Amount').nth(1).fill('10')
+  await dialog.getByRole('button', { name: 'Use custom blend' }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText('Enter a dose to see how much to draw.')).toBeVisible()
+  await page.locator('#dose').fill('2')
+  await expect(page.getByTestId('draw-headline')).toHaveText('30')
 })
 
 test('calculates the standard check: 5 mg in 2 mL, 250 mcg is 10 units', async ({ page }) => {

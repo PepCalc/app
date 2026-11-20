@@ -19,28 +19,38 @@ const props = withDefaults(
 const model = defineModel<number | null>({ required: true })
 
 const CUSTOM = -1
+const hasPresets = computed(() => props.presets.length > 0)
 const isPreset = (v: number | null) => v !== null && props.presets.includes(v)
 
 /*
- * Custom mode is explicit (the user tapped "Custom") or implied (the value is not a preset).
- * Selection is derived from the value and the preset list together, because a parent can
- * change both in the same tick (switching product swaps presets and the default dose).
+ * Custom mode is explicit (the user tapped "Custom"), implied (the value is not a preset), or
+ * automatic when no presets exist (so an empty preset list never hides the input behind a lone
+ * "Custom" chip). Selection is derived from the value and the preset list together, because a
+ * parent can change both in the same tick (switching product swaps presets and the default dose).
  */
 const customMode = ref(false)
 const customText = ref('')
 
 const selected = computed(() => {
-  if (customMode.value) return CUSTOM
+  if (!hasPresets.value || customMode.value) return CUSTOM
   if (isPreset(model.value)) return model.value
   return model.value === null ? null : CUSTOM
 })
 
+const customError = computed(() => {
+  if (selected.value !== CUSTOM || customText.value === '') return undefined
+  const parsed = Number.parseFloat(customText.value)
+  return Number.isFinite(parsed) && parsed > 0 ? undefined : 'Enter a number greater than 0'
+})
+
 watch(
   [model, () => props.presets],
-  ([value]) => {
+  ([value, presets], [, prevPresets]) => {
     if (isPreset(value)) {
       customMode.value = false
-    } else if (value !== null && String(value) !== customText.value) {
+    } else if (value === null) {
+      if (presets !== prevPresets || !customError.value) customText.value = ''
+    } else if (String(value) !== customText.value) {
       customText.value = String(value)
     }
   },
@@ -64,12 +74,6 @@ function onCustomInput(text: string) {
   const parsed = Number.parseFloat(text)
   model.value = Number.isFinite(parsed) && parsed > 0 ? parsed : null
 }
-
-const customError = computed(() => {
-  if (selected.value !== CUSTOM || customText.value === '') return undefined
-  const parsed = Number.parseFloat(customText.value)
-  return Number.isFinite(parsed) && parsed > 0 ? undefined : 'Enter a number greater than 0'
-})
 </script>
 
 <template>
@@ -79,7 +83,13 @@ const customError = computed(() => {
       <span :id="`${inputId}-label`" class="pc-label">{{ label }}</span>
       <slot name="action" />
     </legend>
-    <v-chip-group :model-value="selected" color="primary" column @update:model-value="choose">
+    <v-chip-group
+      v-if="hasPresets"
+      :model-value="selected"
+      color="primary"
+      column
+      @update:model-value="choose"
+    >
       <v-chip
         v-for="value in presets"
         :key="value"
@@ -101,7 +111,8 @@ const customError = computed(() => {
         <v-text-field
           :id="inputId"
           :model-value="customText"
-          :label="`Custom ${label.toLowerCase()}`"
+          :label="hasPresets ? `Custom ${label.toLowerCase()}` : undefined"
+          :aria-labelledby="hasPresets ? undefined : `${inputId}-label`"
           :suffix="unitLabel"
           :error-messages="customError"
           :min="min"
