@@ -63,11 +63,18 @@ interface StorageGuidance {
   adviceSources: SourceRef[]
 }
 
+/** Visual tint of the reconstituted solution in the syringe graphic. */
+export type SolutionColor = 'clear' | 'blue'
+
 export interface CatalogPeptide {
   id: string
   name: string
   aliases: string[]
   kind: 'single' | 'blend'
+  /** Shown directly in the calculator's top-level peptide dropdown. */
+  popular?: boolean
+  /** Tint of the reconstituted solution; omitted means clear. */
+  solutionColor?: SolutionColor
   summary: string
   /** Unit the vial's contents are labelled in. */
   vialUnit: AmountUnit

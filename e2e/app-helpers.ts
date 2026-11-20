@@ -16,8 +16,8 @@ export const TILE_TARGET = { heading: 'Progress', url: /#\/progress/ } as const
 export const DOSE_KIND = {
   row: 'Draw',
   plural: 'Draws',
-  expectedTitle: '0.25 mg Semaglutide',
-  updatedTitle: '0.5 mg Semaglutide',
+  expectedTitle: '2.5 mg Tirzepatide',
+  updatedTitle: '5 mg Tirzepatide',
 } as const
 
 /** Opens the screen whose empty state shows the active body-unit summary. */
@@ -33,19 +33,19 @@ export async function prepareDoseTarget(page: Page) {
 export async function fillNewDose(page: Page) {
   const dialog = page.getByRole('dialog', { name: 'Log a draw' })
   await dialog.getByRole('button', { name: 'Log draw' }).click()
-  await expect(page.getByText(/Logged 0\.25 mg of Semaglutide/)).toBeVisible()
+  await expect(page.getByText(/Logged 2\.5 mg of Tirzepatide/)).toBeVisible()
 }
 
 export async function editDoseEntry(page: Page) {
-  await page.getByRole('button', { name: /0\.25 mg Semaglutide/ }).click()
+  await page.getByRole('button', { name: /2\.5 mg Tirzepatide/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Edit draw' })
-  await dialog.getByLabel('Dose', { exact: true }).fill('0.5')
+  await dialog.getByLabel('Dose', { exact: true }).fill('5')
   await dialog.getByRole('button', { name: 'Save' }).click()
   await expect(page.getByText('Draw updated')).toBeVisible()
 }
 
 export async function deleteDoseEntry(page: Page) {
-  await page.getByRole('button', { name: /0\.5 mg Semaglutide/ }).click()
+  await page.getByRole('button', { name: /5 mg Tirzepatide/ }).click()
   const dialog = page.getByRole('dialog', { name: 'Edit draw' })
   await dialog.getByRole('button', { name: 'Delete draw' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click()
@@ -59,7 +59,7 @@ export async function prepareTodaySchedule(page: Page) {
   await expect(page.getByText('From your shelf')).toBeVisible()
 
   await page.getByRole('link', { name: 'Stack', exact: true }).first().click()
-  await page.getByRole('link', { name: /^Semaglutide/ }).click()
+  await page.getByRole('link', { name: /^Tirzepatide/ }).click()
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
   await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
@@ -68,7 +68,7 @@ export async function prepareTodaySchedule(page: Page) {
   await dialog.locator('.v-select').filter({ hasText: 'Unit' }).click()
   await page.getByRole('option', { name: 'days', exact: true }).click()
   await dialog.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
+  await expect(page.getByText('Protocol added for Tirzepatide')).toBeVisible()
 
   await page.getByRole('link', { name: 'Today', exact: true }).first().click()
 }
@@ -82,25 +82,25 @@ export async function saveDueCardDose(page: Page) {
 export async function saveRepeatedDueDose(page: Page) {
   const dialog = page.getByRole('dialog', { name: 'Log a draw' })
   await dialog.getByRole('button', { name: 'Log draw' }).click()
-  await expect(page.getByText(/Logged 0\.25 mg of Semaglutide/)).toBeVisible()
+  await expect(page.getByText(/Logged 2\.5 mg of Tirzepatide/)).toBeVisible()
 }
 
 /** Verifies scheduled future days on the calendar with a weekly schedule. */
 export async function verifyScheduledCalendar(page: Page) {
   await page.getByRole('link', { name: 'Stack', exact: true }).first().click()
-  await page.getByRole('link', { name: /^Semaglutide/ }).click()
+  await page.getByRole('link', { name: /^Tirzepatide/ }).click()
   await page.getByRole('button', { name: 'Add a schedule' }).click()
   const dialog = page.getByRole('dialog').filter({ hasText: 'Add a protocol' })
   await dialog.locator('.v-select').filter({ hasText: 'How often' }).click()
   await page.getByRole('option', { name: 'Weekly/Select Days', exact: true }).click()
   await dialog.getByRole('button', { name: 'Wednesday', exact: true }).click()
   await dialog.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByText('Protocol added for Semaglutide')).toBeVisible()
+  await expect(page.getByText('Protocol added for Tirzepatide')).toBeVisible()
 
   await page.goto(`./#/${TIMELINE_HASH}?view=calendar`)
   // Nov 16 is Monday; upcoming Wednesday is Nov 18.
   const wednesdayCell = page.locator('[data-v-date="2026-11-18"]')
   await expect(wednesdayCell.locator('.cal-mark--scheduled')).toBeVisible()
   await wednesdayCell.click()
-  await expect(page.locator('.day-panel')).toContainText('Scheduled: Semaglutide')
+  await expect(page.locator('.day-panel')).toContainText('Scheduled: Tirzepatide')
 }

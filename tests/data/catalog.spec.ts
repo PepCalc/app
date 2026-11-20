@@ -4,7 +4,16 @@ import peptideSchema from '@/data/peptides.schema.json'
 import syringeSchema from '@/data/syringes.schema.json'
 import peptidesJson from '@/data/peptides.json'
 import syringesJson from '@/data/syringes.json'
-import { catalog, findPeptide, inUseLimitFor, syringeCatalog } from '@/data'
+import {
+  allPeptidesSorted,
+  catalog,
+  findPeptide,
+  inUseLimitFor,
+  matchSinglePeptide,
+  popularPeptides,
+  solutionColorFor,
+  syringeCatalog,
+} from '@/data'
 import { areCompatible } from '@/domain/units'
 import { blendTotalMg } from '@/domain/blend'
 import { rateConstants } from '@/domain/pk'
@@ -46,7 +55,7 @@ describe('peptides.json', () => {
     },
   )
 
-  it('ships every launch peptide', () => {
+  it('ships every launch and expanded catalog peptide', () => {
     const names = catalog.peptides.map((p) => p.name)
     for (const name of [
       'Semaglutide',
@@ -60,9 +69,62 @@ describe('peptides.json', () => {
       'TB-500',
       'KPV',
       'GLOW',
+      'Wolverine Blend',
+      'MOTS-c',
+      'AHK-Cu',
+      'Semax',
+      'Selank',
+      'Sermorelin',
+      'Eloralintide',
+      'NAD+',
+      'Ipamorelin',
     ]) {
       expect(names).toContain(name)
     }
+  })
+
+  it('lists the popular peptides in alphabetical order', () => {
+    expect(popularPeptides.map((p) => p.name)).toEqual([
+      'BPC-157',
+      'GHK-Cu',
+      'GLOW',
+      'KLOW',
+      'Retatrutide',
+      'TB-500',
+      'Tesamorelin',
+      'Tirzepatide',
+    ])
+  })
+
+  it('sorts all peptides alphabetically', () => {
+    const names = allPeptidesSorted.map((p) => p.name)
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))
+    expect(names).toEqual(sorted)
+  })
+
+  it('derives blue liquid colour for copper peptides and blends containing them', () => {
+    expect(solutionColorFor(findPeptide('ghk-cu'), [])).toBe('blue')
+    expect(solutionColorFor(findPeptide('ahk-cu'), [])).toBe('blue')
+    expect(solutionColorFor(findPeptide('glow'), findPeptide('glow')!.components!)).toBe('blue')
+    expect(solutionColorFor(findPeptide('klow'), findPeptide('klow')!.components!)).toBe('blue')
+    expect(
+      solutionColorFor(undefined, [
+        { name: 'GHK-Cu', amountMg: 50, peptideId: 'ghk-cu' },
+        { name: 'BPC-157', amountMg: 10, peptideId: 'bpc-157' },
+      ]),
+    ).toBe('blue')
+    expect(solutionColorFor(findPeptide('tirzepatide'), [])).toBe('clear')
+    expect(solutionColorFor(findPeptide('bpc-157'), [])).toBe('clear')
+    expect(
+      solutionColorFor(findPeptide('wolverine-blend'), findPeptide('wolverine-blend')!.components!),
+    ).toBe('clear')
+  })
+
+  it('matches single peptides by name or alias without matching blends', () => {
+    expect(matchSinglePeptide('ghk-cu')?.id).toBe('ghk-cu')
+    expect(matchSinglePeptide('Copper tripeptide-3')?.id).toBe('ahk-cu')
+    expect(matchSinglePeptide('LY3841136')?.id).toBe('eloralintide')
+    expect(matchSinglePeptide('GLOW')).toBeUndefined()
   })
 })
 

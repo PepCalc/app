@@ -4,6 +4,7 @@ import type {
   CatalogPeptide,
   InjectionSiteNote,
   InUseLimit,
+  SolutionColor,
   SyringeCatalog,
 } from '@/domain/catalog'
 import type { ComfortCap } from '@/domain/diluent'
@@ -20,8 +21,44 @@ import syringesJson from './syringes.json'
 export const catalog = peptidesJson as unknown as Catalog
 export const syringeCatalog = syringesJson as unknown as SyringeCatalog
 
+const byName = (a: CatalogPeptide, b: CatalogPeptide) =>
+  a.name.localeCompare(b.name, 'en', { sensitivity: 'base' })
+
+/** All catalog peptides sorted alphabetically by display name. */
+export const allPeptidesSorted: readonly CatalogPeptide[] = [...catalog.peptides].sort(byName)
+
+/** Most popular peptides shown directly in the calculator dropdown, sorted alphabetically. */
+export const popularPeptides: readonly CatalogPeptide[] = allPeptidesSorted.filter((p) => p.popular)
+
+/** Default peptide when opening a blank calculator: popular, with label doses and human PK. */
+export const DEFAULT_PEPTIDE_ID = 'tirzepatide'
+
 export function findPeptide(id: string | null | undefined): CatalogPeptide | undefined {
   return id ? catalog.peptides.find((p) => p.id === id) : undefined
+}
+
+/** Matches a typed component name against single catalog peptides (exact name or alias). */
+export function matchSinglePeptide(query: string): CatalogPeptide | undefined {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return undefined
+  return catalog.peptides.find(
+    (p) =>
+      p.kind === 'single' &&
+      (p.name.toLowerCase() === needle || p.aliases.some((a) => a.toLowerCase() === needle)),
+  )
+}
+
+/**
+ * Reconstituted liquid tint for a peptide or blend: blue for copper peptides (GHK-Cu, AHK-Cu)
+ * and any blend containing one, clear otherwise.
+ */
+export function solutionColorFor(
+  peptide: CatalogPeptide | undefined,
+  components: readonly BlendComponent[],
+): SolutionColor {
+  if (peptide?.solutionColor) return peptide.solutionColor
+  if (components.some((c) => findPeptide(c.peptideId)?.solutionColor === 'blue')) return 'blue'
+  return 'clear'
 }
 
 export function findSyringe(id: string | null | undefined): SyringeSpec {

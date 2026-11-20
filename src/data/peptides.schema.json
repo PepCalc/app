@@ -125,6 +125,8 @@
         "name": { "type": "string", "minLength": 1 },
         "aliases": { "type": "array", "items": { "type": "string" } },
         "kind": { "enum": ["single", "blend"] },
+        "popular": { "type": "boolean" },
+        "solutionColor": { "enum": ["clear", "blue"] },
         "summary": { "type": "string", "minLength": 10 },
         "vialUnit": { "$ref": "#/$defs/unit" },
         "defaultDoseUnit": { "$ref": "#/$defs/unit" },

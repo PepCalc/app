@@ -36,4 +36,30 @@ describe('SyringeGraphic', () => {
     expect(wrapper.find('svg').attributes('aria-label')).toContain('exceeds')
     expect(wrapper.find('.syringe__reading').text()).toBe('exceeds 30 units')
   })
+
+  it('tints the liquid blue when solutionColor is blue and defaults to clear', () => {
+    const clear = mountWithVuetify(SyringeGraphic, {
+      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.2 },
+    })
+    expect(clear.find('figure').attributes('data-solution')).toBe('clear')
+    expect(clear.find('figure').classes()).toContain('syringe--clear')
+
+    const blue = mountWithVuetify(SyringeGraphic, {
+      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.2, solutionColor: 'blue' },
+    })
+    expect(blue.find('figure').attributes('data-solution')).toBe('blue')
+    expect(blue.find('figure').classes()).toContain('syringe--blue')
+  })
+
+  it('keeps the plunger handle fixed across different drawn volumes', () => {
+    const low = mountWithVuetify(SyringeGraphic, {
+      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.1 },
+    })
+    const high = mountWithVuetify(SyringeGraphic, {
+      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.9 },
+    })
+    expect(low.find('.syringe__thumb').attributes('x')).toBe(
+      high.find('.syringe__thumb').attributes('x'),
+    )
+  })
 })

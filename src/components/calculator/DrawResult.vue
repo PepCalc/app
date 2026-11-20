@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { syringeCatalog } from '@/data'
 import type { ComponentDose } from '@/domain/blend'
+import type { SolutionColor } from '@/domain/catalog'
 import { formatConcentration, type DrawPlan } from '@/domain/reconstitution'
 import { scaleLabel, scaleParts, type SyringeReading, type SyringeSpec } from '@/domain/syringe'
 import { AMOUNT_DECIMALS, formatQuantity, roundTo, type Quantity } from '@/domain/units'
@@ -9,15 +10,19 @@ import type { CalculatorWarning } from '@/composables/useCalculator'
 import { mdiShareVariantOutline } from '@/plugins/icons'
 import SyringeGraphic from './SyringeGraphic.vue'
 
-const props = defineProps<{
-  plan: DrawPlan
-  reading: SyringeReading
-  allReadings: SyringeReading[]
-  warnings: CalculatorWarning[]
-  componentDoses: ComponentDose[]
-  betterSyringe: SyringeSpec | null
-  dose: Quantity
-}>()
+const props = withDefaults(
+  defineProps<{
+    plan: DrawPlan
+    reading: SyringeReading
+    allReadings: SyringeReading[]
+    warnings: CalculatorWarning[]
+    componentDoses: ComponentDose[]
+    betterSyringe: SyringeSpec | null
+    dose: Quantity
+    solutionColor?: SolutionColor
+  }>(),
+  { solutionColor: 'clear' },
+)
 
 const syringeId = defineModel<string>('syringeId', { required: true })
 defineEmits<{ share: [] }>()
@@ -64,7 +69,11 @@ const syringeItems = syringeCatalog.syringes.map((s) => ({ title: s.label, value
     </v-card-item>
 
     <v-card-text class="pc-stack">
-      <SyringeGraphic :syringe="reading.syringe" :volume-ml="plan.volumeMl" />
+      <SyringeGraphic
+        :syringe="reading.syringe"
+        :volume-ml="plan.volumeMl"
+        :solution-color="solutionColor"
+      />
 
       <v-alert
         v-for="w in warnings"

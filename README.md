@@ -29,13 +29,14 @@ account, server or tracking.
   far to top up the syringe with water.
 - Presets with sources: vial sizes, water volumes and doses for each peptide, each marked as
   coming from a prescribing label, a clinical trial or community reports.
-- Blends: KLOW, GLOW and custom mixes split each dose into its components.
+- Blends: GLOW, KLOW, Wolverine Blend, and custom mixes split each dose into its components.
 - Stack: save mixed vials, log draws and see what's left.
 - Reminders: local notifications in the Android and iOS apps at your schedule's times, or
   calendar invites everywhere, with peptide names off by default.
 - Level charts: an estimate of the amount remaining in the body, based on a simple model from
-  published human data (semaglutide, tirzepatide, retatrutide, cagrilintide, tesamorelin). For
-  other peptides you can enter your own half-life, and the chart is marked user-supplied.
+  published human data (semaglutide, tirzepatide, retatrutide, cagrilintide, eloralintide,
+  tesamorelin, sermorelin, ipamorelin). For other peptides you can enter your own half-life, and
+  the chart is marked user-supplied.
 - Projected levels: set a frequency and see where levels head, up to 16 weeks out, with the date
   they turn steady. The protocol card draws the same curve behind it.
 - Share and export: share a level chart as an image, with or without the peptide name and
@@ -45,10 +46,12 @@ account, server or tracking.
   file you keep.
 - Phones and tablets, in light and dark themes.
 
-## Launch peptides
+## Catalog peptides
 
-Semaglutide, Tirzepatide, Retatrutide, Cagrilintide, Tesamorelin, BPC-157, TB-500, GHK-Cu, KPV,
-GLOW, and KLOW. Adding more is a data change: see [docs/adding-a-peptide.md](docs/adding-a-peptide.md).
+BPC-157, GHK-Cu, GLOW, KLOW, Retatrutide, TB-500, Tesamorelin, Tirzepatide, Semaglutide,
+Cagrilintide, Eloralintide, KPV, Wolverine Blend, MOTS-c, AHK-Cu, Semax, Selank, Sermorelin,
+Ipamorelin, and NAD+, plus custom peptides and custom blends. Adding more is a data change: see
+[docs/adding-a-peptide.md](docs/adding-a-peptide.md).
 
 ## How the numbers work
 

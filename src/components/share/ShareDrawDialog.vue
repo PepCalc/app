@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { ComponentDose } from '@/domain/blend'
+import type { SolutionColor } from '@/domain/catalog'
 import { formatConcentration, type DrawPlan } from '@/domain/reconstitution'
 import { scaleParts, type SyringeReading } from '@/domain/syringe'
 import { AMOUNT_DECIMALS, formatQuantity, roundTo, type Quantity } from '@/domain/units'
@@ -14,15 +15,19 @@ import { renderDrawCard, type DrawCardContent } from './drawCard'
  * the chosen syringe. Figures match the calculator's result exactly; the card is arithmetic on
  * the user's own inputs, never a recommendation.
  */
-const props = defineProps<{
-  name: string
-  vial: Quantity
-  diluentMl: number
-  dose: Quantity
-  plan: DrawPlan
-  reading: SyringeReading
-  componentDoses: ComponentDose[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    name: string
+    vial: Quantity
+    diluentMl: number
+    dose: Quantity
+    plan: DrawPlan
+    reading: SyringeReading
+    componentDoses: ComponentDose[]
+    solutionColor?: SolutionColor
+  }>(),
+  { solutionColor: 'clear' },
+)
 const open = defineModel<boolean>({ required: true })
 
 const showName = ref(true)
@@ -42,6 +47,7 @@ const figures = computed<Omit<DrawCardContent, 'madeAt'>>(() => {
     volume: `${roundTo(props.plan.volumeMl, 3)} mL`,
     syringe: props.reading.syringe,
     volumeMl: props.plan.volumeMl,
+    solutionColor: props.solutionColor,
     // A blend's contents would name the peptides, so they go with the name. No-break spaces keep
     // each amount with its component when the line wraps.
     components: showName.value

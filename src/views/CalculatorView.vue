@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { catalog, findPeptide } from '@/data'
+import { findPeptide, popularPeptides } from '@/data'
 import { CUSTOM_PEPTIDE, useCalculator } from '@/composables/useCalculator'
 import { useNow } from '@/composables/useNow'
 import { useSettingsStore } from '@/stores/settings'
@@ -17,10 +17,19 @@ import PresetPicker from '@/components/common/PresetPicker.vue'
 import SourceBadge from '@/components/common/SourceBadge.vue'
 import DrawResult from '@/components/calculator/DrawResult.vue'
 import DiluentAdvisor from '@/components/calculator/DiluentAdvisor.vue'
+import PeptidePickerDialog, {
+  type PickerMode,
+} from '@/components/calculator/PeptidePickerDialog.vue'
 import type { MixContext } from '@/composables/useDiluentAdvisor'
 import PkPanel from '@/components/charts/PkPanel.vue'
 import ShareDrawDialog from '@/components/share/ShareDrawDialog.vue'
-import { mdiBookshelf, mdiNeedle, mdiWaterPlusOutline } from '@/plugins/icons'
+import {
+  mdiBookshelf,
+  mdiNeedle,
+  mdiPencilOutline,
+  mdiViewGridOutline,
+  mdiWaterPlusOutline,
+} from '@/plugins/icons'
 
 const route = useRoute()
 const router = useRouter()
@@ -33,14 +42,43 @@ const now = useNow()
 const calc = useCalculator({ syringeId: settings.defaultSyringeId })
 const { state } = calc
 
+const MORE_CUSTOM = '__more__'
+
 const peptideItems = [
-  ...catalog.peptides.map((p) => ({
+  ...popularPeptides.map((p) => ({
     title: p.name,
     value: p.id,
     subtitle: p.kind === 'blend' ? 'Blend' : p.aliases.slice(0, 2).join(', '),
   })),
-  { title: 'Custom peptide', value: CUSTOM_PEPTIDE, subtitle: 'Enter your own values' },
+  {
+    title: 'More / Custom',
+    value: MORE_CUSTOM,
+    subtitle: 'All peptides, custom peptide or blend',
+  },
 ]
+
+const pickingPeptide = ref(false)
+const pickerMode = ref<PickerMode>('all')
+
+function openPicker(mode: PickerMode = 'all') {
+  pickerMode.value = mode
+  pickingPeptide.value = true
+}
+
+function onSelectPeptide(value: string) {
+  if (value === MORE_CUSTOM) {
+    openPicker('all')
+    return
+  }
+  calc.actions.selectPeptide(value)
+}
+
+const selectedPeptideLabel = computed(() => {
+  if (calc.peptide.value) return calc.peptide.value.name
+  const custom = state.customName.trim()
+  if (custom) return custom
+  return calc.isBlend.value ? 'Custom blend' : 'Custom peptide'
+})
 
 /** A shelf vial selected with ?vial=<id>; its amount and water are fixed. */
 const shelfVial = computed(() => {
@@ -96,9 +134,7 @@ const advising = ref(false)
 const sharing = ref(false)
 
 const shareName = computed(() =>
-  shelfVial.value
-    ? shelf.displayName(shelfVial.value)
-    : (calc.peptide.value?.name ?? (state.customName.trim() || 'Custom peptide')),
+  shelfVial.value ? shelf.displayName(shelfVial.value) : selectedPeptideLabel.value,
 )
 const mixContext = computed<MixContext>(() => ({
   peptide: calc.peptide.value,
@@ -136,7 +172,9 @@ async function saveToShelf() {
   const p = calc.peptide.value
   const vial = await shelf.addVial({
     peptideId: p?.id ?? null,
-    name: p?.name ?? (state.customName.trim() || 'Custom peptide'),
+    name:
+      p?.name ??
+      (state.customName.trim() || (calc.isBlend.value ? 'Custom blend' : 'Custom peptide')),
     kind: calc.isBlend.value ? 'blend' : 'single',
     unit: state.vialUnit,
     amount: calc.vial.value.value,
@@ -244,17 +282,25 @@ function useVial(id: string) {
               item-title="title"
               item-value="value"
               label="Peptide"
-              @update:model-value="calc.actions.selectPeptide($event as string)"
+              @update:model-value="onSelectPeptide($event as string)"
             >
+              <template #selection>
+                <span class="v-select__selection-text">{{ selectedPeptideLabel }}</span>
+              </template>
               <template #item="{ props: itemProps, item }">
-                <v-list-item v-bind="itemProps" :subtitle="item.subtitle" />
+                <v-divider v-if="item.value === MORE_CUSTOM" class="my-1" />
+                <v-list-item
+                  v-bind="itemProps"
+                  :subtitle="item.subtitle"
+                  :prepend-icon="item.value === MORE_CUSTOM ? mdiViewGridOutline : undefined"
+                />
               </template>
             </v-select>
             <v-text-field
               v-if="state.peptideId === CUSTOM_PEPTIDE"
               v-model="state.customName"
               label="Name"
-              placeholder="e.g. Ipamorelin"
+              :placeholder="calc.isBlend.value ? 'e.g. CJC-1295 + Ipamorelin' : 'e.g. Epitalon'"
             />
             <p v-if="calc.peptide.value" class="text-body-medium pc-muted">
               {{ calc.peptide.value.summary }}
@@ -284,6 +330,16 @@ function useVial(id: string) {
                   Vendor compositions differ. Match these to your vial's label. Total:
                   <strong class="pc-num">{{ state.vialAmount }} mg</strong>
                 </p>
+                <div v-if="state.peptideId === CUSTOM_PEPTIDE">
+                  <v-btn
+                    variant="tonal"
+                    size="small"
+                    :prepend-icon="mdiPencilOutline"
+                    @click="openPicker('blend')"
+                  >
+                    Edit components
+                  </v-btn>
+                </div>
               </div>
             </template>
             <template v-else>
@@ -404,6 +460,7 @@ function useVial(id: string) {
           :component-doses="calc.componentDoses.value"
           :better-syringe="calc.betterSyringe.value"
           :dose="calc.dose.value"
+          :solution-color="calc.solutionColor.value"
           @share="sharing = true"
         />
         <v-card v-else variant="tonal">
@@ -449,6 +506,7 @@ function useVial(id: string) {
       :plan="calc.plan.value"
       :reading="calc.reading.value"
       :component-doses="calc.componentDoses.value"
+      :solution-color="calc.solutionColor.value"
     />
 
     <DiluentAdvisor
@@ -456,6 +514,19 @@ function useVial(id: string) {
       :context="mixContext"
       :dose="calc.dose.value"
       @choose="state.diluentMl = $event"
+    />
+
+    <PeptidePickerDialog
+      v-model="pickingPeptide"
+      :current-peptide-id="state.peptideId"
+      :initial-mode="pickerMode"
+      :current-custom-name="state.customName"
+      :current-vial-unit="state.vialUnit"
+      :current-vial-amount="state.vialAmount"
+      :current-components="state.peptideId === CUSTOM_PEPTIDE ? state.components : []"
+      @select="calc.actions.selectPeptide($event)"
+      @select-custom="calc.actions.selectCustom($event)"
+      @select-custom-blend="calc.actions.selectCustomBlend($event)"
     />
   </div>
 </template>

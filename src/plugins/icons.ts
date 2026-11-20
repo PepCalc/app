@@ -42,6 +42,7 @@ export {
   mdiCrop,
   mdiImageOutline,
   mdiLockOutline,
+  mdiMagnify,
   mdiScaleBathroom,
   mdiStethoscope,
   mdiViewGridOutline,

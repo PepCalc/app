@@ -1,11 +1,76 @@
 import { expect, test, type Page } from '@playwright/test'
 import { acceptDisclaimer, choose, waitForServiceWorker } from './helpers'
 
-/** Opens the Calculator view and accepts the first-run notice. */
-async function openCalculator(page: Page) {
-  await page.goto('./#/calculator')
+/** Opens the Calculator view (optionally preselecting a catalog peptide) and accepts the first-run notice. */
+async function openCalculator(page: Page, peptideId?: string) {
+  await page.goto(peptideId ? `./#/calculator?peptide=${peptideId}` : './#/calculator')
   await acceptDisclaimer(page)
 }
+
+/** Picks a catalog peptide through the More / Custom dialog. */
+async function pickFromMore(page: Page, name: string) {
+  await page.locator('.v-select').first().click()
+  await page.getByRole('option', { name: /More \/ Custom/ }).click()
+  const dialog = page.getByRole('dialog').filter({ hasText: 'More & Custom' })
+  await dialog.getByRole('textbox', { name: 'Search peptides' }).fill(name)
+  await dialog.locator('.v-list-item').filter({ hasText: name }).first().click()
+  await expect(dialog).toBeHidden()
+}
+
+test('shows the popular peptides alphabetically, then More / Custom with search and custom blends', async ({
+  page,
+}) => {
+  await openCalculator(page)
+  // Default peptide is Tirzepatide: clear liquid, 10 mg in 3 mL, 2.5 mg = 75 units.
+  await expect(page.getByTestId('draw-headline')).toHaveText('75')
+  await expect(page.locator('figure.syringe')).toHaveAttribute('data-solution', 'clear')
+
+  await page.locator('.v-select').first().click()
+  const options = await page.getByRole('option').allInnerTexts()
+  const titles = options.map((t) => t.split('\n')[0]!.trim())
+  expect(titles).toEqual([
+    'BPC-157',
+    'GHK-Cu',
+    'GLOW',
+    'KLOW',
+    'Retatrutide',
+    'TB-500',
+    'Tesamorelin',
+    'Tirzepatide',
+    'More / Custom',
+  ])
+
+  // Picking GHK-Cu switches the syringe liquid to blue.
+  await page.getByRole('option', { name: /GHK-Cu/ }).click()
+  await expect(page.locator('figure.syringe')).toHaveAttribute('data-solution', 'blue')
+
+  // Picking Eloralintide from More / Custom loads its trial doses and clear liquid.
+  await pickFromMore(page, 'Eloralintide')
+  await expect(page.locator('figure.syringe')).toHaveAttribute('data-solution', 'clear')
+  await choose(page, 'Peptide in vial', '10 mg')
+  await choose(page, 'Bacteriostatic water added', '2 mL')
+  await choose(page, 'Dose', '3 mg')
+  await expect(page.getByTestId('draw-headline')).toHaveText('60')
+
+  // Creating a custom blend containing GHK-Cu tints the syringe blue and splits component doses.
+  await page.locator('.v-select').first().click()
+  await page.getByRole('option', { name: /More \/ Custom/ }).click()
+  const dialog = page.getByRole('dialog').filter({ hasText: 'More & Custom' })
+  await dialog.getByRole('button', { name: 'Custom blend', exact: true }).click()
+  await dialog.getByLabel('Blend name').fill('Copper Recovery')
+  await dialog.getByLabel('Component 1').fill('GHK-Cu')
+  await dialog.getByLabel('Amount').nth(0).fill('50')
+  await dialog.getByLabel('Component 2').fill('BPC-157')
+  await dialog.getByLabel('Amount').nth(1).fill('10')
+  await dialog.getByRole('button', { name: 'Use custom blend' }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByText('Total: 60 mg')).toBeVisible()
+  await choose(page, 'Dose', 'Custom')
+  await page.locator('#dose').fill('6')
+  await expect(page.locator('figure.syringe')).toHaveAttribute('data-solution', 'blue')
+  await expect(page.getByText('5000 mcg')).toBeVisible()
+  await expect(page.getByText('1000 mcg')).toBeVisible()
+})
 
 test('calculates the standard check: 5 mg in 2 mL, 250 mcg is 10 units', async ({ page }) => {
   await openCalculator(page)
@@ -42,7 +107,7 @@ test('the mixing advisor dilutes GHK-Cu and fills in the water', async ({ page }
 })
 
 test('saves a vial, logs a draw and tracks the balance', async ({ page }) => {
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   // Semaglutide defaults: 5 mg vial, 3 mL water, 0.25 mg dose.
   await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
@@ -70,9 +135,9 @@ test('saves a vial, logs a draw and tracks the balance', async ({ page }) => {
 })
 
 test('numbers twin vials, ages them, and pages the draw history', async ({ page }) => {
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   for (let i = 0; i < 2; i++) {
-    await page.goto('./#/calculator')
+    await page.goto('./#/calculator?peptide=semaglutide')
     await expect(page.getByTestId('draw-headline')).toHaveText('15')
     await page.getByRole('button', { name: 'Save vial to shelf' }).click()
     await expect(page.getByText('From your shelf')).toBeVisible()
@@ -105,7 +170,7 @@ test('numbers twin vials, ages them, and pages the draw history', async ({ page 
 test('sets a protocol, counts down to the next dose, and filters draws by peptide', async ({
   page,
 }) => {
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await page.getByRole('button', { name: 'Log this draw now' }).click()
   await expect(page.getByText(/Logged 0.25 mg of Semaglutide/)).toBeVisible()
@@ -153,7 +218,7 @@ test('sets a protocol, counts down to the next dose, and filters draws by peptid
 })
 
 test('projects levels while setting a protocol, then draws them on its page', async ({ page }) => {
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
   await page.goto('./#/calculator')
@@ -204,13 +269,13 @@ test('projects levels while setting a protocol, then draws them on its page', as
 })
 
 test('calculates a draw from a protocol, then switches vial', async ({ page }) => {
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Use a different vial' })).toBeHidden()
 
   // A second vial of the same peptide, used most recently, with less water.
-  await page.goto('./#/calculator')
+  await page.goto('./#/calculator?peptide=semaglutide')
   await expect(page.getByTestId('draw-headline')).toHaveText('15')
   await choose(page, 'Bacteriostatic water added', '2 mL')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
@@ -242,7 +307,7 @@ test('calculates a draw from a protocol, then switches vial', async ({ page }) =
 })
 
 test('overlays the levels of several peptides on one chart', async ({ page }) => {
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await page.getByRole('button', { name: 'Log this draw now' }).click()
   await expect(page.getByText(/Logged .+ of Semaglutide/)).toBeVisible()
@@ -273,7 +338,7 @@ test('overlays the levels of several peptides on one chart', async ({ page }) =>
 })
 
 test("marks one peptide's doses on the weight line and switches peptide", async ({ page }) => {
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await page.getByRole('link', { name: 'Open vial' }).click()
   for (const [when, amount] of [
@@ -355,7 +420,7 @@ test('works offline after the first visit, including stored data', async ({
     browserName === 'webkit',
     'Playwright WebKit does not drive service workers reliably; offline is verified on Chromium',
   )
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   await waitForServiceWorker(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await expect(page.getByText('From your shelf')).toBeVisible()
@@ -368,7 +433,7 @@ test('works offline after the first visit, including stored data', async ({
 
   // The calculator chunk (with the chart library) must also come from the precache.
   await page.goto('./#/calculator')
-  await expect(page.getByTestId('draw-headline')).toHaveText('15')
+  await expect(page.getByTestId('draw-headline')).toHaveText('75')
   await context.setOffline(false)
 })
 
@@ -464,9 +529,7 @@ async function scrollInSteps(page: Page, step: number, steps: number) {
 test('the top bar scrolls away when reading and returns on scrolling up', async ({ page }) => {
   // Short enough that the calculator scrolls on a tablet too.
   await page.setViewportSize({ width: page.viewportSize()!.width, height: 480 })
-  await openCalculator(page)
-  await page.locator('.v-select').first().click()
-  await page.getByRole('option', { name: /Semaglutide/ }).click()
+  await openCalculator(page, 'semaglutide')
   await choose(page, 'Dose', '0.5 mg')
   const bar = page.locator('.v-app-bar')
   await page.evaluate(() => window.scrollTo(0, 0))
@@ -595,8 +658,7 @@ test('a tab tapped while the page is still coasting from a fling opens', async (
 
 test('estimated levels can be previewed as a shareable image', async ({ page }) => {
   await openCalculator(page)
-  await page.locator('.v-select').first().click()
-  await page.getByRole('option', { name: /Semaglutide/ }).click()
+  await pickFromMore(page, 'Semaglutide')
   await choose(page, 'Peptide in vial', '5 mg')
   await choose(page, 'Bacteriostatic water added', '2 mL')
   await choose(page, 'Dose', '0.5 mg')
@@ -642,7 +704,7 @@ test('exports draws and estimated levels as a PDF, offline', async ({
     browserName === 'webkit',
     'Playwright WebKit does not drive service workers reliably; offline is verified on Chromium',
   )
-  await openCalculator(page)
+  await openCalculator(page, 'semaglutide')
   await waitForServiceWorker(page)
   await page.getByRole('button', { name: 'Save vial to shelf' }).click()
   await page.getByRole('button', { name: 'Log this draw now' }).click()

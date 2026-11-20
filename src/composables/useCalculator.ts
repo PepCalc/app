@@ -1,13 +1,14 @@
 import { computed, reactive, watch } from 'vue'
 import {
-  catalog,
   comfortCaps,
+  DEFAULT_PEPTIDE_ID,
   findPeptide,
   findSyringe,
   injectionSiteConcerns,
+  solutionColorFor,
   syringeCatalog,
 } from '@/data'
-import type { CatalogPeptide } from '@/domain/catalog'
+import type { CatalogPeptide, SolutionColor } from '@/domain/catalog'
 import { blendTotalMg, splitBlendDose, type BlendComponent } from '@/domain/blend'
 import { InvalidInputError, planDraw, type DrawPlan } from '@/domain/reconstitution'
 import {
@@ -29,6 +30,17 @@ import {
 } from '@/domain/units'
 
 export const CUSTOM_PEPTIDE = 'custom'
+
+export interface CustomPeptideChoice {
+  name: string
+  vialUnit: AmountUnit
+  vialAmount: number | null
+}
+
+export interface CustomBlendChoice {
+  name: string
+  components: BlendComponent[]
+}
 
 export interface CalculatorInput {
   peptideId: string
@@ -64,7 +76,7 @@ function defaultsFor(peptide: CatalogPeptide | undefined): Partial<CalculatorInp
  * only wires inputs to it and turns domain errors into user-facing messages.
  */
 export function useCalculator(initial: Partial<CalculatorInput> = {}) {
-  const firstPeptide = initial.peptideId ?? catalog.peptides[0]?.id ?? CUSTOM_PEPTIDE
+  const firstPeptide = initial.peptideId ?? DEFAULT_PEPTIDE_ID
   const state = reactive<CalculatorInput>({
     peptideId: firstPeptide,
     customName: '',
@@ -81,6 +93,9 @@ export function useCalculator(initial: Partial<CalculatorInput> = {}) {
 
   const peptide = computed(() => findPeptide(state.peptideId))
   const isBlend = computed(() => peptide.value?.kind === 'blend' || state.components.length > 1)
+  const solutionColor = computed<SolutionColor>(() =>
+    solutionColorFor(peptide.value, state.components),
+  )
   const doseUnits = computed(() => doseUnitsFor(state.vialUnit))
   const syringe = computed(() => findSyringe(state.syringeId))
 
@@ -103,6 +118,33 @@ export function useCalculator(initial: Partial<CalculatorInput> = {}) {
       state.vialAmount = null
       state.doseValue = null
     }
+  }
+
+  function selectCustom(choice: CustomPeptideChoice) {
+    state.peptideId = CUSTOM_PEPTIDE
+    state.customName = choice.name.trim()
+    state.components = []
+    state.vialUnit = choice.vialUnit
+    state.vialAmount = choice.vialAmount
+    state.diluentMl = state.diluentMl ?? 3
+    state.doseUnit = choice.vialUnit === 'iu' ? 'iu' : 'mg'
+    state.doseValue = null
+  }
+
+  function selectCustomBlend(choice: CustomBlendChoice) {
+    const components = choice.components.map((c) => ({
+      name: c.name.trim(),
+      amountMg: c.amountMg,
+      peptideId: c.peptideId,
+    }))
+    state.peptideId = CUSTOM_PEPTIDE
+    state.customName = choice.name.trim()
+    state.vialUnit = 'mg'
+    state.components = components
+    state.vialAmount = blendTotalMg(components)
+    state.diluentMl = solutionColorFor(undefined, components) === 'blue' ? 5 : 3
+    state.doseUnit = 'mg'
+    state.doseValue = null
   }
 
   // A blend's vial amount is the sum of its components, so editing composition updates it.
@@ -221,6 +263,7 @@ export function useCalculator(initial: Partial<CalculatorInput> = {}) {
     state,
     peptide,
     isBlend,
+    solutionColor,
     doseUnits,
     syringe,
     vial,
@@ -232,6 +275,6 @@ export function useCalculator(initial: Partial<CalculatorInput> = {}) {
     betterSyringe,
     componentDoses,
     warnings,
-    actions: { selectPeptide, setDoseUnit },
+    actions: { selectPeptide, selectCustom, selectCustomBlend, setDoseUnit },
   }
 }

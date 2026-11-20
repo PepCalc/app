@@ -79,12 +79,12 @@ const SHOTS = [
     scheme: 'light',
     show: async (page) => {
       await openTab(page, 'Calculator')
-      // A dose that lands on a syringe mark from the default vial (5 mg in 3 mL): 30 units.
+      // Default Tirzepatide vial (10 mg in 3 mL): 2.5 mg is 75 units; pick 2 mL for 50 units.
       await page
-        .getByRole('group', { name: 'Dose' })
-        .getByRole('button', { name: '0.5 mg', exact: true })
+        .getByRole('group', { name: 'Bacteriostatic water added' })
+        .getByRole('button', { name: '2 mL', exact: true })
         .click()
-      await page.getByTestId('draw-headline').filter({ hasText: '30' }).waitFor()
+      await page.getByTestId('draw-headline').filter({ hasText: '50' }).waitFor()
       // The wide layout (840px and up) shows the draw beside the inputs, so it returns to the top
       // the click scrolled away from; phones scroll down to the dose instead.
       if (page.viewportSize().width < 840) await scrollTo(page, page.getByText('3 · Dose'))

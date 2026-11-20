@@ -4,7 +4,7 @@ import { acceptDisclaimer, choose } from './helpers'
 test('manages a peptide on Stack, keeps levels off VialView, and supports redirects and Compare levels', async ({
   page,
 }) => {
-  await page.goto('./#/calculator')
+  await page.goto('./#/calculator?peptide=semaglutide')
   await acceptDisclaimer(page)
 
   // Save Semaglutide and Tirzepatide vials.

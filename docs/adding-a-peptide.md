@@ -88,6 +88,13 @@ its `note` replaces the general storage advice on the vial page, so say how to s
 Blend components name the catalog peptide they contain, so its notes apply to the blend:
 `{ "name": "GHK-Cu", "amountMg": 50, "peptideId": "ghk-cu" }`.
 
+Optional catalog flags:
+
+- `"popular": true` shows the peptide directly in the calculator's top-level dropdown (sorted
+  alphabetically above `More / Custom`). Other peptides appear in the `More & Custom` dialog.
+- `"solutionColor": "blue"` tints the syringe graphic blue for copper-peptide solutions (GHK-Cu,
+  AHK-Cu). Blends inherit it through each component's `peptideId`. Omit for clear liquids.
+
 ## 3. Check
 
 ```bash

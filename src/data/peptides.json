@@ -88,11 +88,12 @@
       "name": "Tirzepatide",
       "aliases": ["Tirz", "GIP/GLP-1"],
       "kind": "single",
+      "popular": true,
       "summary": "Dual GIP and GLP-1 receptor agonist; once-weekly in clinical use.",
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [10, 20, 30, 40, 60],
+        "values": [10, 15, 20, 30, 60, 100],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -137,11 +138,12 @@
       "name": "Retatrutide",
       "aliases": ["Reta", "LY3437943"],
       "kind": "single",
+      "popular": true,
       "summary": "Investigational GIP, GLP-1 and glucagon receptor triple agonist; not approved.",
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [10, 20, 30, 40, 60],
+        "values": [10, 20, 30, 40, 50, 60],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -245,6 +247,7 @@
       "name": "Tesamorelin",
       "aliases": ["Egrifta", "TH9507"],
       "kind": "single",
+      "popular": true,
       "summary": "Growth-hormone-releasing hormone analogue; once-daily in clinical use.",
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
@@ -311,11 +314,12 @@
       "name": "BPC-157",
       "aliases": ["Body Protection Compound 157"],
       "kind": "single",
+      "popular": true,
       "summary": "Synthetic gastric pentadecapeptide; studied in animals, no approved human use.",
       "vialUnit": "mg",
       "defaultDoseUnit": "mcg",
       "vialSizes": {
-        "values": [5, 10],
+        "values": [5, 10, 20],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -345,11 +349,12 @@
       "name": "TB-500",
       "aliases": ["Thymosin beta-4 fragment"],
       "kind": "single",
+      "popular": true,
       "summary": "Synthetic peptide derived from thymosin beta-4; no approved human use.",
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
       "vialSizes": {
-        "values": [5, 10],
+        "values": [5, 10, 20],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -379,6 +384,8 @@
       "name": "GHK-Cu",
       "aliases": ["Copper peptide", "Copper tripeptide-1"],
       "kind": "single",
+      "popular": true,
+      "solutionColor": "blue",
       "summary": "Copper-binding tripeptide; widely used topically, injectable use is unapproved.",
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
@@ -457,7 +464,7 @@
       "vialUnit": "mg",
       "defaultDoseUnit": "mcg",
       "vialSizes": {
-        "values": [5, 10],
+        "values": [5, 10, 30],
         "unit": "mg",
         "source": {
           "kind": "community",
@@ -487,6 +494,7 @@
       "name": "GLOW",
       "aliases": ["GLOW blend"],
       "kind": "blend",
+      "popular": true,
       "summary": "Vendor blend of GHK-Cu, BPC-157 and TB-500 in one vial. Compositions vary by vendor: check your vial's label.",
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
@@ -531,6 +539,7 @@
       "name": "KLOW",
       "aliases": ["KLOW blend"],
       "kind": "blend",
+      "popular": true,
       "summary": "Vendor blend of GHK-Cu, BPC-157, TB-500 and KPV in one vial. Compositions vary by vendor: check your vial's label.",
       "vialUnit": "mg",
       "defaultDoseUnit": "mg",
@@ -574,6 +583,372 @@
       ],
       "pk": null,
       "pkUnavailableReason": "No human pharmacokinetic data for the blend or its components. You can enter your own half-life on a shelf vial."
+    },
+    {
+      "id": "wolverine-blend",
+      "name": "Wolverine Blend",
+      "aliases": ["BPC-157 + TB-500", "Wolverine stack"],
+      "kind": "blend",
+      "summary": "Vendor blend of BPC-157 and TB-500 in one vial. Compositions vary by vendor: check your vial's label.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mcg",
+      "vialSizes": {
+        "values": [10, 20],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common vendor compositions: BPC-157 5 mg + TB-500 5 mg (10 mg), or 10 mg + 10 mg (20 mg)"
+        }
+      },
+      "diluentMl": {
+        "values": [1, 2, 3],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes"
+        }
+      },
+      "doses": null,
+      "components": [
+        {
+          "name": "BPC-157",
+          "amountMg": 5,
+          "peptideId": "bpc-157"
+        },
+        {
+          "name": "TB-500",
+          "amountMg": 5,
+          "peptideId": "tb-500"
+        }
+      ],
+      "pk": null,
+      "pkUnavailableReason": "No human pharmacokinetic data for the blend or its components. You can enter your own half-life on a shelf vial."
+    },
+    {
+      "id": "mots-c",
+      "name": "MOTS-c",
+      "aliases": ["Mitochondrial ORF of the 12S rRNA-c"],
+      "kind": "single",
+      "summary": "Mitochondrial-derived 16-amino-acid peptide studied for metabolic regulation; no approved human use.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mg",
+      "vialSizes": {
+        "values": [10, 20, 40],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common research-vendor vial sizes"
+        }
+      },
+      "diluentMl": {
+        "values": [1, 2, 3],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes"
+        }
+      },
+      "doses": {
+        "values": [5, 10],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Amounts commonly cited in research communities; not clinically established"
+        }
+      },
+      "pk": null,
+      "pkUnavailableReason": "No published human pharmacokinetic study of exogenous MOTS-c. Phase 1 work has been reported only for the synthetic analogue CB4211. You can enter your own half-life on a shelf vial."
+    },
+    {
+      "id": "ahk-cu",
+      "name": "AHK-Cu",
+      "aliases": ["Copper tripeptide-3", "Ala-His-Lys-Cu"],
+      "kind": "single",
+      "solutionColor": "blue",
+      "summary": "Copper-binding tripeptide studied in vitro for hair follicle growth; injectable use is unapproved.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mg",
+      "vialSizes": {
+        "values": [50, 100],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common research-vendor vial sizes"
+        }
+      },
+      "diluentMl": {
+        "values": [3, 5, 10],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes; copper peptides are often diluted further"
+        }
+      },
+      "doses": null,
+      "pk": null,
+      "pkUnavailableReason": "No published human pharmacokinetic study of AHK-Cu. Published research is limited to in vitro hair follicle and dermal papilla cell models. You can enter your own half-life on a shelf vial."
+    },
+    {
+      "id": "semax",
+      "name": "Semax",
+      "aliases": ["ACTH(4-7)-PGP"],
+      "kind": "single",
+      "summary": "Synthetic ACTH(4-10) heptapeptide analogue approved in Russia as nasal drops; not FDA-approved.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mcg",
+      "vialSizes": {
+        "values": [5, 10],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common research-vendor vial sizes"
+        }
+      },
+      "diluentMl": {
+        "values": [1, 2, 3],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes"
+        }
+      },
+      "doses": {
+        "values": [200, 300, 600],
+        "unit": "mcg",
+        "source": {
+          "kind": "community",
+          "citation": "Amounts commonly cited in research communities; not clinically established for injection"
+        }
+      },
+      "pk": null,
+      "pkUnavailableReason": "No published human systemic pharmacokinetic parameters for Semax. Degradation data come from animal models while human studies track neurological outcomes. You can enter your own half-life on a shelf vial."
+    },
+    {
+      "id": "selank",
+      "name": "Selank",
+      "aliases": ["TP-7", "Tuftsin-PGP"],
+      "kind": "single",
+      "summary": "Synthetic tuftsin heptapeptide analogue approved in Russia as nasal drops; not FDA-approved.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mcg",
+      "vialSizes": {
+        "values": [5, 10],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common research-vendor vial sizes"
+        }
+      },
+      "diluentMl": {
+        "values": [1, 2, 3],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes"
+        }
+      },
+      "doses": {
+        "values": [250, 500, 750],
+        "unit": "mcg",
+        "source": {
+          "kind": "community",
+          "citation": "Amounts commonly cited in research communities; not clinically established for injection"
+        }
+      },
+      "pk": null,
+      "pkUnavailableReason": "No published human plasma elimination half-life for Selank. Human studies report enkephalinase activity and anxiety scores rather than Selank PK curves. You can enter your own half-life on a shelf vial."
+    },
+    {
+      "id": "sermorelin",
+      "name": "Sermorelin",
+      "aliases": ["GHRH(1-29)", "Geref"],
+      "kind": "single",
+      "summary": "Growth-hormone-releasing hormone (1-29) analogue; formerly FDA-approved as Geref, now discontinued.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mcg",
+      "vialSizes": {
+        "values": [5, 10],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common research-vendor vial sizes"
+        }
+      },
+      "diluentMl": {
+        "values": [1, 2, 3],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes"
+        }
+      },
+      "doses": {
+        "values": [100, 200, 300],
+        "unit": "mcg",
+        "source": {
+          "kind": "community",
+          "citation": "Amounts commonly cited in adult compounding and research communities; pediatric Geref label dosed by weight (30 mcg/kg)"
+        }
+      },
+      "pk": {
+        "halfLifeHours": 0.192,
+        "tmaxHours": 0.167,
+        "notes": "Historical Geref label: elimination half-life 11 to 12 minutes after IV or subcutaneous dosing, peak 5 to 20 minutes after subcutaneous injection, bioavailability about 6%. The model uses 11.5 min (0.192 h) and 10 min (0.167 h); its growth-hormone pulse lasts longer than the peptide itself.",
+        "sources": [
+          {
+            "kind": "label",
+            "citation": "GEREF (sermorelin acetate) historical US prescribing information (NDA 019863 / 020443): t1/2 11 to 12 min, SC tmax 5 to 20 min"
+          },
+          {
+            "kind": "trial",
+            "citation": "Prakash & Goa, BioDrugs 1999;12(2):139-157: review of sermorelin human pharmacokinetics",
+            "url": "https://doi.org/10.2165/00063030-199912020-00007"
+          },
+          {
+            "kind": "model",
+            "citation": "Half-life and time to peak chosen within the reported ranges"
+          }
+        ]
+      }
+    },
+    {
+      "id": "eloralintide",
+      "name": "Eloralintide",
+      "aliases": ["LY3841136"],
+      "kind": "single",
+      "summary": "Investigational long-acting selective amylin receptor agonist; studied once-weekly, not approved.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mg",
+      "vialSizes": {
+        "values": [5, 10],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common research-vendor vial sizes"
+        }
+      },
+      "diluentMl": {
+        "values": [1, 2, 3],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes"
+        }
+      },
+      "doses": {
+        "values": [1, 3, 6, 9],
+        "unit": "mg",
+        "source": {
+          "kind": "trial",
+          "citation": "Phase 2 48-week trial, The Lancet 2025: once-weekly fixed-dose arms 1, 3, 6 and 9 mg",
+          "url": "https://doi.org/10.1016/S0140-6736(25)02155-5"
+        }
+      },
+      "pk": {
+        "halfLifeHours": 336,
+        "tmaxHours": 96,
+        "notes": "Phase 1: geometric mean terminal half-life 310 to 366 h (about 13 to 15 days); time to peak 72 to 132 h across single-dose cohorts. The model uses 336 h (14 days) and 96 h (4 days).",
+        "sources": [
+          {
+            "kind": "trial",
+            "citation": "Briere et al., Molecular Metabolism 2025;102:102271: LY3841136 discovery and phase 1 PK",
+            "url": "https://doi.org/10.1016/j.molmet.2025.102271"
+          },
+          {
+            "kind": "trial",
+            "citation": "Phase 2 48-week trial, The Lancet 2025;406(10520):2631-2643",
+            "url": "https://doi.org/10.1016/S0140-6736(25)02155-5"
+          },
+          {
+            "kind": "model",
+            "citation": "Half-life and time to peak chosen within the reported phase 1 ranges"
+          }
+        ]
+      }
+    },
+    {
+      "id": "nad-plus",
+      "name": "NAD+",
+      "aliases": ["Nicotinamide adenine dinucleotide"],
+      "kind": "single",
+      "summary": "Cellular coenzyme (not a peptide); injectable use is unapproved and unbuffered solutions often sting.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mg",
+      "vialSizes": {
+        "values": [500, 1000],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common research-vendor vial sizes"
+        }
+      },
+      "diluentMl": {
+        "values": [5, 10],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes for 500 mg and 1000 mg vials"
+        }
+      },
+      "doses": {
+        "values": [25, 50, 100],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Amounts commonly cited in research communities; not clinically established"
+        }
+      },
+      "injectionSite": {
+        "note": "Unbuffered NAD+ is acidic and often stings or burns on subcutaneous injection. Buffered vials (pH 6 to 6.5), a room-temperature dose and slower injection are commonly reported to help.",
+        "sources": [
+          {
+            "kind": "community",
+            "citation": "Vendor buffered-vial specifications and user injection-site reports"
+          }
+        ]
+      },
+      "pk": null,
+      "pkUnavailableReason": "No published human subcutaneous pharmacokinetic model for intact NAD+. Extracellular enzymes (CD38, CD157) cleave injected NAD+ within minutes, while cellular NAD+ turnover spans hours. You can enter your own half-life on a shelf vial."
+    },
+    {
+      "id": "ipamorelin",
+      "name": "Ipamorelin",
+      "aliases": ["NNC 26-0161"],
+      "kind": "single",
+      "summary": "Selective growth-hormone-releasing peptide (ghrelin receptor agonist); investigational, not approved.",
+      "vialUnit": "mg",
+      "defaultDoseUnit": "mcg",
+      "vialSizes": {
+        "values": [5, 10],
+        "unit": "mg",
+        "source": {
+          "kind": "community",
+          "citation": "Common research-vendor vial sizes"
+        }
+      },
+      "diluentMl": {
+        "values": [1, 2, 3],
+        "source": {
+          "kind": "community",
+          "citation": "Common reconstitution volumes"
+        }
+      },
+      "doses": {
+        "values": [100, 200, 300],
+        "unit": "mcg",
+        "source": {
+          "kind": "community",
+          "citation": "Amounts commonly cited in research communities; not clinically established"
+        }
+      },
+      "pk": {
+        "halfLifeHours": 2,
+        "tmaxHours": 0.5,
+        "notes": "Human phase 1 IV infusion study (Gobburu et al., 1999): terminal half-life about 2 h; growth hormone peaked at 0.67 h. Subcutaneous time to peak is not published in humans; the model uses 0.5 h as an absorption estimate.",
+        "sources": [
+          {
+            "kind": "trial",
+            "citation": "Gobburu et al., Pharm Res 1999;16(9):1412-1416: human PK/PD modeling of ipamorelin",
+            "url": "https://doi.org/10.1023/a:1018955126402"
+          },
+          {
+            "kind": "model",
+            "citation": "Subcutaneous time to peak estimated; human study used 15-minute IV infusion"
+          }
+        ]
+      }
     }
   ]
 }

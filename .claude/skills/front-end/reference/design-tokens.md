@@ -20,17 +20,17 @@ cards are translucent paper with a lit top edge. Glass falls back to `--pc-surfa
 
 ## Semantic tokens (both themes)
 
-| Group        | Tokens                                                                                                                           |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Surfaces     | `--pc-bg`, `--pc-surface`, `--pc-surface-2`, `--pc-surface-sunk`                                                                 |
-| Text         | `--pc-text-1` (primary), `--pc-text-2` (secondary), `--pc-text-3` (tertiary)                                                     |
-| Brand        | `--pc-brand`, `--pc-brand-strong`, `--pc-brand-soft`, `--pc-brand-softer`, `--pc-accent`, `--pc-accent-soft`, `--pc-accent-line` |
-| Lines        | `--pc-divider`, `--pc-divider-strong`                                                                                            |
-| Status pairs | `--pc-{good,notice,alert,info}-{fg,bg}`                                                                                          |
-| Shadows      | `--pc-shadow-{sm,md,lg,inset}`                                                                                                   |
-| Glass        | `--pc-glass`, `--pc-glass-strong`, `--pc-glass-card`, `--pc-glass-{line,edge,sheen,shadow}`, `--pc-backdrop-{1,2}`               |
-| Syringe      | `--pc-syringe-{barrel,ink,fill,fill-deep,glint,plunger}`                                                                         |
-| Chart        | `--pc-chart-{logged,preview,grid,axis,now,on-dose}`, `--pc-chart-dose-1` to `--pc-chart-dose-8`                                  |
+| Group        | Tokens                                                                                                                             |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Surfaces     | `--pc-bg`, `--pc-surface`, `--pc-surface-2`, `--pc-surface-sunk`                                                                   |
+| Text         | `--pc-text-1` (primary), `--pc-text-2` (secondary), `--pc-text-3` (tertiary)                                                       |
+| Brand        | `--pc-brand`, `--pc-brand-strong`, `--pc-brand-soft`, `--pc-brand-softer`, `--pc-accent`, `--pc-accent-soft`, `--pc-accent-line`   |
+| Lines        | `--pc-divider`, `--pc-divider-strong`                                                                                              |
+| Status pairs | `--pc-{good,notice,alert,info}-{fg,bg}`                                                                                            |
+| Shadows      | `--pc-shadow-{sm,md,lg,inset}`                                                                                                     |
+| Glass        | `--pc-glass`, `--pc-glass-strong`, `--pc-glass-card`, `--pc-glass-{line,edge,sheen,shadow}`, `--pc-backdrop-{1,2}`                 |
+| Syringe      | `--pc-syringe-{barrel,barrel-shade,ink,fill,fill-deep,clear-*,blue-*,steel-*,hub,hub-deep,stopper,stopper-hi,rod-*,glint,plunger}` |
+| Chart        | `--pc-chart-{logged,preview,grid,axis,now,on-dose}`, `--pc-chart-dose-1` to `--pc-chart-dose-8`                                    |
 
 Theme-independent: `--pc-font`, `--pc-font-display`, `--pc-font-mono`, `--pc-radius-*`, `--pc-glass-blur`,
 `--pc-dur-*`, `--pc-focus-ring`, `--pc-shadow-focus`, `--pc-touch`.

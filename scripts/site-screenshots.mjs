@@ -48,7 +48,7 @@ const SHOTS = [
     name: 'draw',
     scheme: 'light',
     show: async (page) => {
-      await openTab(page, 'Calculator')
+      await page.goto(`http://localhost:${PORT}/app/#/calculator?peptide=semaglutide`)
       await choose(page, 'Peptide in vial', 'Custom')
       await page.getByLabel('Peptide in vial').last().fill('2')
       await choose(page, 'Bacteriostatic water added', 'Custom')
@@ -62,7 +62,7 @@ const SHOTS = [
     name: 'dose',
     scheme: 'light',
     show: async (page) => {
-      await openTab(page, 'Calculator')
+      await page.goto(`http://localhost:${PORT}/app/#/calculator?peptide=semaglutide`)
       await choose(page, 'Dose', '0.5 mg')
       await page.getByTestId('draw-headline').filter({ hasText: '30' }).waitFor()
       await scrollTo(page, page.getByText('3 · Dose').first().locator('..'))

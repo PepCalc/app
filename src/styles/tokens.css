@@ -133,10 +133,27 @@
 
     /* Syringe drawing */
     --pc-syringe-barrel: #fffdf9;
+    --pc-syringe-barrel-shade: #ece3d5;
     --pc-syringe-ink: #433c30;
     --pc-syringe-fill: #dc8d6b;
     --pc-syringe-fill-deep: #b8613f;
-    --pc-syringe-glint: rgba(255, 255, 255, 0.6);
+    --pc-syringe-clear-light: #eff4f5;
+    --pc-syringe-clear-mid: #d3e0e4;
+    --pc-syringe-clear-deep: #98b2bc;
+    --pc-syringe-clear-meniscus: #4c6f7c;
+    --pc-syringe-blue-light: #7cc2f5;
+    --pc-syringe-blue-mid: #2a82d6;
+    --pc-syringe-blue-deep: #175294;
+    --pc-syringe-blue-meniscus: #0f3d73;
+    --pc-syringe-steel-light: #dfd9cf;
+    --pc-syringe-steel-dark: #746c60;
+    --pc-syringe-hub: #c8704f;
+    --pc-syringe-hub-deep: #94492e;
+    --pc-syringe-stopper: #2d2922;
+    --pc-syringe-stopper-hi: #60584c;
+    --pc-syringe-rod-hi: #dcd1be;
+    --pc-syringe-rod-shade: #6b604d;
+    --pc-syringe-glint: rgba(255, 255, 255, 0.72);
     --pc-syringe-plunger: #877960;
 
     /* Chart: validated with the dataviz palette checker against --pc-surface. */
@@ -225,10 +242,27 @@
     --pc-backdrop-2: rgba(189, 89, 47, 0.12);
 
     --pc-syringe-barrel: #2c2820;
+    --pc-syringe-barrel-shade: #1e1b15;
     --pc-syringe-ink: #e8ddcc;
     --pc-syringe-fill: #c8704f;
     --pc-syringe-fill-deep: #94492e;
-    --pc-syringe-glint: rgba(255, 240, 225, 0.22);
+    --pc-syringe-clear-light: #6a7d84;
+    --pc-syringe-clear-mid: #4b5e66;
+    --pc-syringe-clear-deep: #303f45;
+    --pc-syringe-clear-meniscus: #a6c4cf;
+    --pc-syringe-blue-light: #6bb6f0;
+    --pc-syringe-blue-mid: #2c7ed1;
+    --pc-syringe-blue-deep: #184b85;
+    --pc-syringe-blue-meniscus: #99d3ff;
+    --pc-syringe-steel-light: #cfc8bc;
+    --pc-syringe-steel-dark: #746d62;
+    --pc-syringe-hub: #b8613f;
+    --pc-syringe-hub-deep: #7d3c24;
+    --pc-syringe-stopper: #161410;
+    --pc-syringe-stopper-hi: #4f483d;
+    --pc-syringe-rod-hi: #aba08a;
+    --pc-syringe-rod-shade: #574e40;
+    --pc-syringe-glint: rgba(255, 244, 230, 0.28);
     --pc-syringe-plunger: #877960;
 
     --pc-chart-logged: #3fab73;
