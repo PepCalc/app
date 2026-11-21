@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, onMounted, reactive } from 'vue'
+import { computed, reactive } from 'vue'
 
 /** Chrome's install event; not in the DOM typings because it is non-standard. */
 interface BeforeInstallPromptEvent extends Event {
@@ -24,50 +24,51 @@ export function detectPlatform(ua: string, maxTouchPoints: number): InstallPlatf
   return 'other'
 }
 
+/*
+ * Chrome fires beforeinstallprompt once, soon after load, so one listener registered when this
+ * module loads keeps the event for every caller: the banner and Settings, which loads later.
+ */
+const state = reactive({
+  platform: detectPlatform(navigator.userAgent, navigator.maxTouchPoints ?? 0),
+  // The Android app is already installed; its WebView reports display-mode "browser".
+  standalone:
+    __NATIVE__ ||
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true,
+  deferred: null as BeforeInstallPromptEvent | null,
+})
+
+const canPrompt = computed(() => state.deferred !== null)
+
+window.addEventListener('beforeinstallprompt', (event) => {
+  // Hold Chrome's own install bar back; the banner offers the same prompt.
+  event.preventDefault()
+  state.deferred = event as BeforeInstallPromptEvent
+})
+
+window.addEventListener('appinstalled', () => {
+  state.deferred = null
+  state.standalone = true
+})
+
+/** Shows the browser's install dialog. The event is single use; Chrome may fire a fresh one later. */
+async function promptInstall(): Promise<boolean> {
+  const event = state.deferred
+  if (!event) return false
+  state.deferred = null
+  try {
+    await event.prompt()
+    const { outcome } = await event.userChoice
+    return outcome === 'accepted'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Install state and the platform-appropriate way to add PepCalc to the home screen. Only
  * Chromium browsers offer a programmatic prompt; Safari and Firefox need instructions.
  */
 export function useInstallPrompt() {
-  const state = reactive({
-    platform: detectPlatform(navigator.userAgent, navigator.maxTouchPoints ?? 0),
-    // The Android app is already installed; its WebView reports display-mode "browser".
-    standalone:
-      __NATIVE__ ||
-      window.matchMedia?.('(display-mode: standalone)').matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone === true,
-    deferred: null as BeforeInstallPromptEvent | null,
-  })
-
-  const canPrompt = computed(() => state.deferred !== null)
-
-  function onBeforeInstall(event: Event) {
-    event.preventDefault()
-    state.deferred = event as BeforeInstallPromptEvent
-  }
-
-  function onInstalled() {
-    state.deferred = null
-    state.standalone = true
-  }
-
-  onMounted(() => {
-    window.addEventListener('beforeinstallprompt', onBeforeInstall)
-    window.addEventListener('appinstalled', onInstalled)
-  })
-  onBeforeUnmount(() => {
-    window.removeEventListener('beforeinstallprompt', onBeforeInstall)
-    window.removeEventListener('appinstalled', onInstalled)
-  })
-
-  async function promptInstall(): Promise<boolean> {
-    const event = state.deferred
-    if (!event) return false
-    await event.prompt()
-    const { outcome } = await event.userChoice
-    state.deferred = null
-    return outcome === 'accepted'
-  }
-
   return { state, canPrompt, actions: { promptInstall } }
 }
