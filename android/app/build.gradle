@@ -53,8 +53,11 @@ android {
     buildTypes {
         release {
             if (releaseKeystore) signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 shrinks the code. Play Console reads the mapping.txt it writes into the bundle
+            // to turn obfuscated crash traces back into readable ones.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

@@ -1,0 +1,1 @@
+Clearer crash reports on Google Play.

@@ -28,8 +28,11 @@ base64 -w0 upload.jks   # paste into the PEPCALC_KEYSTORE_BASE64 secret
 ```
 
 Repository secrets: `PEPCALC_KEYSTORE_BASE64`, `PEPCALC_KEYSTORE_PASSWORD`,
-`PEPCALC_KEY_ALIAS`, `PEPCALC_KEY_PASSWORD`. Enrol in Play App Signing so Google holds the
-app signing key and this one is only the upload key.
+`PEPCALC_KEY_ALIAS` (`pepcalc`), `PEPCALC_KEY_PASSWORD`. All four must be set; an unset secret
+reaches Gradle as an empty string and signing fails with "Given final block not properly
+padded". `keytool` makes a PKCS12 keystore, where the key password is the keystore password, so
+set `PEPCALC_KEY_PASSWORD` to the same value as `PEPCALC_KEYSTORE_PASSWORD`. Enrol in Play App
+Signing so Google holds the app signing key and this one is only the upload key.
 
 ## Google Play
 
