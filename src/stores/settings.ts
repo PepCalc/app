@@ -64,7 +64,14 @@ const SETTING_KEYS = {
   a1cUnit: 'a1cUnit',
   profile: 'profile',
   reminders: 'reminders',
+  realisticSyringe: 'realisticSyringe',
 } as const
+
+/**
+ * Whether the syringe drawing shows a needle and plunger. Off by default in the Android and iOS
+ * apps, where store policies restrict medical syringe imagery; on by default on the web.
+ */
+const REALISTIC_SYRINGE_DEFAULT = !__NATIVE__
 
 export const useSettingsStore = defineStore('settings', () => {
   const loaded = ref(false)
@@ -81,6 +88,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const a1cUnit = ref<A1cUnit>(LEGACY_UNITS.a1cUnit)
   const profile = ref<Profile>({ ...EMPTY_PROFILE })
   const reminders = ref<ReminderSettings>(sanitizeReminderSettings(null))
+  const realisticSyringe = ref(REALISTIC_SYRINGE_DEFAULT)
 
   async function load() {
     const [
@@ -97,6 +105,7 @@ export const useSettingsStore = defineStore('settings', () => {
       aUnit,
       storedProfile,
       remind,
+      realistic,
     ] = await Promise.all([
       repository.getSetting<string>(SETTING_KEYS.defaultSyringeId),
       repository.getSetting<ThemePreference>(SETTING_KEYS.theme),
@@ -111,6 +120,7 @@ export const useSettingsStore = defineStore('settings', () => {
       repository.getSetting<A1cUnit>(SETTING_KEYS.a1cUnit),
       repository.getSetting<unknown>(SETTING_KEYS.profile),
       repository.getSetting<unknown>(SETTING_KEYS.reminders),
+      repository.getSetting<unknown>(SETTING_KEYS.realisticSyringe),
     ])
     if (syringe && syringeCatalog.syringes.some((s) => s.id === syringe)) {
       defaultSyringeId.value = syringe
@@ -146,6 +156,7 @@ export const useSettingsStore = defineStore('settings', () => {
     a1cUnit.value = units.a1cUnit
     profile.value = sanitizeProfile(storedProfile)
     reminders.value = sanitizeReminderSettings(remind)
+    realisticSyringe.value = typeof realistic === 'boolean' ? realistic : REALISTIC_SYRINGE_DEFAULT
     await Promise.all(
       (Object.keys(toStore) as (keyof UnitDefaults)[]).map((key) => {
         const value = toStore[key]
@@ -160,6 +171,11 @@ export const useSettingsStore = defineStore('settings', () => {
   async function setDefaultSyringe(id: string) {
     defaultSyringeId.value = id
     await repository.setSetting(SETTING_KEYS.defaultSyringeId, id)
+  }
+
+  async function setRealisticSyringe(value: boolean) {
+    realisticSyringe.value = value
+    await repository.setSetting(SETTING_KEYS.realisticSyringe, value)
   }
 
   async function setTheme(value: ThemePreference) {
@@ -267,9 +283,11 @@ export const useSettingsStore = defineStore('settings', () => {
     a1cUnit,
     profile,
     reminders,
+    realisticSyringe,
     load,
     setDefaultSyringe,
     setTheme,
+    setRealisticSyringe,
     markBackedUp,
     acceptDisclaimer,
     dismissInstallHint,

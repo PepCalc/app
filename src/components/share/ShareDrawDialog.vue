@@ -6,6 +6,7 @@ import { formatConcentration, type DrawPlan } from '@/domain/reconstitution'
 import { scaleParts, type SyringeReading } from '@/domain/syringe'
 import { AMOUNT_DECIMALS, formatQuantity, roundTo, type Quantity } from '@/domain/units'
 import { formatDateTime, nowIso } from '@/services/time'
+import { useSettingsStore } from '@/stores/settings'
 import ShareImageDialog from './ShareImageDialog.vue'
 import { renderDrawCard, type DrawCardContent } from './drawCard'
 
@@ -29,6 +30,7 @@ const props = withDefaults(
   { solutionColor: 'clear' },
 )
 const open = defineModel<boolean>({ required: true })
+const settings = useSettingsStore()
 
 const showName = ref(true)
 
@@ -48,6 +50,7 @@ const figures = computed<Omit<DrawCardContent, 'madeAt'>>(() => {
     syringe: props.reading.syringe,
     volumeMl: props.plan.volumeMl,
     solutionColor: props.solutionColor,
+    realistic: settings.realisticSyringe,
     // A blend's contents would name the peptides, so they go with the name. No-break spaces keep
     // each amount with its component when the line wraps.
     components: showName.value

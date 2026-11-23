@@ -404,6 +404,13 @@ const formatMb = (bytes: number | null) =>
             :items="syringeCatalog.syringes.map((s) => ({ title: s.label, value: s.id }))"
             label="Default syringe"
           />
+          <v-switch
+            :model-value="settings.realisticSyringe"
+            label="Realistic draw visualization"
+            color="primary"
+            hide-details
+            @update:model-value="settings.setRealisticSyringe(!!$event)"
+          />
         </v-card-text>
       </v-card>
 

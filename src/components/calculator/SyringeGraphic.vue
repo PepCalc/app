@@ -9,9 +9,15 @@ const props = withDefaults(
     syringe: SyringeSpec
     volumeMl: number
     solutionColor?: SolutionColor
+    /**
+     * Draw the needle and plunger. Off draws only the graduated barrel and its liquid, which
+     * store policies on medical syringe imagery allow (see `realisticSyringe` in settings).
+     */
+    realistic?: boolean
   }>(),
   {
     solutionColor: 'clear',
+    realistic: false,
   },
 )
 
@@ -137,7 +143,11 @@ const ariaLabel = computed(() => {
     class="syringe"
     :class="[
       `syringe--${solutionColor}`,
-      { 'syringe--over': !reading.fits, 'syringe--reduced': reduceMotion },
+      {
+        'syringe--over': !reading.fits,
+        'syringe--reduced': reduceMotion,
+        'syringe--simple': !realistic,
+      },
     ]"
     :data-solution="solutionColor"
   >
@@ -201,7 +211,7 @@ const ariaLabel = computed(() => {
       </defs>
 
       <!-- Beveled stainless-steel needle -->
-      <g class="syringe__needle-group">
+      <g v-if="realistic" class="syringe__needle-group">
         <path
           :d="`M 6 ${MID_Y} L 16 ${MID_Y - 1.8} L 62 ${MID_Y - 1.8} L 62 ${MID_Y + 1.8} L 12 ${MID_Y + 1.8} Z`"
           :fill="`url(#${steelId})`"
@@ -211,10 +221,12 @@ const ariaLabel = computed(() => {
 
       <!-- Contoured needle hub and barrel shoulder -->
       <g class="syringe__hub-group">
-        <rect :x="60" :y="MID_Y - 6.5" width="11" height="13" rx="2" :fill="`url(#${hubId})`" />
-        <rect :x="69" :y="MID_Y - 10" width="14" height="20" rx="2.5" :fill="`url(#${hubId})`" />
-        <line class="syringe__hub-rib" x1="73" :y1="MID_Y - 9" x2="73" :y2="MID_Y + 9" />
-        <line class="syringe__hub-rib" x1="78" :y1="MID_Y - 9" x2="78" :y2="MID_Y + 9" />
+        <template v-if="realistic">
+          <rect :x="60" :y="MID_Y - 6.5" width="11" height="13" rx="2" :fill="`url(#${hubId})`" />
+          <rect :x="69" :y="MID_Y - 10" width="14" height="20" rx="2.5" :fill="`url(#${hubId})`" />
+          <line class="syringe__hub-rib" x1="73" :y1="MID_Y - 9" x2="73" :y2="MID_Y + 9" />
+          <line class="syringe__hub-rib" x1="78" :y1="MID_Y - 9" x2="78" :y2="MID_Y + 9" />
+        </template>
         <path
           class="syringe__shoulder"
           :d="`M 82 ${MID_Y - 12} L ${BARREL_X + 2} ${BARREL_Y + 6} L ${BARREL_X + 2} ${BARREL_Y + BARREL_H - 6} L 82 ${MID_Y + 12} Z`"
@@ -223,7 +235,7 @@ const ariaLabel = computed(() => {
       </g>
 
       <!-- Cruciform plunger rod extending to the fixed thumb handle -->
-      <g class="syringe__rod-group">
+      <g v-if="realistic" class="syringe__rod-group">
         <rect :x="rodX" :y="MID_Y - 7.5" :width="rodW" height="15" :fill="`url(#${rodId})`" />
         <line class="syringe__rod-rib" :x1="rodX" :y1="MID_Y - 7" :x2="HANDLE_X" :y2="MID_Y - 7" />
         <line class="syringe__rod-rib" :x1="rodX" :y1="MID_Y + 7" :x2="HANDLE_X" :y2="MID_Y + 7" />
@@ -244,14 +256,16 @@ const ariaLabel = computed(() => {
       <!-- Interior clipped to the barrel cylinder -->
       <g :clip-path="`url(#${clipId})`">
         <!-- Internal section of the plunger rod visible through empty barrel -->
-        <rect :x="rodX" :y="MID_Y - 7" :width="rodW" height="14" :fill="`url(#${rodId})`" />
-        <line
-          class="syringe__rod-spine"
-          :x1="rodX"
-          :y1="MID_Y"
-          :x2="BARREL_X + BARREL_W"
-          :y2="MID_Y"
-        />
+        <template v-if="realistic">
+          <rect :x="rodX" :y="MID_Y - 7" :width="rodW" height="14" :fill="`url(#${rodId})`" />
+          <line
+            class="syringe__rod-spine"
+            :x1="rodX"
+            :y1="MID_Y"
+            :x2="BARREL_X + BARREL_W"
+            :y2="MID_Y"
+          />
+        </template>
 
         <!-- Drawn liquid column -->
         <g v-if="liquidW > 0.5" class="syringe__liquid-group">
@@ -291,7 +305,7 @@ const ariaLabel = computed(() => {
         </g>
 
         <!-- Dual-ribbed elastomeric rubber stopper; leading edge sits exactly on fillX -->
-        <g class="syringe__stopper">
+        <g v-if="realistic" class="syringe__stopper">
           <rect
             :x="fillX"
             :y="BARREL_Y + 2"
@@ -384,7 +398,7 @@ const ariaLabel = computed(() => {
       </g>
 
       <!-- Fixed thumb rest (plunger handle stays inside the panel bounds) -->
-      <g class="syringe__thumb-group">
+      <g v-if="realistic" class="syringe__thumb-group">
         <rect
           :x="HANDLE_X"
           :y="BARREL_Y - 9"

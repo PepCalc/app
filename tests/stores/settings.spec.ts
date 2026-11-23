@@ -139,3 +139,37 @@ describe('settings.load', () => {
     })
   })
 })
+
+describe('settings.realisticSyringe', () => {
+  beforeEach(async () => {
+    setActivePinia(createPinia())
+    vi.restoreAllMocks()
+    await Promise.all(db.tables.map((t) => t.clear()))
+    mockRegionalPreferences.mockReset()
+    mockRegionalPreferences.mockResolvedValue({ region: null, measurementSystem: null })
+  })
+
+  it('shows the needle and plunger by default on the web', async () => {
+    const settings = useSettingsStore()
+    await settings.load()
+    expect(settings.realisticSyringe).toBe(true)
+  })
+
+  it('persists the choice across a reload', async () => {
+    const settings = useSettingsStore()
+    await settings.load()
+    await settings.setRealisticSyringe(false)
+
+    setActivePinia(createPinia())
+    const reloaded = useSettingsStore()
+    await reloaded.load()
+    expect(reloaded.realisticSyringe).toBe(false)
+  })
+
+  it('ignores a restored value that is not a boolean', async () => {
+    await repository.setSetting('realisticSyringe', 'yes')
+    const settings = useSettingsStore()
+    await settings.load()
+    expect(settings.realisticSyringe).toBe(true)
+  })
+})

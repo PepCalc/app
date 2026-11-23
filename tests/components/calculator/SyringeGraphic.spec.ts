@@ -51,12 +51,31 @@ describe('SyringeGraphic', () => {
     expect(blue.find('figure').classes()).toContain('syringe--blue')
   })
 
+  it('draws no needle or plunger unless realistic', () => {
+    const simple = mountWithVuetify(SyringeGraphic, {
+      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.2 },
+    })
+    expect(simple.find('figure').classes()).toContain('syringe--simple')
+    for (const part of ['needle-group', 'rod-group', 'stopper', 'thumb-group']) {
+      expect(simple.find(`.syringe__${part}`).exists()).toBe(false)
+    }
+    expect(simple.find('.syringe__fill').exists()).toBe(true)
+
+    const realistic = mountWithVuetify(SyringeGraphic, {
+      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.2, realistic: true },
+    })
+    expect(realistic.find('figure').classes()).not.toContain('syringe--simple')
+    for (const part of ['needle-group', 'rod-group', 'stopper', 'thumb-group']) {
+      expect(realistic.find(`.syringe__${part}`).exists()).toBe(true)
+    }
+  })
+
   it('keeps the plunger handle fixed across different drawn volumes', () => {
     const low = mountWithVuetify(SyringeGraphic, {
-      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.1 },
+      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.1, realistic: true },
     })
     const high = mountWithVuetify(SyringeGraphic, {
-      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.9 },
+      props: { syringe: findSyringe('u100-1ml'), volumeMl: 0.9, realistic: true },
     })
     expect(low.find('.syringe__thumb').attributes('x')).toBe(
       high.find('.syringe__thumb').attributes('x'),

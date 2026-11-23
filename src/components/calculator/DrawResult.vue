@@ -8,6 +8,7 @@ import { scaleLabel, scaleParts, type SyringeReading, type SyringeSpec } from '@
 import { AMOUNT_DECIMALS, formatQuantity, roundTo, type Quantity } from '@/domain/units'
 import type { CalculatorWarning } from '@/composables/useCalculator'
 import { mdiShareVariantOutline } from '@/plugins/icons'
+import { useSettingsStore } from '@/stores/settings'
 import SyringeGraphic from './SyringeGraphic.vue'
 
 const props = withDefaults(
@@ -25,6 +26,7 @@ const props = withDefaults(
 )
 
 const syringeId = defineModel<string>('syringeId', { required: true })
+const settings = useSettingsStore()
 defineEmits<{ share: [] }>()
 
 const headline = computed(() => scaleParts(props.reading))
@@ -73,6 +75,7 @@ const syringeItems = syringeCatalog.syringes.map((s) => ({ title: s.label, value
         :syringe="reading.syringe"
         :volume-ml="plan.volumeMl"
         :solution-color="solutionColor"
+        :realistic="settings.realisticSyringe"
       />
 
       <v-alert

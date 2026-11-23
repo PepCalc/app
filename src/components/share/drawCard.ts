@@ -34,6 +34,8 @@ export interface DrawCardContent {
   volumeMl: number
   /** Visual tint of the drawn liquid ('clear' or 'blue'). */
   solutionColor?: SolutionColor
+  /** Draw the syringe's needle and plunger, as the calculator does when the setting is on. */
+  realistic?: boolean
   /** A blend's share of the draw: "BPC-157 250 mcg". Empty for a single peptide. */
   components: string[]
   /** Short warnings about this draw: more than the vial holds, or the syringe cannot measure it. */
@@ -187,6 +189,7 @@ export async function renderDrawCard(content: DrawCardContent): Promise<Blob> {
     PAD - 6,
     syringeTop,
     inner + 12,
+    content.realistic ?? false,
   )
 
   // Below the syringe, most important first, in the room above the footer: warnings, a blend's
@@ -310,9 +313,9 @@ function readSyringePalette(
 }
 
 /**
- * The syringe as the calculator draws it, at rest at the reading: beveled needle, contoured hub,
- * cylindrical barrel, clear or blue liquid with meniscus, dual-ribbed stopper, cruciform rod with
- * fixed handle, graduations, and the floating reading pill.
+ * The syringe as the calculator draws it, at rest at the reading: cylindrical barrel, clear or
+ * blue liquid with meniscus, graduations, and the floating reading pill. With `realistic`, also
+ * the beveled needle, contoured hub, dual-ribbed stopper, and cruciform rod with fixed handle.
  */
 function drawSyringe(
   ctx: CanvasRenderingContext2D,
@@ -325,6 +328,7 @@ function drawSyringe(
   left: number,
   top: number,
   width: number,
+  realistic: boolean,
 ) {
   const reading = readSyringe(volumeMl, syringe)
   const fillX = BARREL_X + BARREL_W * Math.min(1, volumeMl / syringe.capacityMl)
@@ -383,25 +387,29 @@ function drawSyringe(
     [1, p.stopper],
   ])
 
-  // Beveled steel needle.
-  const steelGrad = vGrad(MID_Y - 2, MID_Y + 2, [
-    [0, p.steelDark],
-    [0.38, p.steelLight],
-    [1, p.steelDark],
-  ])
-  ctx.fillStyle = steelGrad
-  ctx.beginPath()
-  ctx.moveTo(6, MID_Y)
-  ctx.lineTo(16, MID_Y - 1.8)
-  ctx.lineTo(62, MID_Y - 1.8)
-  ctx.lineTo(62, MID_Y + 1.8)
-  ctx.lineTo(12, MID_Y + 1.8)
-  ctx.closePath()
-  ctx.fill()
+  if (realistic) {
+    // Beveled steel needle.
+    const steelGrad = vGrad(MID_Y - 2, MID_Y + 2, [
+      [0, p.steelDark],
+      [0.38, p.steelLight],
+      [1, p.steelDark],
+    ])
+    ctx.fillStyle = steelGrad
+    ctx.beginPath()
+    ctx.moveTo(6, MID_Y)
+    ctx.lineTo(16, MID_Y - 1.8)
+    ctx.lineTo(62, MID_Y - 1.8)
+    ctx.lineTo(62, MID_Y + 1.8)
+    ctx.lineTo(12, MID_Y + 1.8)
+    ctx.closePath()
+    ctx.fill()
 
-  // Contoured needle hub and barrel shoulder.
-  rect(60, MID_Y - 6.5, 11, 13, 2, hubGrad)
-  rect(69, MID_Y - 10, 14, 20, 2.5, hubGrad)
+    // Contoured needle hub.
+    rect(60, MID_Y - 6.5, 11, 13, 2, hubGrad)
+    rect(69, MID_Y - 10, 14, 20, 2.5, hubGrad)
+  }
+
+  // Barrel shoulder.
   ctx.fillStyle = barrelGrad
   ctx.strokeStyle = t['syringe-ink']
   ctx.lineWidth = 1.5
@@ -415,7 +423,7 @@ function drawSyringe(
   ctx.stroke()
 
   // Cruciform plunger rod to the fixed thumb handle.
-  rect(rodX, MID_Y - 7.5, rodW, 15, 0, rodGrad)
+  if (realistic) rect(rodX, MID_Y - 7.5, rodW, 15, 0, rodGrad)
 
   // Barrel cylinder background.
   rect(BARREL_X, BARREL_Y, BARREL_W, BARREL_H, 6, barrelGrad)
@@ -426,7 +434,7 @@ function drawSyringe(
   ctx.roundRect(BARREL_X + 1, BARREL_Y + 1, BARREL_W - 2, BARREL_H - 2, 5)
   ctx.clip()
 
-  rect(rodX, MID_Y - 7, rodW, 14, 0, rodGrad)
+  if (realistic) rect(rodX, MID_Y - 7, rodW, 14, 0, rodGrad)
 
   if (liquidW > 0.5) {
     const fluid = vGrad(BARREL_Y, BARREL_Y + BARREL_H, [
@@ -454,9 +462,11 @@ function drawSyringe(
   }
 
   // Dual-ribbed rubber stopper.
-  rect(fillX, BARREL_Y + 2, 6, BARREL_H - 4, 1.5, stopperGrad)
-  rect(fillX + 5.5, BARREL_Y + 5, 5, BARREL_H - 10, 0, stopperGrad)
-  rect(fillX + 10, BARREL_Y + 2, 6, BARREL_H - 4, 1.5, stopperGrad)
+  if (realistic) {
+    rect(fillX, BARREL_Y + 2, 6, BARREL_H - 4, 1.5, stopperGrad)
+    rect(fillX + 5.5, BARREL_Y + 5, 5, BARREL_H - 10, 0, stopperGrad)
+    rect(fillX + 10, BARREL_Y + 2, 6, BARREL_H - 4, 1.5, stopperGrad)
+  }
 
   // Glass barrel specular reflections.
   rect(BARREL_X + 6, BARREL_Y + 6, BARREL_W - 12, 6, 3, t['syringe-glint'])
@@ -467,7 +477,7 @@ function drawSyringe(
   ctx.globalAlpha = 1
   ctx.restore()
 
-  // Crisp barrel rim, flared finger flange, and fixed thumb rest.
+  // Crisp barrel rim, flared finger flange, and (realistic only) fixed thumb rest.
   ctx.strokeStyle = t['syringe-ink']
   ctx.lineWidth = 1.75
   ctx.beginPath()
@@ -480,7 +490,7 @@ function drawSyringe(
     [1, p.rodShade],
   ])
   rect(BARREL_X + BARREL_W + 1, BARREL_Y - 11, 10, BARREL_H + 22, 4.5, handleGrad)
-  rect(HANDLE_X, BARREL_Y - 9, 14, BARREL_H + 18, 5, handleGrad)
+  if (realistic) rect(HANDLE_X, BARREL_Y - 9, 14, BARREL_H + 18, 5, handleGrad)
 
   // Graduations along the top edge, numbers below.
   ctx.strokeStyle = t['syringe-ink']

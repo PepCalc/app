@@ -1,0 +1,1 @@
+Simplified draw visualization by default in the app. Turn on Realistic draw visualization in Settings to show the full drawing.
